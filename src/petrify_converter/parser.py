@@ -4,13 +4,15 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
+from petrify_converter.color_extractor import ColorExtractor
 from petrify_converter.exceptions import InvalidNoteFileError, ParseError
-from petrify_converter.models import Note, Page, Stroke
+from petrify_converter.models import Note, Page, Point, Stroke
 
 
 class NoteParser:
     RESOURCE_TYPE_MAINBMP = 1
     RESOURCE_TYPE_PATH = 7
+    DEFAULT_GAP_THRESHOLD = 6
     def __init__(self, path: Path | str):
         self.path = Path(path)
         if not self.path.exists():
@@ -146,11 +148,12 @@ class NoteParser:
 
         for path_file in path_files:
             page_id = path_file.stem.replace("path_", "")
-            strokes = self._parse_strokes(path_file)
 
             background_image = self._load_mainbmp(
                 page_id, path_to_mainbmp, mainbmp_files
             )
+
+            strokes = self._parse_strokes(path_file, background_image)
 
             page = Page(
                 id=page_id,
@@ -182,13 +185,89 @@ class NoteParser:
 
         return None
 
-    def _parse_strokes(self, path_file: Path) -> list[Stroke]:
-        """스트로크 파싱."""
+    def _parse_strokes(self, path_file: Path, mainbmp_data: bytes | None) -> list[Stroke]:
+        """스트로크 파싱 (mainBmp에서 색상 추출 포함)."""
         try:
             data = json.loads(path_file.read_text(encoding="utf-8"))
-            return Stroke.split_by_timestamp_gap(data, gap_threshold=6)
         except json.JSONDecodeError as e:
             raise ParseError(f"Failed to parse stroke data: {e}")
+
+        if not data:
+            return []
+
+        if mainbmp_data is None:
+            return Stroke.split_by_timestamp_gap(data, gap_threshold=self.DEFAULT_GAP_THRESHOLD)
+
+        extractor = ColorExtractor(mainbmp_data)
+        return self._split_strokes_with_color(data, extractor)
+
+    def _split_strokes_with_color(
+        self, data: list[list], extractor: ColorExtractor
+    ) -> list[Stroke]:
+        """색상 변경 또는 timestamp gap으로 스트로크 분리."""
+        if not data:
+            return []
+
+        sorted_data = sorted(data, key=lambda p: p[2])
+
+        strokes = []
+        current_points: list[Point] = []
+        current_color: str | None = None
+        current_alpha: int | None = None
+
+        for i, point_data in enumerate(sorted_data):
+            x, y = int(point_data[0]), int(point_data[1])
+            color, alpha = extractor.get_color_at(x, y)
+
+            is_background = color.lower() in ColorExtractor.BACKGROUND_COLORS
+
+            if is_background:
+                if current_color is not None:
+                    color = current_color
+                    alpha = current_alpha
+                else:
+                    color = "#000000"
+                    alpha = 255
+
+            if i > 0:
+                prev_ts = sorted_data[i - 1][2]
+                curr_ts = point_data[2]
+                gap = curr_ts - prev_ts
+
+                color_changed = (
+                    current_color is not None
+                    and not is_background
+                    and color != current_color
+                )
+
+                if gap >= self.DEFAULT_GAP_THRESHOLD or color_changed:
+                    if current_points:
+                        opacity = int((current_alpha / 255) * 100) if current_alpha else 100
+                        strokes.append(
+                            Stroke(
+                                points=current_points,
+                                color=current_color or "#000000",
+                                opacity=opacity,
+                            )
+                        )
+                    current_points = []
+
+            current_points.append(Point.from_list(point_data))
+            if not is_background or current_color is None:
+                current_color = color
+                current_alpha = alpha
+
+        if current_points:
+            opacity = int((current_alpha / 255) * 100) if current_alpha else 100
+            strokes.append(
+                Stroke(
+                    points=current_points,
+                    color=current_color or "#000000",
+                    opacity=opacity,
+                )
+            )
+
+        return strokes
 
     @staticmethod
     def _timestamp_to_datetime(timestamp: int) -> datetime:

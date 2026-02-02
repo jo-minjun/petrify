@@ -8,6 +8,7 @@ class ColorExtractor:
     """mainBmp 이미지에서 색상 추출."""
 
     ALPHA_THRESHOLD = 200  # 이 값 미만이면 형광펜으로 분류
+    BACKGROUND_COLORS = ("#ffffff", "#fefefe", "#fdfdfd")
 
     def __init__(self, image_data: bytes):
         self.image = Image.open(io.BytesIO(image_data)).convert('RGBA')
@@ -53,7 +54,7 @@ class ColorExtractor:
             x, y = int(point[0]), int(point[1])
             color, alpha = self.get_color_at(x, y)
 
-            if color.lower() not in ("#ffffff", "#fefefe", "#fdfdfd"):
+            if color.lower() not in self.BACKGROUND_COLORS:
                 colors.append((color, alpha))
 
         if not colors:
