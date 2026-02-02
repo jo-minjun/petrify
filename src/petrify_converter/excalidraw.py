@@ -1,4 +1,3 @@
-import base64
 import random
 import uuid
 from typing import Any
@@ -9,19 +8,14 @@ from petrify_converter.models import Note, Page, Stroke
 class ExcalidrawGenerator:
     PAGE_GAP = 100
 
-    def __init__(self, include_background: bool = True):
-        self.include_background = include_background
-
     def generate(self, note: Note) -> dict[str, Any]:
         """Note를 Excalidraw 문서로 변환."""
         elements = []
-        files: dict[str, Any] = {}
         y_offset = 0
 
         for page in note.pages:
-            page_elements, page_files = self._generate_page_elements(page, y_offset)
+            page_elements = self._generate_page_elements(page, y_offset)
             elements.extend(page_elements)
-            files.update(page_files)
             y_offset += page.height + self.PAGE_GAP
 
         return {
@@ -33,88 +27,20 @@ class ExcalidrawGenerator:
                 "gridSize": None,
                 "viewBackgroundColor": "#ffffff",
             },
-            "files": files,
+            "files": {},
         }
 
     def _generate_page_elements(
         self, page: Page, y_offset: float
-    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """페이지의 모든 요소 생성."""
         elements = []
-        files: dict[str, Any] = {}
-
-        if self.include_background and page.background_image is not None:
-            image_element, file_data = self.create_image(
-                page.background_image,
-                page.width,
-                page.height,
-                x_offset=0,
-                y_offset=y_offset,
-            )
-            elements.append(image_element)
-            files.update(file_data)
 
         for stroke in page.strokes:
             element = self.create_freedraw(stroke, x_offset=0, y_offset=y_offset)
             elements.append(element)
 
-        return elements, files
-
-    def create_image(
-        self,
-        image_data: bytes,
-        width: float,
-        height: float,
-        x_offset: float,
-        y_offset: float,
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """이미지 요소 생성."""
-        file_id = self._generate_id()
-        data_url = f"data:image/png;base64,{base64.b64encode(image_data).decode()}"
-
-        element = {
-            "type": "image",
-            "id": self._generate_id(),
-            "x": x_offset,
-            "y": y_offset,
-            "width": width,
-            "height": height,
-            "strokeColor": "transparent",
-            "backgroundColor": "transparent",
-            "fillStyle": "solid",
-            "strokeWidth": 1,
-            "strokeStyle": "solid",
-            "roughness": 0,
-            "opacity": 100,
-            "angle": 0,
-            "seed": self._generate_seed(),
-            "version": 1,
-            "versionNonce": self._generate_seed(),
-            "index": "a0",
-            "isDeleted": False,
-            "groupIds": [],
-            "frameId": None,
-            "roundness": None,
-            "boundElements": [],
-            "updated": 1,
-            "link": None,
-            "locked": False,
-            "fileId": file_id,
-            "status": "saved",
-            "scale": [1, 1],
-            "crop": None,
-        }
-
-        file_data = {
-            file_id: {
-                "mimeType": "image/png",
-                "id": file_id,
-                "dataURL": data_url,
-                "created": 1,
-            }
-        }
-
-        return element, file_data
+        return elements
 
     def create_freedraw(
         self, stroke: Stroke, x_offset: float, y_offset: float
