@@ -7,7 +7,7 @@ from petrify_converter.models import Note, Page, Stroke
 
 class ExcalidrawGenerator:
     PAGE_GAP = 100
-    STROKE_WIDTH_DIVISOR = 4
+    STROKE_WIDTH_DIVISOR = 6
     MIN_STROKE_WIDTH = 1
 
     def generate(self, note: Note) -> dict[str, Any]:

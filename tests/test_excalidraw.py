@@ -69,7 +69,7 @@ def test_generate_full_document():
 def test_stroke_width_scaling_constant_exists():
     """스케일링 상수가 정의되어 있는지 확인."""
     assert hasattr(ExcalidrawGenerator, 'STROKE_WIDTH_DIVISOR')
-    assert ExcalidrawGenerator.STROKE_WIDTH_DIVISOR == 4
+    assert ExcalidrawGenerator.STROKE_WIDTH_DIVISOR == 6
 
 
 def test_stroke_width_min_constant_exists():
@@ -81,10 +81,10 @@ def test_stroke_width_min_constant_exists():
 def test_scale_stroke_width_normal():
     """일반적인 굵기 스케일링."""
     generator = ExcalidrawGenerator()
-    assert generator._scale_stroke_width(4) == 1
-    assert generator._scale_stroke_width(8) == 2
-    assert generator._scale_stroke_width(16) == 4
-    assert generator._scale_stroke_width(74) == 18  # 74/4 = 18.5 -> 18
+    assert generator._scale_stroke_width(6) == 1
+    assert generator._scale_stroke_width(12) == 2
+    assert generator._scale_stroke_width(18) == 3
+    assert generator._scale_stroke_width(74) == 12  # 74/6 = 12.3 -> 12
 
 
 def test_scale_stroke_width_minimum():
@@ -107,11 +107,11 @@ def test_create_freedraw_applies_scaling():
     stroke = Stroke(
         points=[Point(x=0, y=0, timestamp=0), Point(x=10, y=10, timestamp=1)],
         color="#000000",
-        width=20.0,  # 20px -> 20/4 = 5
+        width=18.0,  # 18px -> 18/6 = 3
         opacity=100,
     )
     element = generator.create_freedraw(stroke, x_offset=0, y_offset=0)
-    assert element["strokeWidth"] == 5
+    assert element["strokeWidth"] == 3
 
 
 def test_create_freedraw_minimum_width():
