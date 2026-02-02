@@ -1,3 +1,3 @@
-from petrify_converter.models.stroke import Point
+from petrify_converter.models.stroke import Point, Stroke
 
-__all__ = ["Point"]
+__all__ = ["Point", "Stroke"]
