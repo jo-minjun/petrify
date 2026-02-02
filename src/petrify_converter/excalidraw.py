@@ -88,6 +88,7 @@ class ExcalidrawGenerator:
             "opacity": stroke.opacity,
             "angle": 0,
             "points": points,
+            # 실험적으로 결정된 값: 원본 굵기에 가깝게 렌더링되는 pressure
             "pressures": [0.5] * len(points),
             "simulatePressure": False,
             "seed": self._generate_seed(),

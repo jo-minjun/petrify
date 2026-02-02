@@ -8,7 +8,9 @@ class ColorExtractor:
     """mainBmp 이미지에서 색상 추출."""
 
     BACKGROUND_COLORS = {"#ffffff", "#fffff0"}
+    # 실험적으로 결정된 값: 교차점에서의 급격한 증가를 감지하기 위한 임계값
     OUTLIER_THRESHOLD = 1.5
+    # 실험적으로 결정된 값: 스트로크 끝단 특성과 노이즈 사이 균형점
     LOWER_PERCENTILE = 5
 
     def __init__(self, image_data: bytes):
