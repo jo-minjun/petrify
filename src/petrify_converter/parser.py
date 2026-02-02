@@ -13,6 +13,7 @@ class NoteParser:
     RESOURCE_TYPE_MAINBMP = 1
     RESOURCE_TYPE_PATH = 7
     DEFAULT_GAP_THRESHOLD = 6
+
     def __init__(self, path: Path | str):
         self.path = Path(path)
         if not self.path.exists():
@@ -21,29 +22,23 @@ class NoteParser:
         self._extracted_dir: Path | None = None
         self._is_directory = self.path.is_dir()
 
+    @property
+    def _search_dir(self) -> Path | None:
+        """검색에 사용할 디렉터리 반환."""
+        return self.path if self._is_directory else self._extracted_dir
+
     def _find_path_files(self) -> list[Path]:
         """path_*.json 파일 찾기."""
-        if self._is_directory:
-            search_dir = self.path
-        else:
-            search_dir = self._extracted_dir
-
-        if search_dir is None:
+        if self._search_dir is None:
             return []
-
-        return list(search_dir.glob("path_*.json"))
+        return list(self._search_dir.glob("path_*.json"))
 
     def _find_file_by_suffix(self, suffix: str) -> Path | None:
         """특정 suffix로 끝나는 파일 찾기."""
-        if self._is_directory:
-            search_dir = self.path
-        else:
-            search_dir = self._extracted_dir
-
-        if search_dir is None:
+        if self._search_dir is None:
             return None
 
-        for f in search_dir.iterdir():
+        for f in self._search_dir.iterdir():
             if f.name.endswith(suffix):
                 return f
         return None
@@ -82,15 +77,9 @@ class NoteParser:
 
     def _find_mainbmp_files(self) -> list[Path]:
         """mainBmp_*.png 파일 찾기."""
-        if self._is_directory:
-            search_dir = self.path
-        else:
-            search_dir = self._extracted_dir
-
-        if search_dir is None:
+        if self._search_dir is None:
             return []
-
-        return list(search_dir.glob("mainBmp_*.png"))
+        return list(self._search_dir.glob("mainBmp_*.png"))
 
     def parse(self) -> Note:
         """note 파일 파싱."""
@@ -171,12 +160,11 @@ class NoteParser:
         mainbmp_files: list[Path],
     ) -> bytes | None:
         """mainBmp 이미지 로드."""
-        search_dir = self.path if self._is_directory else self._extracted_dir
-        if search_dir is None:
+        if self._search_dir is None:
             return None
 
         if page_id in path_to_mainbmp:
-            mainbmp_path = search_dir / path_to_mainbmp[page_id]
+            mainbmp_path = self._search_dir / path_to_mainbmp[page_id]
             if mainbmp_path.exists():
                 return mainbmp_path.read_bytes()
 
@@ -200,6 +188,13 @@ class NoteParser:
 
         extractor = ColorExtractor(mainbmp_data)
         return self._split_strokes_with_color(data, extractor)
+
+    @staticmethod
+    def _alpha_to_opacity(alpha: int | None) -> int:
+        """알파값(0-255)을 opacity(0-100)로 변환."""
+        if alpha is None:
+            return 100
+        return int((alpha / 255) * 100)
 
     def _split_strokes_with_color(
         self, data: list[list], extractor: ColorExtractor
@@ -242,12 +237,11 @@ class NoteParser:
 
                 if gap >= self.DEFAULT_GAP_THRESHOLD or color_changed:
                     if current_points:
-                        opacity = int((current_alpha / 255) * 100) if current_alpha else 100
                         strokes.append(
                             Stroke(
                                 points=current_points,
                                 color=current_color or "#000000",
-                                opacity=opacity,
+                                opacity=self._alpha_to_opacity(current_alpha),
                             )
                         )
                     current_points = []
@@ -258,12 +252,11 @@ class NoteParser:
                 current_alpha = alpha
 
         if current_points:
-            opacity = int((current_alpha / 255) * 100) if current_alpha else 100
             strokes.append(
                 Stroke(
                     points=current_points,
                     color=current_color or "#000000",
-                    opacity=opacity,
+                    opacity=self._alpha_to_opacity(current_alpha),
                 )
             )
 

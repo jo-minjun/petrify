@@ -121,21 +121,23 @@ class ExcalidrawGenerator:
     ) -> dict[str, Any]:
         """Stroke를 freedraw 요소로 변환."""
         if not stroke.points:
-            return self._empty_freedraw(x_offset, y_offset, stroke)
-
-        first_point = stroke.points[0]
-        points = [[p.x - first_point.x, p.y - first_point.y] for p in stroke.points]
-
-        xs = [p[0] for p in points]
-        ys = [p[1] for p in points]
-        width = max(xs) - min(xs) if xs else 0
-        height = max(ys) - min(ys) if ys else 0
+            x, y = x_offset, y_offset
+            points = []
+            width, height = 0, 0
+        else:
+            first_point = stroke.points[0]
+            x, y = first_point.x + x_offset, first_point.y + y_offset
+            points = [[p.x - first_point.x, p.y - first_point.y] for p in stroke.points]
+            xs = [p[0] for p in points]
+            ys = [p[1] for p in points]
+            width = max(xs) - min(xs)
+            height = max(ys) - min(ys)
 
         return {
             "type": "freedraw",
             "id": self._generate_id(),
-            "x": first_point.x + x_offset,
-            "y": first_point.y + y_offset,
+            "x": x,
+            "y": y,
             "width": width,
             "height": height,
             "strokeColor": stroke.color,
@@ -147,40 +149,6 @@ class ExcalidrawGenerator:
             "opacity": stroke.opacity,
             "angle": 0,
             "points": points,
-            "pressures": [],
-            "simulatePressure": True,
-            "seed": self._generate_seed(),
-            "version": 1,
-            "versionNonce": self._generate_seed(),
-            "isDeleted": False,
-            "groupIds": [],
-            "frameId": None,
-            "boundElements": None,
-            "updated": 1,
-            "link": None,
-            "locked": False,
-        }
-
-    def _empty_freedraw(
-        self, x_offset: float, y_offset: float, stroke: Stroke
-    ) -> dict[str, Any]:
-        """빈 freedraw 요소 생성."""
-        return {
-            "type": "freedraw",
-            "id": self._generate_id(),
-            "x": x_offset,
-            "y": y_offset,
-            "width": 0,
-            "height": 0,
-            "strokeColor": stroke.color,
-            "backgroundColor": "transparent",
-            "fillStyle": "solid",
-            "strokeWidth": int(stroke.width),
-            "strokeStyle": "solid",
-            "roughness": 0,
-            "opacity": stroke.opacity,
-            "angle": 0,
-            "points": [],
             "pressures": [],
             "simulatePressure": True,
             "seed": self._generate_seed(),
