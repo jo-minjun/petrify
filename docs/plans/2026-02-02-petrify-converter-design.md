@@ -2,6 +2,19 @@
 
 viwoods note 파일을 Excalidraw 포맷으로 변환하는 Python 라이브러리
 
+## 배경
+
+**petrify 프로젝트의 최종 목표**: viwoods aipaper의 note를 옵시디언에 동기화하고 관리
+
+```
+petrify
+├── petrify-converter    ← 본 프로젝트 (note → Excalidraw 변환)
+├── 동기화 모듈          ← 향후
+└── 옵시디언 통합        ← 향후
+```
+
+Excalidraw 포맷을 선택한 이유: 옵시디언의 Excalidraw 플러그인과 호환
+
 ## 개요
 
 - **프로젝트명**: petrify-converter
