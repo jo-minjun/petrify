@@ -38,3 +38,4 @@ htmlcov/
 
 # Output files
 output.excalidraw
+.DS_Store
