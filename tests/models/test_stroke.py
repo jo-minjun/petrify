@@ -41,3 +41,64 @@ def test_stroke_from_path_data():
     assert len(stroke.points) == 3
     assert stroke.points[0].x == 0
     assert stroke.points[2].y == 10
+
+
+def test_split_strokes_by_timestamp_gap():
+    """gap >= 6 기준으로 스트로크 분리."""
+    # 두 개의 스트로크: ts 1-5, ts 11-15 (gap=6)
+    data = [
+        [100, 100, 1],
+        [101, 101, 2],
+        [102, 102, 3],
+        [103, 103, 4],
+        [104, 104, 5],
+        # gap = 6 (11 - 5 = 6)
+        [200, 200, 11],
+        [201, 201, 12],
+        [202, 202, 13],
+    ]
+
+    strokes = Stroke.split_by_timestamp_gap(data, gap_threshold=6)
+
+    assert len(strokes) == 2
+    assert len(strokes[0].points) == 5
+    assert len(strokes[1].points) == 3
+    assert strokes[0].points[0].x == 100
+    assert strokes[1].points[0].x == 200
+
+
+def test_split_strokes_sorts_by_timestamp():
+    """timestamp 순서로 정렬 후 분리."""
+    data = [
+        [200, 200, 11],
+        [100, 100, 1],
+        [101, 101, 2],
+    ]
+
+    strokes = Stroke.split_by_timestamp_gap(data, gap_threshold=6)
+
+    assert len(strokes) == 2
+    assert strokes[0].points[0].timestamp == 1
+    assert strokes[0].points[1].timestamp == 2
+    assert strokes[1].points[0].timestamp == 11
+
+
+def test_split_strokes_single_stroke():
+    """gap이 threshold 미만이면 하나의 스트로크."""
+    data = [
+        [100, 100, 1],
+        [101, 101, 2],
+        [102, 102, 3],
+    ]
+
+    strokes = Stroke.split_by_timestamp_gap(data, gap_threshold=6)
+
+    assert len(strokes) == 1
+    assert len(strokes[0].points) == 3
+
+
+def test_split_strokes_empty_data():
+    """빈 데이터는 빈 리스트 반환."""
+    strokes = Stroke.split_by_timestamp_gap([], gap_threshold=6)
+
+    assert len(strokes) == 0
