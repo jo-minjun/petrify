@@ -88,7 +88,7 @@ class ExcalidrawGenerator:
             "opacity": stroke.opacity,
             "angle": 0,
             "points": points,
-            "pressures": [],
+            "pressures": [1.0] * len(points),
             "simulatePressure": False,
             "seed": self._generate_seed(),
             "version": 1,
