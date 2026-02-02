@@ -93,8 +93,8 @@ def test_get_width_at_out_of_bounds():
     assert extractor.get_width_at(5, 100) == 0
 
 
-def test_extract_stroke_width_min():
-    """스트로크 포인트들의 최소값 굵기 반환."""
+def test_extract_stroke_width_q1():
+    """스트로크 포인트들의 Q1 (하위 25%) 굵기 반환."""
     # 10x20 이미지, 위쪽은 3px, 아래쪽은 7px 굵기
     img = Image.new('RGBA', (20, 20), (0, 0, 0, 0))
 
@@ -113,14 +113,14 @@ def test_extract_stroke_width_min():
 
     extractor = ColorExtractor(img_bytes.getvalue())
 
-    # 위쪽 3개, 아래쪽 2개 포인트 -> 최소값은 3
+    # 위쪽 3개, 아래쪽 2개 포인트 -> 정렬: [3,3,3,7,7], Q1 idx=1 -> 3
     points = [
         [5, 2, 1], [5, 5, 2], [5, 8, 3],  # 위쪽 (굵기 3)
         [5, 12, 4], [5, 15, 5],            # 아래쪽 (굵기 7)
     ]
     width = extractor.extract_stroke_width(points)
 
-    assert width == 3  # 최소값
+    assert width == 3  # Q1
 
 
 def test_extract_stroke_width_empty():
