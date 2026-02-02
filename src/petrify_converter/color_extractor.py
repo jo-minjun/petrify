@@ -78,3 +78,27 @@ class ColorExtractor:
             return 1
 
         return int(median(widths))
+
+    def _filter_outliers(self, values: list[int]) -> list[int]:
+        """IQR 기반으로 이상치 제거.
+
+        Args:
+            values: 측정된 굵기 값들
+
+        Returns:
+            이상치가 제거된 값들. 4개 미만이면 그대로 반환.
+        """
+        if len(values) < 4:
+            return values
+
+        sorted_vals = sorted(values)
+        q1_idx = len(sorted_vals) // 4
+        q3_idx = 3 * len(sorted_vals) // 4
+        q1 = sorted_vals[q1_idx]
+        q3 = sorted_vals[q3_idx]
+        iqr = q3 - q1
+
+        lower = q1 - 1.5 * iqr
+        upper = q3 + 1.5 * iqr
+
+        return [v for v in values if lower <= v <= upper]

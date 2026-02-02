@@ -133,3 +133,31 @@ def test_extract_stroke_width_empty():
 
     assert extractor.extract_stroke_width([]) == 1
     assert extractor.extract_stroke_width([[5, 5, 1]]) == 1  # 투명
+
+
+def test_filter_outliers_removes_high_values():
+    """IQR 기반으로 높은 이상치가 제거되는지 확인."""
+    extractor = ColorExtractor(_create_test_image())
+    values = [5, 6, 5, 7, 6, 5, 6, 50]  # 50은 이상치
+    filtered = extractor._filter_outliers(values)
+
+    assert 50 not in filtered
+    assert len(filtered) == 7
+
+
+def test_filter_outliers_keeps_normal_values():
+    """정상 범위 값들은 유지되는지 확인."""
+    extractor = ColorExtractor(_create_test_image())
+    values = [5, 6, 7, 8, 6, 7, 5, 6]
+    filtered = extractor._filter_outliers(values)
+
+    assert filtered == values
+
+
+def test_filter_outliers_with_few_values():
+    """값이 적을 때 (4개 미만) 필터링하지 않음."""
+    extractor = ColorExtractor(_create_test_image())
+    values = [5, 50, 6]
+    filtered = extractor._filter_outliers(values)
+
+    assert filtered == values
