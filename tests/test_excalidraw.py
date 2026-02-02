@@ -1,5 +1,3 @@
-import json
-
 from petrify_converter.excalidraw import ExcalidrawGenerator
 from petrify_converter.models import Point, Stroke, Page, Note
 from datetime import datetime
