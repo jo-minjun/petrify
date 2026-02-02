@@ -125,3 +125,16 @@ def test_create_freedraw_minimum_width():
     )
     element = generator.create_freedraw(stroke, x_offset=0, y_offset=0)
     assert element["strokeWidth"] == 1
+
+
+def test_freedraw_simulate_pressure_disabled():
+    """simulatePressure가 비활성화되어 있는지 확인."""
+    generator = ExcalidrawGenerator()
+    stroke = Stroke(
+        points=[Point(x=0, y=0, timestamp=0), Point(x=10, y=10, timestamp=1)],
+        color="#000000",
+        width=8.0,
+        opacity=100,
+    )
+    element = generator.create_freedraw(stroke, x_offset=0, y_offset=0)
+    assert element["simulatePressure"] == False

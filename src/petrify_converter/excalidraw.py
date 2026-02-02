@@ -89,7 +89,7 @@ class ExcalidrawGenerator:
             "angle": 0,
             "points": points,
             "pressures": [],
-            "simulatePressure": True,
+            "simulatePressure": False,
             "seed": self._generate_seed(),
             "version": 1,
             "versionNonce": self._generate_seed(),
