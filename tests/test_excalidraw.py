@@ -141,7 +141,7 @@ def test_freedraw_simulate_pressure_disabled():
 
 
 def test_freedraw_pressures_filled():
-    """pressures 배열이 포인트 개수만큼 1.0으로 채워지는지 확인."""
+    """pressures 배열이 포인트 개수만큼 0.5로 채워지는지 확인."""
     generator = ExcalidrawGenerator()
     stroke = Stroke(
         points=[Point(x=0, y=0, timestamp=0), Point(x=10, y=10, timestamp=1), Point(x=20, y=20, timestamp=2)],
@@ -151,4 +151,4 @@ def test_freedraw_pressures_filled():
     )
     element = generator.create_freedraw(stroke, x_offset=0, y_offset=0)
 
-    assert element["pressures"] == [1.0, 1.0, 1.0]
+    assert element["pressures"] == [0.5, 0.5, 0.5]
