@@ -63,3 +63,33 @@ class ColorExtractor:
         color_counts = Counter(colors)
         most_common = color_counts.most_common(1)[0][0]
         return most_common
+
+    def get_width_at(self, x: int, y: int) -> int:
+        """포인트에서 스트로크 굵기 측정 (4방향, alpha > 0 기준).
+
+        Returns:
+            굵기 (px). 투명이거나 범위 벗어나면 0.
+        """
+        if not (0 <= x < self.width and 0 <= y < self.height):
+            return 0
+
+        if self.pixels[x, y][3] == 0:  # 투명
+            return 0
+
+        # 수직 측정
+        v_width = 1
+        for dy in [-1, 1]:
+            cy = y + dy
+            while 0 <= cy < self.height and self.pixels[x, cy][3] > 0:
+                v_width += 1
+                cy += dy
+
+        # 수평 측정
+        h_width = 1
+        for dx in [-1, 1]:
+            cx = x + dx
+            while 0 <= cx < self.width and self.pixels[cx, y][3] > 0:
+                h_width += 1
+                cx += dx
+
+        return min(v_width, h_width)

@@ -101,3 +101,44 @@ def test_extract_stroke_color():
 
     assert color == "#ff0000"
     assert alpha == 255
+
+
+def test_get_width_at_basic():
+    """포인트에서 스트로크 굵기 측정."""
+    # 10x10 이미지, 중앙에 5px 굵기의 수직선
+    img = Image.new('RGBA', (10, 10), (0, 0, 0, 0))  # 투명 배경
+    for y in range(10):
+        for x in range(3, 8):  # 5px 굵기
+            img.putpixel((x, y), (0, 0, 0, 255))
+
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+
+    extractor = ColorExtractor(img_bytes.getvalue())
+    width = extractor.get_width_at(5, 5)
+
+    assert width == 5
+
+
+def test_get_width_at_transparent():
+    """투명 픽셀에서는 0 반환."""
+    img = Image.new('RGBA', (10, 10), (0, 0, 0, 0))
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+
+    extractor = ColorExtractor(img_bytes.getvalue())
+    width = extractor.get_width_at(5, 5)
+
+    assert width == 0
+
+
+def test_get_width_at_out_of_bounds():
+    """범위 벗어나면 0 반환."""
+    img = Image.new('RGBA', (10, 10), (255, 0, 0, 255))
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+
+    extractor = ColorExtractor(img_bytes.getvalue())
+
+    assert extractor.get_width_at(-1, 5) == 0
+    assert extractor.get_width_at(5, 100) == 0
