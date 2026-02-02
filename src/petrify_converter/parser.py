@@ -147,7 +147,6 @@ class NoteParser:
             page = Page(
                 id=page_id,
                 strokes=strokes,
-                background_image=background_image,
             )
             pages.append(page)
 
@@ -206,7 +205,7 @@ class NoteParser:
         sorted_data = sorted(data, key=lambda p: p[2])
 
         strokes = []
-        current_points: list[Point] = []
+        current_points: list[list] = []
         current_color: str | None = None
         current_alpha: int | None = None
 
@@ -237,25 +236,29 @@ class NoteParser:
 
                 if gap >= self.DEFAULT_GAP_THRESHOLD or color_changed:
                     if current_points:
+                        width = extractor.extract_stroke_width(current_points)
                         strokes.append(
                             Stroke(
-                                points=current_points,
+                                points=[Point.from_list(p) for p in current_points],
                                 color=current_color or "#000000",
+                                width=float(width),
                                 opacity=self._alpha_to_opacity(current_alpha),
                             )
                         )
                     current_points = []
 
-            current_points.append(Point.from_list(point_data))
+            current_points.append(point_data)
             if not is_background or current_color is None:
                 current_color = color
                 current_alpha = alpha
 
         if current_points:
+            width = extractor.extract_stroke_width(current_points)
             strokes.append(
                 Stroke(
-                    points=current_points,
+                    points=[Point.from_list(p) for p in current_points],
                     color=current_color or "#000000",
+                    width=float(width),
                     opacity=self._alpha_to_opacity(current_alpha),
                 )
             )

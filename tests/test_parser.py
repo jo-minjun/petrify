@@ -66,3 +66,19 @@ def test_parser_extracts_stroke_opacity():
 
     # 기본값(100) 외에 다른 투명도도 있을 수 있음
     assert all(0 <= o <= 100 for o in opacities)
+
+
+def test_parser_extracts_stroke_width():
+    """스트로크 굵기가 mainBmp에서 추출됨."""
+    various_text_dir = Path(__file__).parent.parent / "examples" / "various_text" / "extracted"
+    if not various_text_dir.exists():
+        pytest.skip("various_text example not found")
+
+    parser = NoteParser(various_text_dir)
+    note = parser.parse()
+
+    # 굵기가 추출되었는지 확인 (기본값 1.0이 아닌 값)
+    widths = [stroke.width for page in note.pages for stroke in page.strokes]
+
+    # 다양한 굵기가 있어야 함 (볼펜 ~6px, 형광펜 ~30-75px)
+    assert max(widths) > 10  # 형광펜 굵기
