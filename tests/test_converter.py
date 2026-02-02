@@ -35,10 +35,9 @@ def test_convert_with_custom_stroke_options(examples_dir, tmp_path):
     with open(output_path) as f:
         data = json.load(f)
 
-    freedraw_elements = [e for e in data["elements"] if e["type"] == "freedraw"]
-    if freedraw_elements:
-        assert freedraw_elements[0]["strokeColor"] == "#ff0000"
-        assert freedraw_elements[0]["strokeWidth"] == 2
+    if data["elements"]:
+        assert data["elements"][0]["strokeColor"] == "#ff0000"
+        assert data["elements"][0]["strokeWidth"] == 2
 
 
 def test_convert_nonexistent_file(tmp_path):

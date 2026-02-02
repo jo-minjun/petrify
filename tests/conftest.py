@@ -4,12 +4,7 @@ from pathlib import Path
 
 @pytest.fixture
 def examples_dir() -> Path:
-    return Path(__file__).parent.parent / "examples" / "normal" / "extracted"
-
-
-@pytest.fixture
-def example_note_file() -> Path:
-    return Path(__file__).parent.parent / "examples" / "normal" / "normal.note"
+    return Path(__file__).parent.parent / "examples" / "example1"
 
 
 @pytest.fixture
