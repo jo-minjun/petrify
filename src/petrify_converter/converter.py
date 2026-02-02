@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from petrify_converter.excalidraw import ExcalidrawGenerator
+from petrify_converter.excalidraw_md import ExcalidrawMdGenerator
 from petrify_converter.parser import NoteParser
 
 
@@ -17,7 +18,7 @@ def convert(
 
     Args:
         input_path: 입력 note 파일 또는 디렉터리 경로
-        output_path: 출력 excalidraw 파일 경로
+        output_path: 출력 파일 경로 (.excalidraw.md 또는 .excalidraw)
         include_background: 배경 이미지 포함 여부
         stroke_color: 스트로크 색상 (기본: #000000)
         stroke_width: 스트로크 굵기 (기본: 1.0)
@@ -40,5 +41,12 @@ def convert(
     document = generator.generate(note)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(document, f, ensure_ascii=False, indent=2)
+
+    # 출력 포맷 결정
+    if output_path.suffix == ".md" or output_path.name.endswith(".excalidraw.md"):
+        md_generator = ExcalidrawMdGenerator()
+        content = md_generator.generate(document)
+        output_path.write_text(content, encoding="utf-8")
+    else:
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(document, f, ensure_ascii=False, indent=2)
