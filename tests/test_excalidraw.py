@@ -35,6 +35,18 @@ def test_freedraw_element_has_required_fields():
         assert field in element, f"Missing field: {field}"
 
 
+def test_freedraw_with_opacity():
+    """투명도가 있는 freedraw 요소 생성."""
+    points = [Point(0, 0, 1), Point(10, 10, 2)]
+    stroke = Stroke(points=points, color="#ff00bc", opacity=50)
+
+    generator = ExcalidrawGenerator()
+    element = generator.create_freedraw(stroke, 0, 0)
+
+    assert element["strokeColor"] == "#ff00bc"
+    assert element["opacity"] == 50
+
+
 def test_generate_full_document():
     page = Page(
         id="page-1",

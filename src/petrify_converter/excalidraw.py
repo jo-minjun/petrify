@@ -90,16 +90,19 @@ class ExcalidrawGenerator:
             "seed": self._generate_seed(),
             "version": 1,
             "versionNonce": self._generate_seed(),
+            "index": "a0",
             "isDeleted": False,
             "groupIds": [],
             "frameId": None,
-            "boundElements": None,
+            "roundness": None,
+            "boundElements": [],
             "updated": 1,
             "link": None,
             "locked": False,
             "fileId": file_id,
-            "status": "pending",
+            "status": "saved",
             "scale": [1, 1],
+            "crop": None,
         }
 
         file_data = {
@@ -141,7 +144,7 @@ class ExcalidrawGenerator:
             "strokeWidth": int(stroke.width),
             "strokeStyle": "solid",
             "roughness": 0,
-            "opacity": 100,
+            "opacity": stroke.opacity,
             "angle": 0,
             "points": points,
             "pressures": [],
@@ -175,7 +178,7 @@ class ExcalidrawGenerator:
             "strokeWidth": int(stroke.width),
             "strokeStyle": "solid",
             "roughness": 0,
-            "opacity": 100,
+            "opacity": stroke.opacity,
             "angle": 0,
             "points": [],
             "pressures": [],
@@ -194,8 +197,8 @@ class ExcalidrawGenerator:
 
     @staticmethod
     def _generate_id() -> str:
-        """고유 ID 생성."""
-        return str(uuid.uuid4())[:20]
+        """고유 ID 생성 (40자리 16진수, Obsidian Excalidraw 플러그인 호환)."""
+        return uuid.uuid4().hex + uuid.uuid4().hex[:8]
 
     @staticmethod
     def _generate_seed() -> int:
