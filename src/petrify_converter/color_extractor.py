@@ -59,7 +59,7 @@ class ColorExtractor:
         return min(v_width, h_width)
 
     def extract_stroke_width(self, points: list[list]) -> int:
-        """스트로크 포인트들의 대표 굵기 추출 (중앙값).
+        """스트로크 포인트들의 대표 굵기 추출 (이상치 제거 후 중앙값).
 
         Args:
             points: [[x, y, timestamp], ...] 형식
@@ -77,7 +77,12 @@ class ColorExtractor:
         if not widths:
             return 1
 
-        return int(median(widths))
+        # 이상치 필터링 적용
+        filtered = self._filter_outliers(widths)
+        if not filtered:
+            return 1
+
+        return int(median(filtered))
 
     def _filter_outliers(self, values: list[int]) -> list[int]:
         """IQR 기반으로 이상치 제거.
