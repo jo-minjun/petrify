@@ -25,11 +25,14 @@ def test_full_conversion_pipeline(examples_dir, tmp_path):
     # 요소가 존재하는지 확인
     assert len(data["elements"]) > 0
 
-    # freedraw 요소인지 확인
+    # 요소 타입 검증 (image 또는 freedraw)
     for element in data["elements"]:
-        assert element["type"] == "freedraw"
-        assert "points" in element
-        assert len(element["points"]) > 0
+        assert element["type"] in ("freedraw", "image")
+        if element["type"] == "freedraw":
+            assert "points" in element
+            assert len(element["points"]) > 0
+        elif element["type"] == "image":
+            assert "fileId" in element
 
 
 def test_output_can_be_opened_as_valid_json(examples_dir, tmp_path):

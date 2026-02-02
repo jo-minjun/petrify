@@ -9,6 +9,8 @@ from petrify_converter.models import Note, Page, Stroke
 
 
 class NoteParser:
+    RESOURCE_TYPE_MAINBMP = 1
+    RESOURCE_TYPE_PATH = 7
     def __init__(self, path: Path | str):
         self.path = Path(path)
         if not self.path.exists():
@@ -43,6 +45,50 @@ class NoteParser:
             if f.name.endswith(suffix):
                 return f
         return None
+
+    def _parse_page_resource(self) -> dict[str, str]:
+        """PageResource.json 파싱하여 path ID -> mainBmp 파일명 매핑 생성."""
+        resource_file = self._find_file_by_suffix("_PageResource.json")
+        if resource_file is None:
+            return {}
+
+        try:
+            resources = json.loads(resource_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return {}
+
+        mainbmp_by_id: dict[str, str] = {}
+        path_id_to_mainbmp_id: dict[str, str] = {}
+
+        for res in resources:
+            res_type = res.get("resourceType")
+            res_id = res.get("id", "")
+            filename = res.get("fileName", "")
+            nickname = res.get("nickname", "")
+
+            if res_type == self.RESOURCE_TYPE_MAINBMP:
+                mainbmp_by_id[res_id] = filename
+            elif res_type == self.RESOURCE_TYPE_PATH:
+                path_id_to_mainbmp_id[nickname] = nickname
+
+        result: dict[str, str] = {}
+        for path_nickname, mainbmp_id in path_id_to_mainbmp_id.items():
+            if mainbmp_id in mainbmp_by_id:
+                result[path_nickname] = mainbmp_by_id[mainbmp_id]
+
+        return result
+
+    def _find_mainbmp_files(self) -> list[Path]:
+        """mainBmp_*.png 파일 찾기."""
+        if self._is_directory:
+            search_dir = self.path
+        else:
+            search_dir = self._extracted_dir
+
+        if search_dir is None:
+            return []
+
+        return list(search_dir.glob("mainBmp_*.png"))
 
     def parse(self) -> Note:
         """note 파일 파싱."""
@@ -94,19 +140,47 @@ class NoteParser:
     def _parse_pages(self) -> list[Page]:
         """페이지 파싱."""
         path_files = self._find_path_files()
+        path_to_mainbmp = self._parse_page_resource()
+        mainbmp_files = self._find_mainbmp_files()
         pages = []
 
         for path_file in path_files:
             page_id = path_file.stem.replace("path_", "")
             strokes = self._parse_strokes(path_file)
 
+            background_image = self._load_mainbmp(
+                page_id, path_to_mainbmp, mainbmp_files
+            )
+
             page = Page(
                 id=page_id,
                 strokes=strokes,
+                background_image=background_image,
             )
             pages.append(page)
 
         return pages if pages else [Page(id="empty", strokes=[])]
+
+    def _load_mainbmp(
+        self,
+        page_id: str,
+        path_to_mainbmp: dict[str, str],
+        mainbmp_files: list[Path],
+    ) -> bytes | None:
+        """mainBmp 이미지 로드."""
+        search_dir = self.path if self._is_directory else self._extracted_dir
+        if search_dir is None:
+            return None
+
+        if page_id in path_to_mainbmp:
+            mainbmp_path = search_dir / path_to_mainbmp[page_id]
+            if mainbmp_path.exists():
+                return mainbmp_path.read_bytes()
+
+        if len(mainbmp_files) == 1:
+            return mainbmp_files[0].read_bytes()
+
+        return None
 
     def _parse_strokes(self, path_file: Path) -> list[Stroke]:
         """스트로크 파싱."""
