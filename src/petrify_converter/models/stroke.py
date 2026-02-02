@@ -17,13 +17,14 @@ class Stroke:
     points: list[Point]
     color: str = "#000000"
     width: float = 1.0
+    opacity: int = 100  # 0-100, 100이 불투명
 
     @classmethod
     def from_path_data(
-        cls, data: list[list], color: str = "#000000", width: float = 1.0
+        cls, data: list[list], color: str = "#000000", width: float = 1.0, opacity: int = 100
     ) -> "Stroke":
         points = [Point.from_list(p) for p in data]
-        return cls(points=points, color=color, width=width)
+        return cls(points=points, color=color, width=width, opacity=opacity)
 
     @classmethod
     def split_by_timestamp_gap(
@@ -32,6 +33,7 @@ class Stroke:
         gap_threshold: int = 6,
         color: str = "#000000",
         width: float = 1.0,
+        opacity: int = 100,
     ) -> list["Stroke"]:
         """timestamp gap 기준으로 스트로크 분리.
 
@@ -40,6 +42,7 @@ class Stroke:
             gap_threshold: 스트로크 분리 기준 gap (이상)
             color: 스트로크 색상
             width: 스트로크 굵기
+            opacity: 스트로크 투명도
 
         Returns:
             분리된 Stroke 리스트
@@ -58,12 +61,12 @@ class Stroke:
             gap = curr_ts - prev_ts
 
             if gap >= gap_threshold:
-                strokes.append(cls(points=current_points, color=color, width=width))
+                strokes.append(cls(points=current_points, color=color, width=width, opacity=opacity))
                 current_points = []
 
             current_points.append(Point.from_list(sorted_data[i]))
 
         if current_points:
-            strokes.append(cls(points=current_points, color=color, width=width))
+            strokes.append(cls(points=current_points, color=color, width=width, opacity=opacity))
 
         return strokes

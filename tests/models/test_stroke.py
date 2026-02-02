@@ -102,3 +102,44 @@ def test_split_strokes_empty_data():
     strokes = Stroke.split_by_timestamp_gap([], gap_threshold=6)
 
     assert len(strokes) == 0
+
+
+def test_stroke_with_opacity():
+    """투명도가 있는 스트로크 생성."""
+    points = [Point(0, 0, 1), Point(10, 10, 2)]
+    stroke = Stroke(points=points, color="#ff00bc", width=5.0, opacity=50)
+
+    assert stroke.opacity == 50
+
+
+def test_stroke_default_opacity():
+    """기본 투명도는 100."""
+    points = [Point(0, 0, 1)]
+    stroke = Stroke(points=points)
+
+    assert stroke.opacity == 100
+
+
+def test_stroke_from_path_data_with_opacity():
+    """from_path_data에서 opacity 파라미터 전달."""
+    path_data = [[0, 0, 100], [10, 5, 101]]
+    stroke = Stroke.from_path_data(path_data, color="#ff0000", width=2.0, opacity=75)
+
+    assert stroke.opacity == 75
+    assert stroke.color == "#ff0000"
+    assert stroke.width == 2.0
+
+
+def test_split_strokes_with_opacity():
+    """split_by_timestamp_gap에서 opacity 파라미터 전달."""
+    data = [
+        [100, 100, 1],
+        [101, 101, 2],
+        [200, 200, 11],
+    ]
+
+    strokes = Stroke.split_by_timestamp_gap(data, gap_threshold=6, opacity=50)
+
+    assert len(strokes) == 2
+    assert strokes[0].opacity == 50
+    assert strokes[1].opacity == 50
