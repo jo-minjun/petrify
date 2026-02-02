@@ -102,6 +102,11 @@ class ExcalidrawGenerator:
             "locked": False,
         }
 
+    def _scale_stroke_width(self, width: float) -> int:
+        """mainBmp 픽셀 굵기를 Excalidraw strokeWidth로 스케일링."""
+        scaled = int(width / self.STROKE_WIDTH_DIVISOR)
+        return max(self.MIN_STROKE_WIDTH, scaled)
+
     @staticmethod
     def _generate_id() -> str:
         """고유 ID 생성 (40자리 16진수, Obsidian Excalidraw 플러그인 호환)."""

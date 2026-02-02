@@ -76,3 +76,26 @@ def test_stroke_width_min_constant_exists():
     """최소 굵기 상수가 정의되어 있는지 확인."""
     assert hasattr(ExcalidrawGenerator, 'MIN_STROKE_WIDTH')
     assert ExcalidrawGenerator.MIN_STROKE_WIDTH == 1
+
+
+def test_scale_stroke_width_normal():
+    """일반적인 굵기 스케일링."""
+    generator = ExcalidrawGenerator()
+    assert generator._scale_stroke_width(4) == 1
+    assert generator._scale_stroke_width(8) == 2
+    assert generator._scale_stroke_width(16) == 4
+    assert generator._scale_stroke_width(74) == 18  # 74/4 = 18.5 -> 18
+
+
+def test_scale_stroke_width_minimum():
+    """최소값 1 보장."""
+    generator = ExcalidrawGenerator()
+    assert generator._scale_stroke_width(1) == 1
+    assert generator._scale_stroke_width(2) == 1
+    assert generator._scale_stroke_width(3) == 1
+
+
+def test_scale_stroke_width_zero():
+    """0 입력 시 최소값 반환."""
+    generator = ExcalidrawGenerator()
+    assert generator._scale_stroke_width(0) == 1
