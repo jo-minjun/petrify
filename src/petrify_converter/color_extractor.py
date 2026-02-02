@@ -58,11 +58,11 @@ class ColorExtractor:
         return min(v_width, h_width)
 
     def extract_stroke_width(self, points: list[list]) -> int:
-        """스트로크 포인트들의 대표 굵기 추출 (Q1 사용).
+        """스트로크 포인트들의 대표 굵기 추출 (하위 20% 사용).
 
         - min: 너무 가는 이상치에 좌우됨
         - median: 교차점의 큰 값들에 영향받음
-        - Q1 (하위 25%): 교차점 무시하면서 이상치에도 강건함
+        - 하위 20%: 교차점 무시하면서 이상치에도 강건함
 
         Args:
             points: [[x, y, timestamp], ...] 형식
@@ -81,5 +81,5 @@ class ColorExtractor:
             return 1
 
         sorted_widths = sorted(widths)
-        q1_idx = len(sorted_widths) // 4
-        return sorted_widths[q1_idx]
+        idx = len(sorted_widths) // 5
+        return sorted_widths[idx]
