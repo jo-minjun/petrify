@@ -35,3 +35,6 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Output files
+output.excalidraw
