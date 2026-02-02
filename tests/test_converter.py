@@ -29,7 +29,7 @@ def test_convert_with_custom_stroke_options(examples_dir, tmp_path):
         examples_dir,
         output_path,
         stroke_color="#ff0000",
-        stroke_width=2,
+        stroke_width=8,  # 8px -> 8/4 = 2 (스케일링 적용됨)
     )
 
     with open(output_path) as f:

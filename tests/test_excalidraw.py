@@ -99,3 +99,29 @@ def test_scale_stroke_width_zero():
     """0 입력 시 최소값 반환."""
     generator = ExcalidrawGenerator()
     assert generator._scale_stroke_width(0) == 1
+
+
+def test_create_freedraw_applies_scaling():
+    """freedraw 생성 시 스케일링이 적용되는지 확인."""
+    generator = ExcalidrawGenerator()
+    stroke = Stroke(
+        points=[Point(x=0, y=0, timestamp=0), Point(x=10, y=10, timestamp=1)],
+        color="#000000",
+        width=20.0,  # 20px -> 20/4 = 5
+        opacity=100,
+    )
+    element = generator.create_freedraw(stroke, x_offset=0, y_offset=0)
+    assert element["strokeWidth"] == 5
+
+
+def test_create_freedraw_minimum_width():
+    """freedraw 생성 시 최소 굵기 보장."""
+    generator = ExcalidrawGenerator()
+    stroke = Stroke(
+        points=[Point(x=0, y=0, timestamp=0)],
+        color="#000000",
+        width=2.0,  # 2px -> 2/4 = 0.5 -> 1 (최소값)
+        opacity=100,
+    )
+    element = generator.create_freedraw(stroke, x_offset=0, y_offset=0)
+    assert element["strokeWidth"] == 1

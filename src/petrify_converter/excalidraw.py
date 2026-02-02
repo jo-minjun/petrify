@@ -82,7 +82,7 @@ class ExcalidrawGenerator:
             "strokeColor": stroke.color,
             "backgroundColor": "transparent",
             "fillStyle": "solid",
-            "strokeWidth": int(stroke.width),
+            "strokeWidth": self._scale_stroke_width(stroke.width),
             "strokeStyle": "solid",
             "roughness": 0,
             "opacity": stroke.opacity,
