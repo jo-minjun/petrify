@@ -9,4 +9,3 @@ class Page:
     strokes: list[Stroke]
     width: float = 1440.0
     height: float = 1920.0
-    background_image: bytes | None = None

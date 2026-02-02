@@ -9,7 +9,6 @@ def test_page_creation():
     assert len(page.strokes) == 1
     assert page.width == 1440.0
     assert page.height == 1920.0
-    assert page.background_image is None
 
 
 def test_page_custom_dimensions():
@@ -17,10 +16,3 @@ def test_page_custom_dimensions():
 
     assert page.width == 800.0
     assert page.height == 600.0
-
-
-def test_page_with_background():
-    image_data = b"fake-image-data"
-    page = Page(id="page-1", strokes=[], background_image=image_data)
-
-    assert page.background_image == image_data
