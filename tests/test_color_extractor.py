@@ -142,3 +142,45 @@ def test_get_width_at_out_of_bounds():
 
     assert extractor.get_width_at(-1, 5) == 0
     assert extractor.get_width_at(5, 100) == 0
+
+
+def test_extract_stroke_width_median():
+    """스트로크 포인트들의 중앙값 굵기 반환."""
+    # 10x20 이미지, 위쪽은 3px, 아래쪽은 7px 굵기
+    img = Image.new('RGBA', (20, 20), (0, 0, 0, 0))
+
+    # 위쪽 3px 굵기 (y=0~9)
+    for y in range(10):
+        for x in range(4, 7):
+            img.putpixel((x, y), (0, 0, 0, 255))
+
+    # 아래쪽 7px 굵기 (y=10~19)
+    for y in range(10, 20):
+        for x in range(2, 9):
+            img.putpixel((x, y), (0, 0, 0, 255))
+
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+
+    extractor = ColorExtractor(img_bytes.getvalue())
+
+    # 위쪽 3개, 아래쪽 2개 포인트 -> 중앙값은 3
+    points = [
+        [5, 2, 1], [5, 5, 2], [5, 8, 3],  # 위쪽 (굵기 3)
+        [5, 12, 4], [5, 15, 5],            # 아래쪽 (굵기 7)
+    ]
+    width = extractor.extract_stroke_width(points)
+
+    assert width == 3  # 중앙값
+
+
+def test_extract_stroke_width_empty():
+    """포인트가 없거나 모두 투명이면 기본값 1 반환."""
+    img = Image.new('RGBA', (10, 10), (0, 0, 0, 0))
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+
+    extractor = ColorExtractor(img_bytes.getvalue())
+
+    assert extractor.extract_stroke_width([]) == 1
+    assert extractor.extract_stroke_width([[5, 5, 1]]) == 1  # 투명

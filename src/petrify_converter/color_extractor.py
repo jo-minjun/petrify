@@ -1,5 +1,7 @@
 # src/petrify_converter/color_extractor.py
 from collections import Counter
+from statistics import median
+
 from PIL import Image
 import io
 
@@ -93,3 +95,24 @@ class ColorExtractor:
                 cx += dx
 
         return min(v_width, h_width)
+
+    def extract_stroke_width(self, points: list[list]) -> int:
+        """스트로크 포인트들의 대표 굵기 추출 (중앙값).
+
+        Args:
+            points: [[x, y, timestamp], ...] 형식
+
+        Returns:
+            굵기 (px). 측정 불가시 기본값 1.
+        """
+        widths = []
+        for point in points:
+            x, y = int(point[0]), int(point[1])
+            w = self.get_width_at(x, y)
+            if w > 0:
+                widths.append(w)
+
+        if not widths:
+            return 1
+
+        return int(median(widths))
