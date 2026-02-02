@@ -7,7 +7,7 @@ name = "petrify-converter"
 version = "0.1.0"
 description = "viwoods note to Excalidraw converter"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["lzstring>=1.0.4"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0.0"]
