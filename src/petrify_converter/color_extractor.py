@@ -1,6 +1,5 @@
 # src/petrify_converter/color_extractor.py
 import io
-from statistics import median
 
 from PIL import Image
 
@@ -59,7 +58,10 @@ class ColorExtractor:
         return min(v_width, h_width)
 
     def extract_stroke_width(self, points: list[list]) -> int:
-        """스트로크 포인트들의 대표 굵기 추출 (이상치 제거 후 중앙값).
+        """스트로크 포인트들의 대표 굵기 추출 (최소값 사용).
+
+        교차점에서는 두 선의 결합 크기가 측정되므로,
+        가장 가는 값(min)이 실제 펜 굵기에 가깝다.
 
         Args:
             points: [[x, y, timestamp], ...] 형식
@@ -77,33 +79,4 @@ class ColorExtractor:
         if not widths:
             return 1
 
-        # 이상치 필터링 적용
-        filtered = self._filter_outliers(widths)
-        if not filtered:
-            return 1
-
-        return int(median(filtered))
-
-    def _filter_outliers(self, values: list[int]) -> list[int]:
-        """IQR 기반으로 이상치 제거.
-
-        Args:
-            values: 측정된 굵기 값들
-
-        Returns:
-            이상치가 제거된 값들. 4개 미만이면 그대로 반환.
-        """
-        if len(values) < 4:
-            return values
-
-        sorted_vals = sorted(values)
-        q1_idx = len(sorted_vals) // 4
-        q3_idx = 3 * len(sorted_vals) // 4
-        q1 = sorted_vals[q1_idx]
-        q3 = sorted_vals[q3_idx]
-        iqr = q3 - q1
-
-        lower = q1 - 1.5 * iqr
-        upper = q3 + 1.5 * iqr
-
-        return [v for v in values if lower <= v <= upper]
+        return min(widths)

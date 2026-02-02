@@ -93,8 +93,8 @@ def test_get_width_at_out_of_bounds():
     assert extractor.get_width_at(5, 100) == 0
 
 
-def test_extract_stroke_width_median():
-    """스트로크 포인트들의 중앙값 굵기 반환."""
+def test_extract_stroke_width_min():
+    """스트로크 포인트들의 최소값 굵기 반환."""
     # 10x20 이미지, 위쪽은 3px, 아래쪽은 7px 굵기
     img = Image.new('RGBA', (20, 20), (0, 0, 0, 0))
 
@@ -113,14 +113,14 @@ def test_extract_stroke_width_median():
 
     extractor = ColorExtractor(img_bytes.getvalue())
 
-    # 위쪽 3개, 아래쪽 2개 포인트 -> 중앙값은 3
+    # 위쪽 3개, 아래쪽 2개 포인트 -> 최소값은 3
     points = [
         [5, 2, 1], [5, 5, 2], [5, 8, 3],  # 위쪽 (굵기 3)
         [5, 12, 4], [5, 15, 5],            # 아래쪽 (굵기 7)
     ]
     width = extractor.extract_stroke_width(points)
 
-    assert width == 3  # 중앙값
+    assert width == 3  # 최소값
 
 
 def test_extract_stroke_width_empty():
@@ -135,29 +135,3 @@ def test_extract_stroke_width_empty():
     assert extractor.extract_stroke_width([[5, 5, 1]]) == 1  # 투명
 
 
-def test_filter_outliers_removes_high_values():
-    """IQR 기반으로 높은 이상치가 제거되는지 확인."""
-    extractor = ColorExtractor(_create_test_image())
-    values = [5, 6, 5, 7, 6, 5, 6, 50]  # 50은 이상치
-    filtered = extractor._filter_outliers(values)
-
-    assert 50 not in filtered
-    assert len(filtered) == 7
-
-
-def test_filter_outliers_keeps_normal_values():
-    """정상 범위 값들은 유지되는지 확인."""
-    extractor = ColorExtractor(_create_test_image())
-    values = [5, 6, 7, 8, 6, 7, 5, 6]
-    filtered = extractor._filter_outliers(values)
-
-    assert filtered == values
-
-
-def test_filter_outliers_with_few_values():
-    """값이 적을 때 (4개 미만) 필터링하지 않음."""
-    extractor = ColorExtractor(_create_test_image())
-    values = [5, 50, 6]
-    filtered = extractor._filter_outliers(values)
-
-    assert filtered == values
