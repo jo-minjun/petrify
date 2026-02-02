@@ -58,11 +58,10 @@ class ColorExtractor:
         return min(v_width, h_width)
 
     def extract_stroke_width(self, points: list[list]) -> int:
-        """스트로크 포인트들의 대표 굵기 추출 (하위 20% 사용).
+        """스트로크 포인트들의 대표 굵기 추출 (outlier 필터링 + 하위 20%).
 
-        - min: 너무 가는 이상치에 좌우됨
-        - median: 교차점의 큰 값들에 영향받음
-        - 하위 20%: 교차점 무시하면서 이상치에도 강건함
+        - 정렬된 배열에서 급격한 변화(1.5배 이상)가 시작되는 지점 이전까지만 사용
+        - 교차점에서 과대측정된 값을 효과적으로 제거
 
         Args:
             points: [[x, y, timestamp], ...] 형식
@@ -81,5 +80,20 @@ class ColorExtractor:
             return 1
 
         sorted_widths = sorted(widths)
-        idx = len(sorted_widths) // 5
-        return sorted_widths[idx]
+        filtered = self._filter_outliers(sorted_widths)
+
+        idx = len(filtered) // 5
+        return filtered[idx]
+
+    def _filter_outliers(self, sorted_widths: list[int]) -> list[int]:
+        """급격한 변화(1.5배 이상)가 시작되는 지점 이전까지 필터링."""
+        if len(sorted_widths) <= 1:
+            return sorted_widths
+
+        filtered = [sorted_widths[0]]
+        for i in range(1, len(sorted_widths)):
+            if sorted_widths[i] > sorted_widths[i - 1] * 1.5:
+                break
+            filtered.append(sorted_widths[i])
+
+        return filtered

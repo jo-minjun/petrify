@@ -135,3 +135,40 @@ def test_extract_stroke_width_empty():
     assert extractor.extract_stroke_width([[5, 5, 1]]) == 1  # 투명
 
 
+def test_extract_stroke_width_filters_outliers():
+    """교차점 outlier를 급격한 변화 감지로 필터링."""
+    # 30x20 이미지
+    img = Image.new('RGBA', (30, 20), (0, 0, 0, 0))
+
+    # 왼쪽: 4px 굵기 수직선 (x=2~5)
+    for y in range(20):
+        for x in range(2, 6):
+            img.putpixel((x, y), (0, 0, 0, 255))
+
+    # 중간: 5px 굵기 수직선 (x=10~14)
+    for y in range(20):
+        for x in range(10, 15):
+            img.putpixel((x, y), (0, 0, 0, 255))
+
+    # 오른쪽: 12px 굵기 수직선 (x=18~29) - 교차점 시뮬레이션
+    for y in range(20):
+        for x in range(18, 30):
+            img.putpixel((x, y), (0, 0, 0, 255))
+
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+
+    extractor = ColorExtractor(img_bytes.getvalue())
+
+    # 5개 포인트: widths [4, 5, 12, 12, 12]
+    # sorted: [4, 5, 12, 12, 12]
+    # 현재 로직: idx=5//5=1 -> 5 반환
+    # 새 로직: 5 → 12는 2.4배 -> filtered: [4, 5] -> idx=2//5=0 -> 4 반환
+    points = [
+        [3, 10, 1],       # 4px 영역
+        [12, 10, 2],      # 5px 영역
+        [24, 5, 3], [24, 10, 4], [24, 15, 5],  # 12px 영역 (교차점)
+    ]
+    width = extractor.extract_stroke_width(points)
+
+    assert width == 4  # outlier 필터링 후: [4, 5] -> 하위 20% = 4
