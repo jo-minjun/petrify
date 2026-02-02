@@ -8,6 +8,8 @@ class ColorExtractor:
     """mainBmp 이미지에서 색상 추출."""
 
     BACKGROUND_COLORS = {"#ffffff", "#fffff0"}
+    OUTLIER_THRESHOLD = 1.5
+    LOWER_PERCENTILE = 5
 
     def __init__(self, image_data: bytes):
         self.image = Image.open(io.BytesIO(image_data)).convert('RGBA')
@@ -69,30 +71,26 @@ class ColorExtractor:
         Returns:
             굵기 (px). 측정 불가시 기본값 1.
         """
-        widths = []
-        for point in points:
-            x, y = int(point[0]), int(point[1])
-            w = self.get_width_at(x, y)
-            if w > 0:
-                widths.append(w)
+        widths = [
+            w for point in points
+            if (w := self.get_width_at(int(point[0]), int(point[1]))) > 0
+        ]
 
         if not widths:
             return 1
 
-        sorted_widths = sorted(widths)
-        filtered = self._filter_outliers(sorted_widths)
-
-        idx = len(filtered) // 5
+        filtered = self._filter_outliers(sorted(widths))
+        idx = len(filtered) // self.LOWER_PERCENTILE
         return filtered[idx]
 
     def _filter_outliers(self, sorted_widths: list[int]) -> list[int]:
-        """급격한 변화(1.5배 이상)가 시작되는 지점 이전까지 필터링."""
+        """급격한 변화가 시작되는 지점 이전까지 필터링."""
         if len(sorted_widths) <= 1:
             return sorted_widths
 
         filtered = [sorted_widths[0]]
         for i in range(1, len(sorted_widths)):
-            if sorted_widths[i] > sorted_widths[i - 1] * 1.5:
+            if sorted_widths[i] > sorted_widths[i - 1] * self.OUTLIER_THRESHOLD:
                 break
             filtered.append(sorted_widths[i])
 
