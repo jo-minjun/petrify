@@ -64,3 +64,15 @@ def test_generate_full_document():
     assert doc["version"] == 2
     assert "elements" in doc
     assert "appState" in doc
+
+
+def test_stroke_width_scaling_constant_exists():
+    """스케일링 상수가 정의되어 있는지 확인."""
+    assert hasattr(ExcalidrawGenerator, 'STROKE_WIDTH_DIVISOR')
+    assert ExcalidrawGenerator.STROKE_WIDTH_DIVISOR == 4
+
+
+def test_stroke_width_min_constant_exists():
+    """최소 굵기 상수가 정의되어 있는지 확인."""
+    assert hasattr(ExcalidrawGenerator, 'MIN_STROKE_WIDTH')
+    assert ExcalidrawGenerator.MIN_STROKE_WIDTH == 1

@@ -7,6 +7,8 @@ from petrify_converter.models import Note, Page, Stroke
 
 class ExcalidrawGenerator:
     PAGE_GAP = 100
+    STROKE_WIDTH_DIVISOR = 4
+    MIN_STROKE_WIDTH = 1
 
     def generate(self, note: Note) -> dict[str, Any]:
         """Note를 Excalidraw 문서로 변환."""
