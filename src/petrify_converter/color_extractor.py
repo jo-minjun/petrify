@@ -1,8 +1,8 @@
 # src/petrify_converter/color_extractor.py
+import io
 from statistics import median
 
 from PIL import Image
-import io
 
 
 class ColorExtractor:

@@ -34,31 +34,42 @@ class ExcalidrawGenerator:
         self, page: Page, y_offset: float
     ) -> list[dict[str, Any]]:
         """페이지의 모든 요소 생성."""
-        elements = []
-
-        for stroke in page.strokes:
-            element = self.create_freedraw(stroke, x_offset=0, y_offset=y_offset)
-            elements.append(element)
-
-        return elements
+        return [
+            self.create_freedraw(stroke, x_offset=0, y_offset=y_offset)
+            for stroke in page.strokes
+        ]
 
     def create_freedraw(
         self, stroke: Stroke, x_offset: float, y_offset: float
     ) -> dict[str, Any]:
         """Stroke를 freedraw 요소로 변환."""
         if not stroke.points:
-            x, y = x_offset, y_offset
-            points = []
-            width, height = 0, 0
-        else:
-            first_point = stroke.points[0]
-            x, y = first_point.x + x_offset, first_point.y + y_offset
-            points = [[p.x - first_point.x, p.y - first_point.y] for p in stroke.points]
-            xs = [p[0] for p in points]
-            ys = [p[1] for p in points]
-            width = max(xs) - min(xs)
-            height = max(ys) - min(ys)
+            return self._create_freedraw_element(
+                x=x_offset, y=y_offset, points=[], width=0, height=0, stroke=stroke
+            )
 
+        first_point = stroke.points[0]
+        x, y = first_point.x + x_offset, first_point.y + y_offset
+        points = [[p.x - first_point.x, p.y - first_point.y] for p in stroke.points]
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+        width = max(xs) - min(xs)
+        height = max(ys) - min(ys)
+
+        return self._create_freedraw_element(
+            x=x, y=y, points=points, width=width, height=height, stroke=stroke
+        )
+
+    def _create_freedraw_element(
+        self,
+        x: float,
+        y: float,
+        points: list[list[float]],
+        width: float,
+        height: float,
+        stroke: Stroke,
+    ) -> dict[str, Any]:
+        """freedraw 요소 딕셔너리 생성."""
         return {
             "type": "freedraw",
             "id": self._generate_id(),

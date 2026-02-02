@@ -67,3 +67,25 @@ def test_various_text_color_extraction(tmp_path):
 
     # 형광펜 색상이 포함되어 있는지 확인
     assert "#ff00bc" in content.lower() or "#00b4fa" in content.lower()
+
+
+def test_various_text_stroke_width_extraction(tmp_path):
+    """various_text 예시에서 굵기가 올바르게 추출됨."""
+    various_text_dir = Path(__file__).parent.parent / "examples/various_text/extracted"
+    if not various_text_dir.exists():
+        pytest.skip("various_text example not found")
+
+    output_path = tmp_path / "various_text_width.excalidraw"
+    convert(various_text_dir, output_path)
+
+    with open(output_path) as f:
+        content = f.read()
+
+    data = json.loads(content)
+
+    # strokeWidth 값들 추출
+    widths = [el.get("strokeWidth", 1) for el in data["elements"] if el["type"] == "freedraw"]
+
+    # 다양한 굵기가 있어야 함
+    assert len(set(widths)) > 1, f"모든 굵기가 동일: {set(widths)}"
+    assert max(widths) > 10, f"형광펜 굵기가 없음: max={max(widths)}"
