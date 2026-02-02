@@ -82,3 +82,22 @@ def test_classify_pen_type_below_alpha_threshold():
     pen_type = extractor.classify_pen_type("#000000", 199)
 
     assert pen_type == "highlighter"
+
+
+def test_extract_stroke_color():
+    """스트로크의 대표 색상 추출."""
+    img = Image.new('RGBA', (20, 10), (255, 0, 0, 255))
+    for x in range(10, 20):
+        for y in range(10):
+            img.putpixel((x, y), (0, 0, 255, 255))
+
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+
+    extractor = ColorExtractor(img_bytes.getvalue())
+
+    red_points = [[5, 5, 1], [6, 5, 2], [7, 5, 3]]
+    color, alpha = extractor.extract_stroke_color(red_points)
+
+    assert color == "#ff0000"
+    assert alpha == 255

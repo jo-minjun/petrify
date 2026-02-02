@@ -1,4 +1,5 @@
 # src/petrify_converter/color_extractor.py
+from collections import Counter
 from PIL import Image
 import io
 
@@ -35,3 +36,29 @@ class ColorExtractor:
         if alpha < self.ALPHA_THRESHOLD:
             return "highlighter"
         return "pen"
+
+    def extract_stroke_color(self, points: list[list]) -> tuple[str, int]:
+        """스트로크 포인트들의 대표 색상 추출.
+
+        가장 많이 나타나는 색상을 반환 (배경색 제외).
+
+        Args:
+            points: [[x, y, timestamp], ...] 형식
+
+        Returns:
+            (hex_color, alpha) 튜플
+        """
+        colors = []
+        for point in points:
+            x, y = int(point[0]), int(point[1])
+            color, alpha = self.get_color_at(x, y)
+
+            if color.lower() not in ("#ffffff", "#fefefe", "#fdfdfd"):
+                colors.append((color, alpha))
+
+        if not colors:
+            return "#000000", 255
+
+        color_counts = Counter(colors)
+        most_common = color_counts.most_common(1)[0][0]
+        return most_common
