@@ -8,6 +8,8 @@ import io
 class ColorExtractor:
     """mainBmp 이미지에서 색상 추출."""
 
+    BACKGROUND_COLORS = {"#ffffff", "#fffff0"}
+
     def __init__(self, image_data: bytes):
         self.image = Image.open(io.BytesIO(image_data)).convert('RGBA')
         self.pixels = self.image.load()
