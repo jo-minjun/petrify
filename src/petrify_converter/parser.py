@@ -112,7 +112,7 @@ class NoteParser:
         """스트로크 파싱."""
         try:
             data = json.loads(path_file.read_text(encoding="utf-8"))
-            return [Stroke.from_path_data(data)]
+            return Stroke.split_by_timestamp_gap(data, gap_threshold=6)
         except json.JSONDecodeError as e:
             raise ParseError(f"Failed to parse stroke data: {e}")
 

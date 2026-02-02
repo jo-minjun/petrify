@@ -24,3 +24,13 @@ def test_parser_extracts_files(examples_dir):
     parser = NoteParser(examples_dir)
 
     assert parser._find_path_files() is not None
+
+
+def test_parser_splits_strokes_by_timestamp(examples_dir):
+    """Parser가 timestamp gap 기준으로 스트로크를 분리."""
+    parser = NoteParser(examples_dir)
+    note = parser.parse()
+
+    # examples 데이터는 여러 스트로크로 분리되어야 함
+    total_strokes = sum(len(page.strokes) for page in note.pages)
+    assert total_strokes > 1
