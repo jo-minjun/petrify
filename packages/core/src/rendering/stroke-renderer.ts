@@ -1,4 +1,4 @@
-import type { Stroke } from '@petrify/core';
+import type { Stroke } from '../models/index.js';
 
 export class StrokeRenderer {
   private canvas: HTMLCanvasElement | null = null;

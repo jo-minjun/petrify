@@ -19,3 +19,5 @@ export { convert, convertToMd, convertToMdWithOcr } from './api.js';
 export type { ConvertOptions } from './api.js';
 
 export { filterOcrByConfidence } from './ocr/filter.js';
+
+export { StrokeRenderer } from './rendering/index.js';

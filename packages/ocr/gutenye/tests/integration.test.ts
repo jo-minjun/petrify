@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GutenyeOcr } from '../src/gutenye-ocr.js';
-import { StrokeRenderer } from '../src/stroke-renderer.js';
+import { StrokeRenderer } from '@petrify/core';
 import type { Stroke } from '@petrify/core';
 
 // Canvas 모킹

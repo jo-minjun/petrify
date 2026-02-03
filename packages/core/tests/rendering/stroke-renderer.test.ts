@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { StrokeRenderer } from '../src/stroke-renderer.js';
-import type { Stroke } from '@petrify/core';
+import { StrokeRenderer } from '../../src/rendering/stroke-renderer.js';
+import type { Stroke } from '../../src/models/index.js';
 
 // 브라우저 Canvas API 모킹
 const mockContext = {
