@@ -1,4 +1,4 @@
-import type { Note } from '../models';
+import type { Note } from '../models/index.js';
 
 export interface ParserPort {
   /** 지원하는 파일 확장자 */

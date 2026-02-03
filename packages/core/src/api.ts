@@ -1,7 +1,7 @@
-import type { ParserPort } from './ports/parser';
-import { ExcalidrawGenerator } from './excalidraw/generator';
-import { ExcalidrawMdGenerator } from './excalidraw/md-generator';
-import type { ExcalidrawData } from './excalidraw/generator';
+import type { ParserPort } from './ports/parser.js';
+import { ExcalidrawGenerator } from './excalidraw/generator.js';
+import { ExcalidrawMdGenerator } from './excalidraw/md-generator.js';
+import type { ExcalidrawData } from './excalidraw/generator.js';
 
 export async function convert(
   data: ArrayBuffer,

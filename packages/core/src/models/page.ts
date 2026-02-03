@@ -1,11 +1,10 @@
-// packages/core/src/models/page.ts
-import type { Stroke } from './stroke';
+import type { Stroke } from './stroke.js';
 
 export interface Page {
-  id: string;
-  strokes: Stroke[];
-  width: number;
-  height: number;
+  readonly id: string;
+  readonly strokes: Stroke[];
+  readonly width: number;
+  readonly height: number;
 }
 
 export const DEFAULT_PAGE_WIDTH = 1440;

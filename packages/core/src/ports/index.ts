@@ -1,2 +1,2 @@
-export type { ParserPort } from './parser';
-export type { OcrPort, OcrResult, OcrRegion } from './ocr';
+export type { ParserPort } from './parser.js';
+export type { OcrPort, OcrResult, OcrRegion } from './ocr.js';

@@ -1,8 +1,21 @@
 import JSZip from 'jszip';
-import { ColorExtractor } from './color-extractor';
-import { InvalidNoteFileError, ParseError } from './exceptions';
+import { ColorExtractor } from './color-extractor.js';
+import { InvalidNoteFileError, ParseError } from './exceptions.js';
 import type { Note, Page, Stroke } from '@petrify/core';
 import { DEFAULT_PAGE_HEIGHT, DEFAULT_PAGE_WIDTH, pointFromList, splitByTimestampGap } from '@petrify/core';
+
+interface NoteFileInfo {
+  fileName?: string;
+  creationTime?: number;
+  lastModifiedTime?: number;
+}
+
+interface PageResource {
+  resourceType: number;
+  id: string;
+  fileName: string;
+  nickname: string;
+}
 
 export class NoteParser {
   static readonly RESOURCE_TYPE_MAINBMP = 1;
@@ -27,20 +40,20 @@ export class NoteParser {
     const pages = await this.parsePages(zip);
 
     return {
-      title: (noteInfo.fileName as string) ?? 'Untitled',
+      title: noteInfo.fileName ?? 'Untitled',
       pages,
-      createdAt: this.timestampToDate((noteInfo.creationTime as number) ?? 0),
-      modifiedAt: this.timestampToDate((noteInfo.lastModifiedTime as number) ?? 0),
+      createdAt: this.timestampToDate(noteInfo.creationTime ?? 0),
+      modifiedAt: this.timestampToDate(noteInfo.lastModifiedTime ?? 0),
     };
   }
 
-  private async parseNoteInfo(zip: JSZip): Promise<Record<string, unknown>> {
+  private async parseNoteInfo(zip: JSZip): Promise<NoteFileInfo> {
     const infoFile = Object.keys(zip.files).find((name) => name.endsWith('_NoteFileInfo.json'));
     if (!infoFile) return {};
 
     try {
       const content = await zip.file(infoFile)!.async('string');
-      return JSON.parse(content);
+      return JSON.parse(content) as NoteFileInfo;
     } catch (e) {
       throw new ParseError(`Failed to parse NoteFileInfo: ${e}`);
     }
@@ -83,12 +96,7 @@ export class NoteParser {
 
     try {
       const content = await zip.file(resourceFile)!.async('string');
-      const resources: Array<{
-        resourceType: number;
-        id: string;
-        fileName: string;
-        nickname: string;
-      }> = JSON.parse(content);
+      const resources = JSON.parse(content) as PageResource[];
 
       const mainbmpById: Record<string, string> = {};
       const pathNicknames: string[] = [];

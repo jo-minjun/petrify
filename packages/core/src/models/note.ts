@@ -1,9 +1,8 @@
-// packages/core/src/models/note.ts
-import type { Page } from './page';
+import type { Page } from './page.js';
 
 export interface Note {
-  title: string;
-  pages: Page[];
-  createdAt: Date;
-  modifiedAt: Date;
+  readonly title: string;
+  readonly pages: Page[];
+  readonly createdAt: Date;
+  readonly modifiedAt: Date;
 }

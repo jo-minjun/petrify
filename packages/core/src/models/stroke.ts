@@ -1,18 +1,17 @@
-// packages/core/src/models/stroke.ts
 export interface Point {
-  x: number;
-  y: number;
-  timestamp: number;
+  readonly x: number;
+  readonly y: number;
+  readonly timestamp: number;
 }
 
 export interface StrokeStyle {
-  color: string;
-  width: number;
-  opacity: number;
+  readonly color: string;
+  readonly width: number;
+  readonly opacity: number;
 }
 
 export interface Stroke extends StrokeStyle {
-  points: Point[];
+  readonly points: Point[];
 }
 
 const DEFAULT_STYLE: StrokeStyle = {

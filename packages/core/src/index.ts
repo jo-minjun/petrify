@@ -1,17 +1,12 @@
-// Models
-export * from './models';
+export * from './models/index.js';
 
-// Excalidraw
-export { ExcalidrawGenerator } from './excalidraw/generator';
-export { ExcalidrawMdGenerator } from './excalidraw/md-generator';
-export type { ExcalidrawData, ExcalidrawElement } from './excalidraw/generator';
+export { ExcalidrawGenerator } from './excalidraw/generator.js';
+export { ExcalidrawMdGenerator } from './excalidraw/md-generator.js';
+export type { ExcalidrawData, ExcalidrawElement } from './excalidraw/generator.js';
 
-// Ports
-export type { ParserPort } from './ports/parser';
-export type { OcrPort, OcrResult, OcrRegion } from './ports/ocr';
+export type { ParserPort } from './ports/parser.js';
+export type { OcrPort, OcrResult, OcrRegion } from './ports/ocr.js';
 
-// Exceptions
-export { InvalidNoteFileError, ParseError } from './exceptions';
+export { InvalidNoteFileError, ParseError } from './exceptions.js';
 
-// Public API
-export { convert, convertToMd } from './api';
+export { convert, convertToMd } from './api.js';

@@ -1,3 +1,3 @@
-export { ExcalidrawGenerator } from './generator';
-export type { ExcalidrawData, ExcalidrawElement } from './generator';
-export { ExcalidrawMdGenerator } from './md-generator';
+export { ExcalidrawGenerator } from './generator.js';
+export type { ExcalidrawData, ExcalidrawElement } from './generator.js';
+export { ExcalidrawMdGenerator } from './md-generator.js';

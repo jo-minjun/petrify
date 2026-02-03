@@ -1,4 +1,3 @@
-// packages/core/tests/models/stroke.test.ts
 import { describe, it, expect } from 'vitest';
 import { Point, Stroke, pointFromList, strokeFromPathData, splitByTimestampGap } from '../../src/models/stroke';
 

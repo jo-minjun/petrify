@@ -1,42 +1,42 @@
-import type { Note, Page, Stroke } from '../models';
+import type { Note, Page, Stroke } from '../models/index.js';
 
 export interface ExcalidrawElement {
-  type: string;
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  strokeColor: string;
-  backgroundColor: string;
-  fillStyle: string;
-  strokeWidth: number;
-  strokeStyle: string;
-  roughness: number;
-  opacity: number;
-  angle: number;
-  points: number[][];
-  pressures: number[];
-  simulatePressure: boolean;
-  seed: number;
-  version: number;
-  versionNonce: number;
-  isDeleted: boolean;
-  groupIds: string[];
-  frameId: null;
-  boundElements: null;
-  updated: number;
-  link: null;
-  locked: boolean;
+  readonly type: string;
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly strokeColor: string;
+  readonly backgroundColor: string;
+  readonly fillStyle: string;
+  readonly strokeWidth: number;
+  readonly strokeStyle: string;
+  readonly roughness: number;
+  readonly opacity: number;
+  readonly angle: number;
+  readonly points: readonly number[][];
+  readonly pressures: readonly number[];
+  readonly simulatePressure: boolean;
+  readonly seed: number;
+  readonly version: number;
+  readonly versionNonce: number;
+  readonly isDeleted: boolean;
+  readonly groupIds: readonly string[];
+  readonly frameId: string | null;
+  readonly boundElements: readonly unknown[] | null;
+  readonly updated: number;
+  readonly link: string | null;
+  readonly locked: boolean;
 }
 
 export interface ExcalidrawData {
-  type: 'excalidraw';
-  version: number;
-  source: string;
-  elements: ExcalidrawElement[];
-  appState: Record<string, unknown>;
-  files: Record<string, unknown>;
+  readonly type: 'excalidraw';
+  readonly version: number;
+  readonly source: string;
+  readonly elements: readonly ExcalidrawElement[];
+  readonly appState: Readonly<Record<string, unknown>>;
+  readonly files: Readonly<Record<string, unknown>>;
 }
 
 export class ExcalidrawGenerator {

@@ -1,4 +1,3 @@
-// packages/core/src/models/index.ts
-export * from './stroke';
-export * from './page';
-export * from './note';
+export * from './stroke.js';
+export * from './page.js';
+export * from './note.js';

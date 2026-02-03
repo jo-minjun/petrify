@@ -1,4 +1,3 @@
-// packages/core/tests/models/note.test.ts
 import { describe, it, expect } from 'vitest';
 import { Note } from '../../src/models/note';
 
