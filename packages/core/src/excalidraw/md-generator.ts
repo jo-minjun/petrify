@@ -1,5 +1,5 @@
 import LZString from 'lz-string';
-import type { ExcalidrawData } from './excalidraw';
+import type { ExcalidrawData } from './generator';
 
 export class ExcalidrawMdGenerator {
   generate(

@@ -1,9 +1,6 @@
-// tests/excalidraw.test.ts
 import { describe, it, expect } from 'vitest';
-import { ExcalidrawGenerator } from '../src/excalidraw';
-import type { Note } from '../src/models/note';
-import type { Page } from '../src/models/page';
-import type { Point, Stroke } from '../src/models/stroke';
+import { ExcalidrawGenerator } from '../../src/excalidraw';
+import type { Note, Page, Point, Stroke } from '../../src/models';
 
 describe('ExcalidrawGenerator', () => {
   describe('createFreedraw', () => {

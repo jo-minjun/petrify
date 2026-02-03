@@ -1,8 +1,7 @@
-// tests/excalidraw-md.test.ts
 import { describe, it, expect } from 'vitest';
 import LZString from 'lz-string';
-import { ExcalidrawMdGenerator } from '../src/excalidraw-md';
-import type { ExcalidrawData } from '../src/excalidraw';
+import { ExcalidrawMdGenerator } from '../../src/excalidraw';
+import type { ExcalidrawData } from '../../src/excalidraw';
 
 describe('ExcalidrawMdGenerator', () => {
   it('올바른 마크다운 구조 생성', () => {

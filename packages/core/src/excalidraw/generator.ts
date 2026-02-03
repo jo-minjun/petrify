@@ -1,5 +1,4 @@
-// src/excalidraw.ts
-import type { Note, Page, Stroke } from '@petrify/core';
+import type { Note, Page, Stroke } from '../models';
 
 export interface ExcalidrawElement {
   type: string;
