@@ -9,9 +9,9 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 **현재 지원:**
 - Parser: viwoods (.note)
 - OCR: @gutenye/ocr-browser (PaddleOCR 기반)
+- Obsidian 플러그인 (외부 폴더 감시 → 자동 변환)
 
 **계획 중:**
-- Obsidian 플러그인
 - Google Drive 파일 감지 및 동기화
 
 어댑터 패턴을 사용하여 새로운 Parser나 OCR provider를 쉽게 추가할 수 있습니다. OCR 기능으로 손글씨를 텍스트로 추출하여 Obsidian에서 검색 가능하게 만듭니다.
@@ -28,7 +28,7 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 | OCR | etc. | ❌ |
 | 기능 | Excalidraw 변환 | ✅ |
 | 기능 | OCR 텍스트 추출 | ✅ |
-| 기능 | Obsidian 플러그인 | ❌ |
+| 기능 | Obsidian 플러그인 | ✅ |
 | 기능 | Google Drive 동기화 | ❌ |
 
 ✅ 지원 | ❌ 미지원
@@ -39,7 +39,7 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
                              ┌─────────────────────────────────────┐
                              │               @petrify/core         │
 ┌────────────────┐           │  ┌────────────┐    ┌────────────┐   │               ┌────────────────┐
-│ Handwriting    │──▶ parser─│─▶│ ParserPort │───▶│  변환 로직   │───│──▶ output ───▶│ .excalidraw.md │
+│ Handwriting    │──▶ parser─│─▶│ ParserPort │───▶│  Converter │───│──▶ output ───▶│ .excalidraw.md │
 │ File           │           │  └────────────┘    └────────────┘   │               └────────────────┘
 └────────────────┘           │                          ▲          │
                              │  ┌────────────┐          │          │
@@ -49,10 +49,11 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
                                         │
                                        ocr
                                         ▲
-                                        ┆
-                             ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
-                               Obsidian 플러그인
-                             └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+                                        │
+                             ┌──────────┴──────────┐
+                             │  Obsidian Plugin    │
+                             │   (Watcher + UI)    │
+                             └─────────────────────┘
 ```
 
 ## 설치
@@ -78,6 +79,32 @@ pnpm add @petrify/parser-viwoods
 pnpm add @petrify/ocr-gutenye
 ```
 
+## Obsidian 플러그인
+
+외부 폴더의 필기 노트 파일을 감시하여 Obsidian vault에 Excalidraw 형식으로 자동 변환합니다.
+
+### 기능
+
+- **파일 감시**: chokidar 기반 실시간 파일 변경 감지
+- **다중 폴더 매핑**: 여러 외부 폴더를 각각 다른 vault 폴더로 매핑
+- **자동 변환**: 지원하는 파일 형식 자동 감지 및 변환
+- **OCR 지원**: 손글씨 텍스트 추출 (현재 Gutenye/로컬만 지원)
+- **중복 방지**: mtime 기반 변환 스킵 (이미 변환된 파일 재처리 안함)
+
+### 설정
+
+| 항목 | 설명 |
+|------|------|
+| Watch Directories | 감시할 외부 폴더 경로 (다중 설정 가능) |
+| Output Directories | 변환된 파일이 저장될 vault 내 경로 (매핑별 지정) |
+| OCR Provider | gutenye (로컬) |
+| Confidence Threshold | OCR 신뢰도 임계값 (0-100) |
+
+### 요구사항
+
+- Obsidian 1.11.0+
+- Desktop only (Node.js 파일 시스템 접근 필요)
+
 ## 패키지 구조
 
 ```
@@ -85,14 +112,23 @@ packages/
 ├── core/                 # @petrify/core
 ├── parser/
 │   └── viwoods/          # @petrify/parser-viwoods
-└── ocr/
-    └── gutenye/          # @petrify/ocr-gutenye
+├── ocr/
+│   └── gutenye/          # @petrify/ocr-gutenye
+└── obsidian-plugin/      # Obsidian 플러그인 (petrify)
 ```
 
 ### 의존성
 
 ```
-parser ──▶ core ◀── ocr
+                    ┌─────────────────────┐
+                    │  obsidian-plugin    │
+                    └─────────┬───────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+   ┌─────────┐           ┌─────────┐           ┌─────────┐
+   │ parser  │──────────▶│  core   │◀──────────│   ocr   │
+   └─────────┘           └─────────┘           └─────────┘
 ```
 
 ## 라이선스
