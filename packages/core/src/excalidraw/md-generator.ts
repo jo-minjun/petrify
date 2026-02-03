@@ -1,6 +1,11 @@
 import LZString from 'lz-string';
 import type { ExcalidrawData } from './generator.js';
 
+export interface OcrTextResult {
+  pageIndex: number;
+  texts: string[];
+}
+
 export class ExcalidrawMdGenerator {
   generate(
     excalidrawData: ExcalidrawData,
