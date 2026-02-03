@@ -1,5 +1,8 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import type { PetrifySettings } from './settings.js';
+
+// TODO(2026-02-03, minjun.jo): API 키를 Obsidian SecretStorage로 마이그레이션 고려
+// 현재 API 키는 settings.json에 평문으로 저장됨
 
 export interface SettingsTabCallbacks {
   getSettings: () => PetrifySettings;
@@ -9,8 +12,8 @@ export interface SettingsTabCallbacks {
 export class PetrifySettingsTab extends PluginSettingTab {
   private readonly callbacks: SettingsTabCallbacks;
 
-  constructor(app: App, plugin: { manifest: { id: string; name: string } }, callbacks: SettingsTabCallbacks) {
-    super(app, plugin as any);
+  constructor(app: App, plugin: Plugin, callbacks: SettingsTabCallbacks) {
+    super(app, plugin);
     this.callbacks = callbacks;
   }
 

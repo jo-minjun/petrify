@@ -1,4 +1,6 @@
 import { Notice, Plugin } from 'obsidian';
+import type { DataAdapter } from 'obsidian';
+import type { OcrPort } from '@petrify/core';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
@@ -7,6 +9,10 @@ import { ParserRegistry } from './parser-registry.js';
 import { Converter } from './converter.js';
 import { PetrifyWatcher } from './watcher.js';
 import { parseFrontmatter } from './utils/frontmatter.js';
+
+interface FileSystemAdapter extends DataAdapter {
+  getBasePath(): string;
+}
 
 export default class PetrifyPlugin extends Plugin {
   settings!: PetrifySettings;
@@ -57,20 +63,21 @@ export default class PetrifyPlugin extends Plugin {
     });
   }
 
-  private createOcr(): any {
+  private createOcr(): OcrPort {
     const provider = this.settings.ocr.provider;
 
     if (provider === 'gutenye') {
       try {
         const { GutenyeOcr } = require('@petrify/ocr-gutenye');
-        return new GutenyeOcr();
+        return new GutenyeOcr() as OcrPort;
       } catch {
         console.error('[Petrify] @petrify/ocr-gutenye not found');
         throw new Error('OCR provider not available');
       }
     }
 
-    throw new Error(`Unsupported OCR provider: ${provider}`);
+    // TODO(2026-02-03, minjun.jo): google-vision, azure-ocr provider 구현 필요
+    throw new Error(`Unsupported OCR provider: ${provider}. Currently only 'gutenye' is supported.`);
   }
 
   private initializeWatcher(): void {
@@ -123,7 +130,8 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async shouldSkipConversion(outputPath: string, sourceMtime: number): Promise<boolean> {
-    const vaultPath = (this.app.vault.adapter as any).getBasePath();
+    const adapter = this.app.vault.adapter as FileSystemAdapter;
+    const vaultPath = adapter.getBasePath();
     const fullPath = path.join(vaultPath, outputPath);
 
     try {
