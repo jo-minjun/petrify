@@ -48,16 +48,15 @@ export class ExcalidrawGenerator {
   static readonly MIN_STROKE_WIDTH = 1;
   // 실험적으로 결정된 값: Excalidraw에서 일정한 획 굵기를 위해 사용
   private static readonly PRESSURE_VALUE = 0.5;
+  private static readonly MAX_SEED = 2147483647;
 
   generate(note: Note): ExcalidrawData {
-    const elements: ExcalidrawElement[] = [];
     let yOffset = 0;
-
-    for (const page of note.pages) {
+    const elements = note.pages.flatMap((page) => {
       const pageElements = this.generatePageElements(page, yOffset);
-      elements.push(...pageElements);
       yOffset += page.height + ExcalidrawGenerator.PAGE_GAP;
-    }
+      return pageElements;
+    });
 
     return {
       type: 'excalidraw',
@@ -73,16 +72,16 @@ export class ExcalidrawGenerator {
   }
 
   private generatePageElements(page: Page, yOffset: number): ExcalidrawElement[] {
-    return page.strokes.map((stroke) => this.createFreedraw(stroke, 0, yOffset));
+    return page.strokes.map((stroke) => this.createFreedraw(stroke, yOffset));
   }
 
-  createFreedraw(stroke: Stroke, xOffset: number, yOffset: number): ExcalidrawElement {
+  createFreedraw(stroke: Stroke, yOffset: number): ExcalidrawElement {
     if (stroke.points.length === 0) {
-      return this.createFreedrawElement(xOffset, yOffset, [], 0, 0, stroke);
+      return this.createFreedrawElement(0, yOffset, [], 0, 0, stroke);
     }
 
     const firstPoint = stroke.points[0];
-    const x = firstPoint.x + xOffset;
+    const x = firstPoint.x;
     const y = firstPoint.y + yOffset;
     const points = stroke.points.map((p) => [p.x - firstPoint.x, p.y - firstPoint.y]);
     const xs = points.map((p) => p[0]);
@@ -142,6 +141,6 @@ export class ExcalidrawGenerator {
   }
 
   private generateSeed(): number {
-    return Math.floor(Math.random() * 2147483647) + 1;
+    return Math.floor(Math.random() * ExcalidrawGenerator.MAX_SEED) + 1;
   }
 }

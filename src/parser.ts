@@ -12,6 +12,8 @@ export class NoteParser {
   static readonly RESOURCE_TYPE_MAINBMP = 1;
   static readonly RESOURCE_TYPE_PATH = 7;
   static readonly DEFAULT_GAP_THRESHOLD = 6;
+  private static readonly DEFAULT_COLOR = '#000000';
+  private static readonly DEFAULT_ALPHA = 255;
 
   async parse(data: ArrayBuffer): Promise<Note> {
     let zip: JSZip;
@@ -49,12 +51,13 @@ export class NoteParser {
   }
 
   private async parsePages(zip: JSZip): Promise<Page[]> {
-    const pathFiles = Object.keys(zip.files).filter(
+    const fileNames = Object.keys(zip.files);
+    const pathFiles = fileNames.filter(
       (name) => name.startsWith('path_') && name.endsWith('.json')
     );
 
     const pathToMainbmp = await this.parsePageResource(zip);
-    const mainbmpFiles = Object.keys(zip.files).filter(
+    const mainbmpFiles = fileNames.filter(
       (name) => name.startsWith('mainBmp_') && name.endsWith('.png')
     );
 
@@ -92,20 +95,20 @@ export class NoteParser {
       }> = JSON.parse(content);
 
       const mainbmpById: Record<string, string> = {};
-      const pathIdToMainbmpId: Record<string, string> = {};
+      const pathNicknames: string[] = [];
 
       for (const res of resources) {
         if (res.resourceType === NoteParser.RESOURCE_TYPE_MAINBMP) {
           mainbmpById[res.id] = res.fileName;
         } else if (res.resourceType === NoteParser.RESOURCE_TYPE_PATH) {
-          pathIdToMainbmpId[res.nickname] = res.nickname;
+          pathNicknames.push(res.nickname);
         }
       }
 
       const result: Record<string, string> = {};
-      for (const [pathNickname, mainbmpId] of Object.entries(pathIdToMainbmpId)) {
-        if (mainbmpId in mainbmpById) {
-          result[pathNickname] = mainbmpById[mainbmpId];
+      for (const nickname of pathNicknames) {
+        if (nickname in mainbmpById) {
+          result[nickname] = mainbmpById[nickname];
         }
       }
 
@@ -176,13 +179,8 @@ export class NoteParser {
       const isBackground = ColorExtractor.BACKGROUND_COLORS.has(color.toLowerCase());
 
       if (isBackground) {
-        if (currentColor !== null) {
-          color = currentColor;
-          alpha = currentAlpha!;
-        } else {
-          color = '#000000';
-          alpha = 255;
-        }
+        color = currentColor ?? NoteParser.DEFAULT_COLOR;
+        alpha = currentAlpha ?? NoteParser.DEFAULT_ALPHA;
       }
 
       if (i > 0) {
@@ -197,7 +195,7 @@ export class NoteParser {
             const width = extractor.extractStrokeWidth(currentPoints);
             strokes.push({
               points: currentPoints.map(pointFromList),
-              color: currentColor ?? '#000000',
+              color: currentColor ?? NoteParser.DEFAULT_COLOR,
               width,
               opacity: this.alphaToOpacity(currentAlpha),
             });
@@ -217,7 +215,7 @@ export class NoteParser {
       const width = extractor.extractStrokeWidth(currentPoints);
       strokes.push({
         points: currentPoints.map(pointFromList),
-        color: currentColor ?? '#000000',
+        color: currentColor ?? NoteParser.DEFAULT_COLOR,
         width,
         opacity: this.alphaToOpacity(currentAlpha),
       });

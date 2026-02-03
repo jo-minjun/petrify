@@ -23,56 +23,59 @@ export class ColorExtractor {
     return new ColorExtractor(imageData);
   }
 
+  private isOutOfBounds(x: number, y: number): boolean {
+    return x < 0 || x >= this.width || y < 0 || y >= this.height;
+  }
+
+  private getPixelIndex(x: number, y: number): number {
+    return (y * this.width + x) * 4;
+  }
+
+  private getAlphaAt(x: number, y: number): number {
+    return this.data[this.getPixelIndex(x, y) + 3];
+  }
+
   getColorAt(x: number, y: number): { color: string; opacity: number } {
-    if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+    if (this.isOutOfBounds(x, y)) {
       return { color: '#000000', opacity: 255 };
     }
 
-    const idx = (y * this.width + x) * 4;
+    const idx = this.getPixelIndex(x, y);
     const r = this.data[idx];
     const g = this.data[idx + 1];
     const b = this.data[idx + 2];
     const a = this.data[idx + 3];
 
-    const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    return { color, opacity: a };
+    return { color: this.rgbToHex(r, g, b), opacity: a };
+  }
+
+  private rgbToHex(r: number, g: number, b: number): string {
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   }
 
   getWidthAt(x: number, y: number): number {
-    if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+    if (this.isOutOfBounds(x, y) || this.getAlphaAt(x, y) === 0) {
       return 0;
     }
 
-    const idx = (y * this.width + x) * 4;
-    if (this.data[idx + 3] === 0) {
-      return 0;
-    }
-
-    // 수직 측정
-    let vWidth = 1;
-    for (const dy of [-1, 1]) {
-      let cy = y + dy;
-      while (cy >= 0 && cy < this.height) {
-        const i = (cy * this.width + x) * 4;
-        if (this.data[i + 3] === 0) break;
-        vWidth++;
-        cy += dy;
-      }
-    }
-
-    // 수평 측정
-    let hWidth = 1;
-    for (const dx of [-1, 1]) {
-      let cx = x + dx;
-      while (cx >= 0 && cx < this.width) {
-        const i = (y * this.width + cx) * 4;
-        if (this.data[i + 3] === 0) break;
-        hWidth++;
-        cx += dx;
-      }
-    }
+    const vWidth = this.measureWidth(x, y, 0, 1);
+    const hWidth = this.measureWidth(x, y, 1, 0);
 
     return Math.min(vWidth, hWidth);
+  }
+
+  private measureWidth(x: number, y: number, dx: number, dy: number): number {
+    let width = 1;
+    for (const direction of [-1, 1]) {
+      let cx = x + dx * direction;
+      let cy = y + dy * direction;
+      while (!this.isOutOfBounds(cx, cy) && this.getAlphaAt(cx, cy) !== 0) {
+        width++;
+        cx += dx * direction;
+        cy += dy * direction;
+      }
+    }
+    return width;
   }
 
   extractStrokeWidth(points: number[][]): number {

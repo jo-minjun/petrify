@@ -6,8 +6,8 @@ export class ExcalidrawMdGenerator {
     excalidrawData: ExcalidrawData,
     embeddedFiles?: Record<string, string>
   ): string {
-    const compressed = this.compress(excalidrawData);
-    const embeddedSection = this.generateEmbeddedSection(embeddedFiles);
+    const compressed = LZString.compressToBase64(JSON.stringify(excalidrawData));
+    const embeddedSection = this.formatEmbeddedFiles(embeddedFiles);
 
     return `---
 excalidraw-plugin: parsed
@@ -28,20 +28,13 @@ ${compressed}
 `;
   }
 
-  private compress(data: ExcalidrawData): string {
-    const jsonStr = JSON.stringify(data);
-    return LZString.compressToBase64(jsonStr);
-  }
-
-  private generateEmbeddedSection(embeddedFiles?: Record<string, string>): string {
+  private formatEmbeddedFiles(embeddedFiles?: Record<string, string>): string {
     if (!embeddedFiles || Object.keys(embeddedFiles).length === 0) {
       return '\n';
     }
 
-    const lines: string[] = [];
-    for (const [fileId, filename] of Object.entries(embeddedFiles)) {
-      lines.push(`${fileId}: [[${filename}]]`);
-    }
+    const lines = Object.entries(embeddedFiles)
+      .map(([fileId, filename]) => `${fileId}: [[${filename}]]`);
 
     return '\n' + lines.join('\n') + '\n';
   }

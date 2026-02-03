@@ -5,12 +5,21 @@ export interface Point {
   timestamp: number;
 }
 
-export interface Stroke {
-  points: Point[];
+export interface StrokeStyle {
   color: string;
   width: number;
   opacity: number;
 }
+
+export interface Stroke extends StrokeStyle {
+  points: Point[];
+}
+
+const DEFAULT_STYLE: StrokeStyle = {
+  color: '#000000',
+  width: 1,
+  opacity: 100,
+};
 
 export function pointFromList(data: number[]): Point {
   return {
@@ -22,33 +31,28 @@ export function pointFromList(data: number[]): Point {
 
 export function strokeFromPathData(
   data: number[][],
-  color = '#000000',
-  width = 1,
-  opacity = 100
+  style: Partial<StrokeStyle> = {}
 ): Stroke {
-  const points = data.map(pointFromList);
-  return { points, color, width, opacity };
+  const { color, width, opacity } = { ...DEFAULT_STYLE, ...style };
+  return { points: data.map(pointFromList), color, width, opacity };
 }
 
 export function splitByTimestampGap(
   data: number[][],
   gapThreshold: number,
-  color = '#000000',
-  width = 1,
-  opacity = 100
+  style: Partial<StrokeStyle> = {}
 ): Stroke[] {
   if (data.length === 0) {
     return [];
   }
 
+  const { color, width, opacity } = { ...DEFAULT_STYLE, ...style };
   const sortedData = [...data].sort((a, b) => a[2] - b[2]);
   const strokes: Stroke[] = [];
   let currentPoints: Point[] = [pointFromList(sortedData[0])];
 
   for (let i = 1; i < sortedData.length; i++) {
-    const prevTs = sortedData[i - 1][2];
-    const currTs = sortedData[i][2];
-    const gap = currTs - prevTs;
+    const gap = sortedData[i][2] - sortedData[i - 1][2];
 
     if (gap >= gapThreshold) {
       strokes.push({ points: currentPoints, color, width, opacity });

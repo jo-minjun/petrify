@@ -15,7 +15,7 @@ describe('ExcalidrawGenerator', () => {
       ];
       const stroke: Stroke = { points, color: '#000000', width: 1, opacity: 100 };
       const generator = new ExcalidrawGenerator();
-      const element = generator.createFreedraw(stroke, 0, 0);
+      const element = generator.createFreedraw(stroke, 0);
 
       expect(element.type).toBe('freedraw');
       expect(element.strokeColor).toBe('#000000');
@@ -31,7 +31,7 @@ describe('ExcalidrawGenerator', () => {
         opacity: 100,
       };
       const generator = new ExcalidrawGenerator();
-      const element = generator.createFreedraw(stroke, 0, 0);
+      const element = generator.createFreedraw(stroke, 0);
 
       const requiredFields = [
         'type', 'id', 'x', 'y', 'width', 'height',
@@ -50,7 +50,7 @@ describe('ExcalidrawGenerator', () => {
         opacity: 50,
       };
       const generator = new ExcalidrawGenerator();
-      const element = generator.createFreedraw(stroke, 0, 0);
+      const element = generator.createFreedraw(stroke, 0);
 
       expect(element.strokeColor).toBe('#ff00bc');
       expect(element.opacity).toBe(50);
@@ -64,7 +64,7 @@ describe('ExcalidrawGenerator', () => {
         opacity: 100,
       };
       const generator = new ExcalidrawGenerator();
-      const element = generator.createFreedraw(stroke, 0, 0);
+      const element = generator.createFreedraw(stroke, 0);
 
       expect(element.simulatePressure).toBe(false);
     });
@@ -81,7 +81,7 @@ describe('ExcalidrawGenerator', () => {
         opacity: 100,
       };
       const generator = new ExcalidrawGenerator();
-      const element = generator.createFreedraw(stroke, 0, 0);
+      const element = generator.createFreedraw(stroke, 0);
 
       expect(element.pressures).toEqual([0.5, 0.5, 0.5]);
     });
