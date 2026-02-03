@@ -4,8 +4,8 @@
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "dev": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --watch",
-    "build": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs",
+    "dev": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --platform=node --watch",
+    "build": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --platform=node",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
