@@ -43,4 +43,12 @@ ${compressed}
 
     return '\n' + lines.join('\n') + '\n';
   }
+
+  private formatOcrSection(ocrResults?: OcrTextResult[]): string {
+    let section = '## OCR Text\n';
+    if (!ocrResults || ocrResults.length === 0) {
+      return section + '\n';
+    }
+    return section + '\n';
+  }
 }

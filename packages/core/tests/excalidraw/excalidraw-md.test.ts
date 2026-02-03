@@ -76,4 +76,16 @@ describe('OCR Text Section', () => {
     expect(ocrResult.pageIndex).toBe(0);
     expect(ocrResult.texts).toEqual(['테스트 텍스트']);
   });
+
+  it('OCR 결과가 없으면 빈 ## OCR Text 섹션 생성', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const result = (generator as any).formatOcrSection(undefined);
+    expect(result).toBe('## OCR Text\n\n');
+  });
+
+  it('OCR 결과가 빈 배열이면 빈 ## OCR Text 섹션 생성', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const result = (generator as any).formatOcrSection([]);
+    expect(result).toBe('## OCR Text\n\n');
+  });
 });
