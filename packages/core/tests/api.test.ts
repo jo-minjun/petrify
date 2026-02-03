@@ -1,10 +1,51 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { convertToMdWithOcr } from '../src/api.js';
 import type { ParserPort } from '../src/ports/parser.js';
 import type { OcrPort, OcrResult } from '../src/ports/ocr.js';
 import type { Note } from '../src/models/note.js';
+import type { Stroke } from '../src/models/index.js';
+
+const mockContext = {
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  stroke: vi.fn(),
+  clearRect: vi.fn(),
+  strokeStyle: '',
+  lineWidth: 0,
+  lineCap: '' as CanvasLineCap,
+  lineJoin: '' as CanvasLineJoin,
+  globalAlpha: 1,
+};
+
+const mockCanvas = {
+  getContext: vi.fn(() => mockContext),
+  width: 0,
+  height: 0,
+  toBlob: vi.fn((callback: (blob: Blob | null) => void) => {
+    callback(new Blob(['test'], { type: 'image/png' }));
+  }),
+};
+
+vi.stubGlobal('document', {
+  createElement: vi.fn(() => mockCanvas),
+});
+
+const testStroke: Stroke = {
+  points: [
+    { x: 0, y: 0, timestamp: 0 },
+    { x: 100, y: 100, timestamp: 1 },
+  ],
+  color: '#000000',
+  width: 2,
+  opacity: 100,
+};
 
 describe('convertToMdWithOcr', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   const mockNote: Note = {
     title: 'Test Note',
     createdAt: new Date('2026-02-03'),
@@ -14,7 +55,7 @@ describe('convertToMdWithOcr', () => {
         id: 'page-1',
         width: 100,
         height: 100,
-        strokes: [],
+        strokes: [testStroke],
       },
     ],
   };
@@ -94,12 +135,16 @@ describe('convertToMdWithOcr', () => {
 });
 
 describe('convertToMdWithOcr integration', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('생성된 마크다운이 올바른 구조를 가짐', async () => {
     const mockNote: Note = {
       title: 'Test Note',
       createdAt: new Date('2026-02-03'),
       modifiedAt: new Date('2026-02-03'),
-      pages: [{ id: 'page-1', width: 100, height: 100, strokes: [] }],
+      pages: [{ id: 'page-1', width: 100, height: 100, strokes: [testStroke] }],
     };
 
     const mockParser: ParserPort = {
