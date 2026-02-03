@@ -77,6 +77,24 @@ packages/
   }
   ```
 
+- 필수 데이터 파싱 실패 시 명시적 예외 throw
+  ```typescript
+  throw new ParseError('Failed to parse stroke data');
+  ```
+
+- 선택적 데이터 파싱 실패 시 기본값 반환 + 로깅
+  ```typescript
+  // 선택적 메타데이터 - 없어도 기본 동작 가능
+  } catch {
+    return {};
+  }
+  ```
+
+- vitest에서 describe, it, expect 등 명시적으로 import
+  ```typescript
+  import { describe, it, expect } from 'vitest';
+  ```
+
 ## DON'T
 
 - core에서 특정 어댑터 직접 import하지 않기 (의존성 역전 위반)
@@ -85,3 +103,5 @@ packages/
 - 사용하지 않는 import/변수 남기지 않기
 - CommonJS 문법(require, module.exports) 사용하지 않기
 - any 타입 남용하지 않기
+- 필수 데이터 실패를 silent fail로 처리하지 않기
+- vitest globals: true 사용하지 않기
