@@ -46,14 +46,14 @@ describe('GutenyeOcr', () => {
 
     expect(result.regions.length).toBe(2);
     expect(result.regions[0].text).toBe('안녕하세요');
-    expect(result.regions[0].confidence).toBe(0.95);
+    expect(result.regions[0].confidence).toBe(95);  // 0.95 * 100
   });
 
   it('confidence 임계값 적용', async () => {
     const ocr = await GutenyeOcr.create();
     const image = new ArrayBuffer(100);
 
-    const result = await ocr.recognize(image, { confidenceThreshold: 0.5 });
+    const result = await ocr.recognize(image, { confidenceThreshold: 50 });  // 0-100 스케일
 
     expect(result.regions.length).toBe(1);
     expect(result.regions[0].text).toBe('안녕하세요');

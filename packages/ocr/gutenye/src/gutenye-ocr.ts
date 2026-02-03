@@ -75,8 +75,10 @@ export class GutenyeOcr implements OcrPort {
     return `data:image/png;base64,${btoa(binary)}`;
   }
 
+  /** PaddleOCR의 0-1 스케일을 0-100으로 변환 */
   private getConfidence(line: TextLine): number {
-    return line.score ?? line.mean;
+    const raw = line.score ?? line.mean;
+    return raw * 100;
   }
 
   private textLineToRegion(line: TextLine): OcrRegion {
