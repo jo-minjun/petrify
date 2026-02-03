@@ -40,11 +40,21 @@ export interface ExcalidrawData {
 }
 
 export class ExcalidrawGenerator {
+  /** 페이지 간 세로 간격 (px) */
   static readonly PAGE_GAP = 100;
+  /**
+   * 스트로크 폭 변환 비율
+   * Viwoods 스트로크 폭을 Excalidraw에 맞게 축소 (width / 6)
+   */
   static readonly STROKE_WIDTH_DIVISOR = 6;
+  /** 최소 스트로크 폭 (px) - 0이 되지 않도록 보장 */
   static readonly MIN_STROKE_WIDTH = 1;
-  // 실험적으로 결정된 값: Excalidraw에서 일정한 획 굵기를 위해 사용
+  /**
+   * 일정한 획 굵기를 위한 압력 값
+   * 실험적으로 결정: 0.5가 원본과 가장 유사한 결과
+   */
   private static readonly PRESSURE_VALUE = 0.5;
+  /** Excalidraw seed 최대값 (Int32 최대값) */
   private static readonly MAX_SEED = 2147483647;
 
   generate(note: Note): ExcalidrawData {
