@@ -1,7 +1,7 @@
-export class InvalidNoteFileError extends Error {
+export class InvalidFileFormatError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'InvalidNoteFileError';
+    this.name = 'InvalidFileFormatError';
   }
 }
 

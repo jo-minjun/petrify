@@ -9,7 +9,7 @@ export type { ParserPort } from './ports/parser.js';
 export type { OcrPort, OcrResult, OcrRegion, OcrOptions } from './ports/ocr.js';
 
 export {
-  InvalidNoteFileError,
+  InvalidFileFormatError,
   ParseError,
   OcrInitializationError,
   OcrRecognitionError,
