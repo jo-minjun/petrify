@@ -9,13 +9,15 @@ packages/
 ├── core/                 # @petrify/core
 ├── parser/
 │   └── viwoods/          # @petrify/parser-viwoods
-└── ocr/                  # (예정)
+└── ocr/
+    └── gutenye/          # @petrify/ocr-gutenye
 ```
 
 | 패키지 | 설명 |
 |--------|------|
 | `@petrify/core` | 핵심 모델, Excalidraw 변환, 포트 인터페이스 |
 | `@petrify/parser-viwoods` | viwoods .note 파일 파서 |
+| `@petrify/ocr-gutenye` | OCR 어댑터 (@gutenye/ocr-browser 래핑) |
 | `obsidian-petrify` | Obsidian 플러그인 (예정) |
 
 ## 설치
