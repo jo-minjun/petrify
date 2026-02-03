@@ -88,4 +88,37 @@ describe('OCR Text Section', () => {
     const result = (generator as any).formatOcrSection([]);
     expect(result).toBe('## OCR Text\n\n');
   });
+
+  it('단일 페이지 OCR 결과 포맷팅', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const ocrResults: OcrTextResult[] = [
+      { pageIndex: 0, texts: ['첫 번째 텍스트', '두 번째 텍스트'] }
+    ];
+    const result = (generator as any).formatOcrSection(ocrResults);
+    expect(result).toBe(
+      '## OCR Text\n' +
+      '<!-- Page 1 -->\n' +
+      '첫 번째 텍스트\n' +
+      '두 번째 텍스트\n' +
+      '\n'
+    );
+  });
+
+  it('여러 페이지 OCR 결과 포맷팅', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const ocrResults: OcrTextResult[] = [
+      { pageIndex: 0, texts: ['페이지1 텍스트'] },
+      { pageIndex: 1, texts: ['페이지2 텍스트A', '페이지2 텍스트B'] }
+    ];
+    const result = (generator as any).formatOcrSection(ocrResults);
+    expect(result).toBe(
+      '## OCR Text\n' +
+      '<!-- Page 1 -->\n' +
+      '페이지1 텍스트\n' +
+      '<!-- Page 2 -->\n' +
+      '페이지2 텍스트A\n' +
+      '페이지2 텍스트B\n' +
+      '\n'
+    );
+  });
 });

@@ -49,6 +49,10 @@ ${compressed}
     if (!ocrResults || ocrResults.length === 0) {
       return section + '\n';
     }
+    for (const result of ocrResults) {
+      section += `<!-- Page ${result.pageIndex + 1} -->\n`;
+      section += result.texts.join('\n') + '\n';
+    }
     return section + '\n';
   }
 }
