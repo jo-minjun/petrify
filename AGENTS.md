@@ -27,14 +27,15 @@ packages/
 ├── core/                 # @petrify/core
 ├── parser/
 │   └── viwoods/          # @petrify/parser-viwoods
-└── ocr/                  # (예정)
-    └── tesseract/        # @petrify/ocr-tesseract
+└── ocr/
+    └── gutenye/          # @petrify/ocr-gutenye
 ```
 
 | 패키지 | 역할 |
 |--------|------|
 | `@petrify/core` | 중간 표현 모델, Excalidraw 변환, 포트 인터페이스 |
 | `@petrify/parser-viwoods` | viwoods .note 파일 파서 (ParserPort 구현) |
+| `@petrify/ocr-gutenye` | @gutenye/ocr-browser 래핑 OCR (OcrPort 구현) |
 
 ## DO
 
