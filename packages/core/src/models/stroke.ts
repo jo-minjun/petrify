@@ -1,4 +1,4 @@
-// src/models/stroke.ts
+// packages/core/src/models/stroke.ts
 export interface Point {
   x: number;
   y: number;

@@ -5,7 +5,7 @@ export { ExcalidrawGenerator } from './excalidraw';
 export type { ExcalidrawData, ExcalidrawElement } from './excalidraw';
 export { ExcalidrawMdGenerator } from './excalidraw-md';
 export { InvalidNoteFileError, ParseError } from './exceptions';
-export * from './models';
+export * from '@petrify/core';
 
 import { NoteParser } from './parser';
 import { ExcalidrawGenerator } from './excalidraw';

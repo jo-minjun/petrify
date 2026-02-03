@@ -6,6 +6,9 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
+  "dependencies": {
+    "@petrify/core": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.3.0"
   }

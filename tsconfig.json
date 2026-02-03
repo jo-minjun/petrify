@@ -9,8 +9,11 @@
     "skipLibCheck": true,
     "declaration": true,
     "outDir": "dist",
-    "rootDir": "src"
+    "baseUrl": ".",
+    "paths": {
+      "@petrify/core": ["packages/core/src/index.ts"]
+    }
   },
-  "include": ["src"],
+  "include": ["src", "packages/core/src"],
   "exclude": ["node_modules", "dist"]
 }

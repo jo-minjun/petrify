@@ -1,4 +1,4 @@
-// tests/models/page.test.ts
+// packages/core/tests/models/page.test.ts
 import { describe, it, expect } from 'vitest';
 import { Page } from '../../src/models/page';
 

@@ -1,4 +1,4 @@
-// src/models/note.ts
+// packages/core/src/models/note.ts
 import type { Page } from './page';
 
 export interface Note {

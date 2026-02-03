@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@petrify/core':
+        specifier: workspace:*
+        version: link:packages/core
     devDependencies:
       typescript:
         specifier: ^5.3.0

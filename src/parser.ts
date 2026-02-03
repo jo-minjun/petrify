@@ -2,11 +2,8 @@
 import JSZip from 'jszip';
 import { ColorExtractor } from './color-extractor';
 import { InvalidNoteFileError, ParseError } from './exceptions';
-import type { Note } from './models/note';
-import type { Page } from './models/page';
-import type { Stroke } from './models/stroke';
-import { DEFAULT_PAGE_HEIGHT, DEFAULT_PAGE_WIDTH } from './models/page';
-import { pointFromList, splitByTimestampGap } from './models/stroke';
+import type { Note, Page, Stroke } from '@petrify/core';
+import { DEFAULT_PAGE_HEIGHT, DEFAULT_PAGE_WIDTH, pointFromList, splitByTimestampGap } from '@petrify/core';
 
 export class NoteParser {
   static readonly RESOURCE_TYPE_MAINBMP = 1;

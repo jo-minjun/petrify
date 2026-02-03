@@ -1,4 +1,4 @@
-// src/models/page.ts
+// packages/core/src/models/page.ts
 import type { Stroke } from './stroke';
 
 export interface Page {
