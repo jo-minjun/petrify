@@ -1,4 +1,14 @@
-// @petrify/core
+// Models
 export * from './models';
-export * from './excalidraw';
-export * from './ports';
+
+// Excalidraw
+export { ExcalidrawGenerator } from './excalidraw/generator';
+export { ExcalidrawMdGenerator } from './excalidraw/md-generator';
+export type { ExcalidrawData, ExcalidrawElement } from './excalidraw/generator';
+
+// Ports
+export type { ParserPort } from './ports/parser';
+export type { OcrPort, OcrResult, OcrRegion } from './ports/ocr';
+
+// Exceptions
+export { InvalidNoteFileError, ParseError } from './exceptions';
