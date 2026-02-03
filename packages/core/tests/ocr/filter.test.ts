@@ -30,4 +30,17 @@ describe('filterOcrByConfidence', () => {
     const result = filterOcrByConfidence([], 50);
     expect(result).toEqual([]);
   });
+
+  it('빈 문자열이나 공백만 있는 텍스트 제외', () => {
+    const regions: OcrRegion[] = [
+      { text: '유효', x: 0, y: 0, width: 10, height: 10, confidence: 80 },
+      { text: '', x: 0, y: 0, width: 10, height: 10, confidence: 80 },
+      { text: '   ', x: 0, y: 0, width: 10, height: 10, confidence: 80 },
+      { text: '\n\t', x: 0, y: 0, width: 10, height: 10, confidence: 80 },
+    ];
+
+    const result = filterOcrByConfidence(regions, 50);
+
+    expect(result).toEqual(['유효']);
+  });
 });

@@ -6,5 +6,6 @@ export function filterOcrByConfidence(
 ): string[] {
   return regions
     .filter(r => (r.confidence ?? 100) >= threshold)
-    .map(r => r.text);
+    .map(r => r.text.trim())
+    .filter(text => text.length > 0);
 }
