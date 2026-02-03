@@ -1,0 +1,9 @@
+{
+  "id": "petrify",
+  "name": "Petrify",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Convert handwriting notes to Excalidraw with OCR support",
+  "author": "minjun.jo",
+  "isDesktopOnly": true
+}

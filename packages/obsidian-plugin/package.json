@@ -1,0 +1,23 @@
+{
+  "name": "@petrify/obsidian-plugin",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "dev": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --watch",
+    "build": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@petrify/core": "workspace:*",
+    "chokidar": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.7.0",
+    "typescript": "^5.9.0",
+    "vitest": "^2.0.0"
+  }
+}
