@@ -4,6 +4,14 @@ viwoods .note 파일을 Obsidian Excalidraw 포맷으로 변환하는 도구입�
 
 ## 패키지 구조
 
+```
+packages/
+├── core/                 # @petrify/core
+├── parser/
+│   └── viwoods/          # @petrify/parser-viwoods
+└── ocr/                  # (예정)
+```
+
 | 패키지 | 설명 |
 |--------|------|
 | `@petrify/core` | 핵심 모델, Excalidraw 변환, 포트 인터페이스 |

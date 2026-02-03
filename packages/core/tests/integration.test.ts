@@ -3,10 +3,10 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { convert, convertToMd } from '../src/index';
 import { ViwoodsParser } from '@petrify/parser-viwoods';
-import { ColorExtractor } from '../../parser-viwoods/src/color-extractor';
+import { ColorExtractor } from '../../parser/viwoods/src/color-extractor';
 
-vi.mock('../../parser-viwoods/src/color-extractor', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../../parser-viwoods/src/color-extractor')>();
+vi.mock('../../parser/viwoods/src/color-extractor', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../../parser/viwoods/src/color-extractor')>();
 
   const MockColorExtractor = class extends original.ColorExtractor {
     static async fromPng(_pngData: ArrayBuffer): Promise<ColorExtractor> {

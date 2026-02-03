@@ -7,7 +7,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@petrify/parser-viwoods': resolve(__dirname, '../parser-viwoods/src/index.ts'),
+      '@petrify/parser-viwoods': resolve(__dirname, '../parser/viwoods/src/index.ts'),
     },
   },
 });

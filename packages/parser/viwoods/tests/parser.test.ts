@@ -33,7 +33,7 @@ vi.mock('../src/color-extractor', async (importOriginal) => {
 
 describe('NoteParser', () => {
   it('ZIP 파일 파싱', async () => {
-    const noteFile = join(__dirname, '../../../examples/normal/normal.note');
+    const noteFile = join(__dirname, '../../../../examples/normal/normal.note');
     const data = await readFile(noteFile);
     const parser = new NoteParser();
     const note = await parser.parse(data.buffer);
@@ -42,7 +42,7 @@ describe('NoteParser', () => {
   });
 
   it('스트로크가 timestamp gap으로 분리됨', async () => {
-    const noteFile = join(__dirname, '../../../examples/normal/normal.note');
+    const noteFile = join(__dirname, '../../../../examples/normal/normal.note');
     const data = await readFile(noteFile);
     const parser = new NoteParser();
     const note = await parser.parse(data.buffer);
