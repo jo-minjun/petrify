@@ -13,4 +13,4 @@ export class ViwoodsParser implements ParserPort {
 
 export { NoteParser } from './parser.js';
 export { ColorExtractor } from './color-extractor.js';
-export { InvalidNoteFileError, ParseError } from './exceptions.js';
+export { InvalidFileFormatError, ParseError } from './exceptions.js';

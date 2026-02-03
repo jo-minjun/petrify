@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { ColorExtractor } from './color-extractor.js';
-import { InvalidNoteFileError, ParseError } from './exceptions.js';
+import { InvalidFileFormatError, ParseError } from './exceptions.js';
 import type { Note, Page, Stroke } from '@petrify/core';
 import { DEFAULT_PAGE_HEIGHT, DEFAULT_PAGE_WIDTH, pointFromList, splitByTimestampGap } from '@petrify/core';
 
@@ -29,7 +29,7 @@ export class NoteParser {
     try {
       zip = await JSZip.loadAsync(data);
     } catch {
-      throw new InvalidNoteFileError('Not a valid zip file');
+      throw new InvalidFileFormatError('Not a valid zip file');
     }
 
     return this.parseContents(zip);

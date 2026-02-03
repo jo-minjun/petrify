@@ -1,1 +1,1 @@
-export { InvalidNoteFileError, ParseError } from '@petrify/core';
+export { InvalidFileFormatError, ParseError } from '@petrify/core';

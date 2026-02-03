@@ -1,5 +1,6 @@
 import Ocr, { type Line } from '@gutenye/ocr-browser';
 import type { OcrPort, OcrResult, OcrRegion, OcrOptions } from '@petrify/core';
+import { OcrInitializationError } from '@petrify/core';
 import { ModelManager } from './model-manager.js';
 
 // @gutenye/ocr-browser의 Line 타입에는 score가 없고 mean이 있음
@@ -37,7 +38,7 @@ export class GutenyeOcr implements OcrPort {
 
   async recognize(image: ArrayBuffer, options?: OcrOptions): Promise<OcrResult> {
     if (!this.ocr) {
-      throw new Error('OCR이 초기화되지 않았습니다');
+      throw new OcrInitializationError('OCR이 초기화되지 않았습니다');
     }
 
     const threshold = options?.confidenceThreshold;
