@@ -1,16 +1,12 @@
 // src/index.ts
-export { NoteParser } from './parser';
-export { ColorExtractor } from './color-extractor';
-export { ExcalidrawGenerator } from './excalidraw';
-export type { ExcalidrawData, ExcalidrawElement } from './excalidraw';
-export { ExcalidrawMdGenerator } from './excalidraw-md';
-export { InvalidNoteFileError, ParseError } from './exceptions';
+export { ViwoodsParser, NoteParser, ColorExtractor, InvalidNoteFileError, ParseError } from '@petrify/parser-viwoods';
+export { ExcalidrawGenerator, ExcalidrawMdGenerator } from '@petrify/core';
+export type { ExcalidrawData, ExcalidrawElement } from '@petrify/core';
 export * from '@petrify/core';
 
-import { NoteParser } from './parser';
-import { ExcalidrawGenerator } from './excalidraw';
-import type { ExcalidrawData } from './excalidraw';
-import { ExcalidrawMdGenerator } from './excalidraw-md';
+import { NoteParser } from '@petrify/parser-viwoods';
+import { ExcalidrawGenerator, ExcalidrawMdGenerator } from '@petrify/core';
+import type { ExcalidrawData } from '@petrify/core';
 
 export async function convert(data: ArrayBuffer): Promise<ExcalidrawData> {
   const parser = new NoteParser();

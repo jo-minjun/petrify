@@ -11,9 +11,10 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@petrify/core": ["packages/core/src/index.ts"]
+      "@petrify/core": ["packages/core/src/index.ts"],
+      "@petrify/parser-viwoods": ["packages/parser-viwoods/src/index.ts"]
     }
   },
-  "include": ["src", "packages/core/src"],
+  "include": ["src", "packages/core/src", "packages/parser-viwoods/src"],
   "exclude": ["node_modules", "dist"]
 }

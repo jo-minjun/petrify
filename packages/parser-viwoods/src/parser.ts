@@ -1,4 +1,3 @@
-// src/parser.ts
 import JSZip from 'jszip';
 import { ColorExtractor } from './color-extractor';
 import { InvalidNoteFileError, ParseError } from './exceptions';
