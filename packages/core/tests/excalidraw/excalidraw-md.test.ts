@@ -121,4 +121,46 @@ describe('OCR Text Section', () => {
       '\n'
     );
   });
+
+  it('generate()에 OCR 결과 전달하면 ## OCR Text 섹션 포함', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const data: ExcalidrawData = {
+      type: 'excalidraw',
+      version: 2,
+      source: 'test',
+      elements: [],
+      appState: { viewBackgroundColor: '#ffffff' },
+      files: {},
+    };
+    const ocrResults: OcrTextResult[] = [
+      { pageIndex: 0, texts: ['테스트 텍스트'] }
+    ];
+
+    const md = generator.generate(data, undefined, ocrResults);
+
+    expect(md).toContain('## OCR Text');
+    expect(md).toContain('<!-- Page 1 -->');
+    expect(md).toContain('테스트 텍스트');
+    // OCR 섹션이 # Excalidraw Data 앞에 있는지 확인
+    const ocrIndex = md.indexOf('## OCR Text');
+    const excalidrawIndex = md.indexOf('# Excalidraw Data');
+    expect(ocrIndex).toBeLessThan(excalidrawIndex);
+  });
+
+  it('generate()에 OCR 결과 없으면 빈 ## OCR Text 섹션', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const data: ExcalidrawData = {
+      type: 'excalidraw',
+      version: 2,
+      source: 'test',
+      elements: [],
+      appState: {},
+      files: {},
+    };
+
+    const md = generator.generate(data);
+
+    expect(md).toContain('## OCR Text');
+    expect(md).not.toContain('<!-- Page');
+  });
 });

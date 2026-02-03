@@ -9,16 +9,19 @@ export interface OcrTextResult {
 export class ExcalidrawMdGenerator {
   generate(
     excalidrawData: ExcalidrawData,
-    embeddedFiles?: Record<string, string>
+    embeddedFiles?: Record<string, string>,
+    ocrResults?: OcrTextResult[]
   ): string {
     const compressed = LZString.compressToBase64(JSON.stringify(excalidrawData));
     const embeddedSection = this.formatEmbeddedFiles(embeddedFiles);
+    const ocrSection = this.formatOcrSection(ocrResults);
 
     return `---
 excalidraw-plugin: parsed
 tags:
 ---
 
+${ocrSection}
 # Excalidraw Data
 
 ## Text Elements
