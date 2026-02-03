@@ -11,3 +11,17 @@ export class ParseError extends Error {
     this.name = 'ParseError';
   }
 }
+
+export class OcrInitializationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'OcrInitializationError';
+  }
+}
+
+export class OcrRecognitionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'OcrRecognitionError';
+  }
+}
