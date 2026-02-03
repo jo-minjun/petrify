@@ -12,3 +12,6 @@ export type { OcrPort, OcrResult, OcrRegion } from './ports/ocr';
 
 // Exceptions
 export { InvalidNoteFileError, ParseError } from './exceptions';
+
+// Public API
+export { convert, convertToMd } from './api';

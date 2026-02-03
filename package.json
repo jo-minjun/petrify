@@ -6,10 +6,6 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
-  "dependencies": {
-    "@petrify/core": "workspace:*",
-    "@petrify/parser-viwoods": "workspace:*"
-  },
   "devDependencies": {
     "typescript": "^5.3.0"
   }

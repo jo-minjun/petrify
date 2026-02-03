@@ -15,6 +15,6 @@
       "@petrify/parser-viwoods": ["packages/parser-viwoods/src/index.ts"]
     }
   },
-  "include": ["src", "packages/core/src", "packages/parser-viwoods/src"],
+  "include": ["packages/*/src"],
   "exclude": ["node_modules", "dist"]
 }
