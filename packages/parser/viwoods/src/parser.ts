@@ -18,10 +18,17 @@ interface PageResource {
 }
 
 export class NoteParser {
+  /** Viwoods PageResource 리소스 타입: mainBmp (배경 이미지) */
   static readonly RESOURCE_TYPE_MAINBMP = 1;
+  /** Viwoods PageResource 리소스 타입: path (스트로크 경로) */
   static readonly RESOURCE_TYPE_PATH = 7;
+  /**
+   * 스트로크 구분 시간 임계값 (ms)
+   * Viwoods 파일 분석 결과: 동일 스트로크 내 포인트 간격은 최대 5ms, 6ms 이상이면 별도 스트로크
+   */
   static readonly DEFAULT_GAP_THRESHOLD = 6;
   private static readonly DEFAULT_COLOR = '#000000';
+  /** 기본 알파값 (0-255), 완전 불투명 */
   private static readonly DEFAULT_ALPHA = 255;
 
   async parse(data: ArrayBuffer): Promise<Note> {
@@ -118,6 +125,7 @@ export class NoteParser {
 
       return result;
     } catch {
+      // PageResource는 선택적 메타데이터 - 파싱 실패해도 mainBmp 자동 매핑 또는 기본 색상으로 진행 가능
       return {};
     }
   }
