@@ -40,18 +40,24 @@ export class GutenyeOcr implements OcrPort {
       throw new Error('OCR이 초기화되지 않았습니다');
     }
 
-    const threshold = options?.confidenceThreshold ?? 0;
+    const threshold = options?.confidenceThreshold;
     const lines = (await this.ocr.detect(this.arrayBufferToDataUrl(image))) as TextLine[];
 
-    const regions: OcrRegion[] = lines
-      .filter((line) => this.getConfidence(line) >= threshold)
-      .map((line) => this.textLineToRegion(line));
+    const allRegions = lines.map((line) => this.textLineToRegion(line));
+
+    // confidence가 있고 threshold가 설정된 경우에만 필터링
+    const regions = threshold !== undefined
+      ? allRegions.filter((r) => r.confidence === undefined || r.confidence >= threshold)
+      : allRegions;
 
     const text = regions.map((r) => r.text).join('\n');
+
+    // confidence가 있는 region들의 평균 계산
+    const regionsWithConfidence = regions.filter((r) => r.confidence !== undefined);
     const avgConfidence =
-      regions.length > 0
-        ? regions.reduce((sum, r) => sum + r.confidence, 0) / regions.length
-        : 0;
+      regionsWithConfidence.length > 0
+        ? regionsWithConfidence.reduce((sum, r) => sum + r.confidence!, 0) / regionsWithConfidence.length
+        : undefined;
 
     return {
       text,

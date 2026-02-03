@@ -4,12 +4,14 @@ export interface OcrRegion {
   y: number;
   width: number;
   height: number;
-  confidence: number;
+  /** OCR 신뢰도 (0-1). 일부 OCR 엔진은 미제공 */
+  confidence?: number;
 }
 
 export interface OcrResult {
   text: string;
-  confidence: number;
+  /** 전체 신뢰도 평균. confidence 제공하는 region이 없으면 undefined */
+  confidence?: number;
   regions: OcrRegion[];
 }
 
