@@ -40,6 +40,35 @@ async function copyTesseractFiles() {
   }
 }
 
+// Tesseract.js를 Obsidian(Electron) 환경에 맞게 패치하는 플러그인
+const tesseractObsidianPlugin = {
+  name: 'tesseract-obsidian',
+  setup(build) {
+    const patchDir = path.resolve(__dirname, 'src/patches');
+
+    // ./worker/node를 ./worker/browser로 교체 (worker_threads 대신 Web Worker 사용)
+    build.onResolve({ filter: /\.\/worker\/node$/ }, (args) => {
+      if (args.importer.includes('tesseract.js')) {
+        const browserWorkerPath = path.resolve(
+          path.dirname(args.importer),
+          './worker/browser/index.js'
+        );
+        return { path: browserWorkerPath };
+      }
+      return null;
+    });
+
+    // spawnWorker를 Obsidian용 패치로 교체 (file:// URL → Blob URL)
+    build.onResolve({ filter: /\.\/spawnWorker/ }, (args) => {
+      if (args.importer.includes('tesseract.js') && args.importer.includes('browser')) {
+        const patchPath = path.join(patchDir, 'tesseract-spawn-worker.js');
+        return { path: patchPath };
+      }
+      return null;
+    });
+  },
+};
+
 const context = await esbuild.context({
   entryPoints: ['src/main.ts'],
   bundle: true,
@@ -50,6 +79,7 @@ const context = await esbuild.context({
   outfile: 'main.js',
   sourcemap: prod ? false : 'inline',
   treeShaking: true,
+  plugins: [tesseractObsidianPlugin],
 });
 
 if (prod) {

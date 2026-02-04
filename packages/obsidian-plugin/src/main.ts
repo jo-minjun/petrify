@@ -28,8 +28,7 @@ export default class PetrifyPlugin extends Plugin {
     this.parserRegistry = new ParserRegistry();
     this.registerParsers();
 
-    // TODO(2026-02-04, minjun.jo): Tesseract.js Worker 경로 문제 해결 필요
-    // await this.initializeOcr();
+    await this.initializeOcr();
     this.initializeConverter();
     this.initializeWatcher();
 
@@ -57,13 +56,22 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async initializeOcr(): Promise<void> {
-    // CDN에서 worker/core를 가져옴 (로컬 파일 경로가 app:// URL로 변환되어 Worker 생성 실패)
+    const adapter = this.app.vault.adapter as FileSystemAdapter;
+    const vaultPath = adapter.getBasePath();
+    const pluginDir = path.join(vaultPath, '.obsidian', 'plugins', 'petrify');
+
+    // Worker는 로컬 파일, Core는 CDN에서 로드
+    // Web Worker 내에서 file:// URL로 importScripts를 사용할 수 없으므로 CDN 사용
+    const workerPath = `file://${path.join(pluginDir, 'worker.min.js')}`;
+    const corePath = 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0/';
+
     this.ocr = new TesseractOcr({
       lang: 'kor+eng',
+      workerPath,
+      corePath,
     });
 
     await this.ocr.initialize();
-    console.log('[Petrify] Tesseract OCR initialized');
   }
 
   private initializeConverter(): void {
