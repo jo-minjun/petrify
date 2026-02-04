@@ -12,9 +12,5 @@
   "dependencies": {
     "@petrify/core": "workspace:*",
     "@gutenye/ocr-browser": "^1.4.0"
-  },
-  "devDependencies": {
-    "tsup": "^8.0.0",
-    "vitest": "^2.0.0"
   }
 }

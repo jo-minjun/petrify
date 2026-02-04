@@ -13,9 +13,5 @@
     "@petrify/core": "workspace:*",
     "jszip": "^3.10.1",
     "lz-string": "^1.5.0"
-  },
-  "devDependencies": {
-    "tsup": "^8.0.0",
-    "vitest": "^2.0.0"
   }
 }
