@@ -28,7 +28,7 @@ export default class PetrifyPlugin extends Plugin {
     this.parserRegistry = new ParserRegistry();
     this.registerParsers();
 
-    this.initializeConverter();
+    await this.initializeConverter();
     this.initializeWatcher();
 
     this.addSettingTab(
@@ -53,18 +53,18 @@ export default class PetrifyPlugin extends Plugin {
     this.parserRegistry.register(new ViwoodsParser());
   }
 
-  private initializeConverter(): void {
-    const ocr = this.createOcr();
+  private async initializeConverter(): Promise<void> {
+    const ocr = await this.createOcr();
     this.converter = new Converter(this.parserRegistry, ocr, {
       confidenceThreshold: this.settings.ocr.confidenceThreshold,
     });
   }
 
-  private createOcr(): OcrPort {
+  private async createOcr(): Promise<OcrPort> {
     const provider = this.settings.ocr.provider;
 
     if (provider === 'gutenye') {
-      return new GutenyeOcr() as OcrPort;
+      return await GutenyeOcr.create() as OcrPort;
     }
 
     // TODO(2026-02-03, minjun.jo): google-vision, azure-ocr provider 구현 필요
@@ -163,7 +163,7 @@ export default class PetrifyPlugin extends Plugin {
 
   private async restartWatcher(): Promise<void> {
     await this.watcher?.close();
-    this.initializeConverter();
+    await this.initializeConverter();
     this.initializeWatcher();
     await this.startWatcher();
   }
