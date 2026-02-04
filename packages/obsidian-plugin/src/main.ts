@@ -1,6 +1,8 @@
 import { Notice, Plugin } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
 import type { OcrPort } from '@petrify/core';
+import { ViwoodsParser } from '@petrify/parser-viwoods';
+import { GutenyeOcr } from '@petrify/ocr-gutenye';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
@@ -48,12 +50,7 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private registerParsers(): void {
-    try {
-      const { ViwoodsParser } = require('@petrify/parser-viwoods');
-      this.parserRegistry.register(new ViwoodsParser());
-    } catch {
-      console.log('[Petrify] @petrify/parser-viwoods not found');
-    }
+    this.parserRegistry.register(new ViwoodsParser());
   }
 
   private initializeConverter(): void {
@@ -67,13 +64,7 @@ export default class PetrifyPlugin extends Plugin {
     const provider = this.settings.ocr.provider;
 
     if (provider === 'gutenye') {
-      try {
-        const { GutenyeOcr } = require('@petrify/ocr-gutenye');
-        return new GutenyeOcr() as OcrPort;
-      } catch {
-        console.error('[Petrify] @petrify/ocr-gutenye not found');
-        throw new Error('OCR provider not available');
-      }
+      return new GutenyeOcr() as OcrPort;
     }
 
     // TODO(2026-02-03, minjun.jo): google-vision, azure-ocr provider 구현 필요
