@@ -41,6 +41,33 @@ packages/
 
 - 테스트 통과 후 커밋
 
+- 공통 devDependencies(typescript, vitest, tsup)는 루트 package.json에서만 관리
+  ```json
+  // 루트 package.json
+  {
+    "devDependencies": {
+      "typescript": "^5.3.0",
+      "vitest": "^2.0.0",
+      "tsup": "^8.0.0"
+    }
+  }
+  ```
+
+- vitest 설정은 루트 vitest.config.ts에서만 관리
+
+- 루트 tsconfig.json paths에 모든 워크스페이스 패키지 경로 명시
+  ```json
+  {
+    "paths": {
+      "@petrify/core": ["packages/core/src/index.ts"],
+      "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
+      "@petrify/ocr-gutenye": ["packages/ocr/gutenye/src/index.ts"]
+    }
+  }
+  ```
+
+- 통합 테스트는 플러그인 패키지(obsidian-plugin) 레벨에서 수행
+
 - 에러는 명시적 예외 클래스로 처리하기
   ```typescript
   throw new InvalidNoteFileError('Invalid file format');
@@ -105,3 +132,7 @@ packages/
 - any 타입 남용하지 않기
 - 필수 데이터 실패를 silent fail로 처리하지 않기
 - vitest globals: true 사용하지 않기
+- 개별 패키지에 공통 devDependencies(typescript, vitest, tsup) 추가하지 않기
+- 개별 패키지에 vitest.config.ts 파일 생성하지 않기
+- pnpm 사용 시 package-lock.json 남겨두지 않기
+- core 패키지에서 어댑터 의존성 추가하지 않기 (devDependencies 포함)
