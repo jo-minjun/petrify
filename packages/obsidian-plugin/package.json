@@ -4,16 +4,16 @@
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "dev": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --platform=node --watch",
-    "build": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --platform=node",
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@petrify/core": "workspace:*",
     "@petrify/parser-viwoods": "workspace:*",
-    "@petrify/ocr-gutenye": "workspace:*",
-    "chokidar": "^5.0.0"
+    "chokidar": "^5.0.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

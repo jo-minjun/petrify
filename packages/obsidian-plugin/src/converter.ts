@@ -15,7 +15,7 @@ export interface ConverterOptions {
 export class Converter {
   constructor(
     private readonly parserRegistry: ParserRegistry,
-    private readonly ocr: OcrPort,
+    private readonly ocr: OcrPort | null,
     private readonly options: ConverterOptions
   ) {}
 
@@ -25,7 +25,8 @@ export class Converter {
       throw new Error(`Unsupported file extension: ${extension}`);
     }
 
-    const mdContent = await convertToMdWithOcr(data, parser, this.ocr, {
+    // TODO(2026-02-04, minjun.jo): OCR 없으면 텍스트 추출 없이 변환
+    const mdContent = await convertToMdWithOcr(data, parser, this.ocr!, {
       ocrConfidenceThreshold: this.options.confidenceThreshold,
     });
 

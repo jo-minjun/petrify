@@ -1,3 +1,7 @@
 main.js
 *.js.map
 node_modules/
+
+# Tesseract.js 빌드 아티팩트
+tesseract-core/
+worker.min.js

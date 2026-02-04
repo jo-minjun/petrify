@@ -1,8 +1,6 @@
 import { Notice, Plugin } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
-import type { OcrPort } from '@petrify/core';
 import { ViwoodsParser } from '@petrify/parser-viwoods';
-import { GutenyeOcr } from '@petrify/ocr-gutenye';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
@@ -11,6 +9,7 @@ import { ParserRegistry } from './parser-registry.js';
 import { Converter } from './converter.js';
 import { PetrifyWatcher } from './watcher.js';
 import { parseFrontmatter } from './utils/frontmatter.js';
+import { TesseractOcr } from './tesseract-ocr.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
@@ -21,6 +20,7 @@ export default class PetrifyPlugin extends Plugin {
   private watcher: PetrifyWatcher | null = null;
   private parserRegistry!: ParserRegistry;
   private converter!: Converter;
+  private ocr: TesseractOcr | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -28,7 +28,9 @@ export default class PetrifyPlugin extends Plugin {
     this.parserRegistry = new ParserRegistry();
     this.registerParsers();
 
-    await this.initializeConverter();
+    // TODO(2026-02-04, minjun.jo): Tesseract.js Worker 경로 문제 해결 필요
+    // await this.initializeOcr();
+    this.initializeConverter();
     this.initializeWatcher();
 
     this.addSettingTab(
@@ -47,28 +49,27 @@ export default class PetrifyPlugin extends Plugin {
 
   async onunload(): Promise<void> {
     await this.watcher?.close();
+    await this.ocr?.terminate();
   }
 
   private registerParsers(): void {
     this.parserRegistry.register(new ViwoodsParser());
   }
 
-  private async initializeConverter(): Promise<void> {
-    const ocr = await this.createOcr();
-    this.converter = new Converter(this.parserRegistry, ocr, {
-      confidenceThreshold: this.settings.ocr.confidenceThreshold,
+  private async initializeOcr(): Promise<void> {
+    // CDN에서 worker/core를 가져옴 (로컬 파일 경로가 app:// URL로 변환되어 Worker 생성 실패)
+    this.ocr = new TesseractOcr({
+      lang: 'kor+eng',
     });
+
+    await this.ocr.initialize();
+    console.log('[Petrify] Tesseract OCR initialized');
   }
 
-  private async createOcr(): Promise<OcrPort> {
-    const provider = this.settings.ocr.provider;
-
-    if (provider === 'gutenye') {
-      return await GutenyeOcr.create() as OcrPort;
-    }
-
-    // TODO(2026-02-03, minjun.jo): google-vision, azure-ocr provider 구현 필요
-    throw new Error(`Unsupported OCR provider: ${provider}. Currently only 'gutenye' is supported.`);
+  private initializeConverter(): void {
+    this.converter = new Converter(this.parserRegistry, this.ocr, {
+      confidenceThreshold: this.settings.ocr.confidenceThreshold,
+    });
   }
 
   private initializeWatcher(): void {
@@ -163,7 +164,7 @@ export default class PetrifyPlugin extends Plugin {
 
   private async restartWatcher(): Promise<void> {
     await this.watcher?.close();
-    await this.initializeConverter();
+    this.initializeConverter();
     this.initializeWatcher();
     await this.startWatcher();
   }
