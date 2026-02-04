@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@petrify/core": "workspace:*",
+    "@petrify/parser-viwoods": "workspace:*",
+    "@petrify/ocr-gutenye": "workspace:*",
     "chokidar": "^5.0.0"
   },
   "devDependencies": {

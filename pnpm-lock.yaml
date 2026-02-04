@@ -33,6 +33,12 @@ importers:
       '@petrify/core':
         specifier: workspace:*
         version: link:../core
+      '@petrify/ocr-gutenye':
+        specifier: workspace:*
+        version: link:../ocr/gutenye
+      '@petrify/parser-viwoods':
+        specifier: workspace:*
+        version: link:../parser/viwoods
       chokidar:
         specifier: ^5.0.0
         version: 5.0.0
