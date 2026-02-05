@@ -14,7 +14,6 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 
 **계획 중:**
 - Obsidian Vault 내부 파일 감시 (VaultWatcher)
-- Google Drive 파일 감지 및 동기화
 
 포트/어댑터 패턴으로 Parser, OCR, Watcher를 독립적으로 확장할 수 있습니다. OCR 기능으로 손글씨를 텍스트로 추출하여 Obsidian에서 검색 가능하게 만듭니다.
 
@@ -30,7 +29,6 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 | OCR | etc. | ❌ |
 | Watcher | chokidar (로컬 FS) | ✅ |
 | Watcher | Obsidian Vault | ❌ |
-| Watcher | Google Drive | ❌ |
 | 기능 | Excalidraw 변환 | ✅ |
 | 기능 | OCR 텍스트 추출 | ✅ |
 | 기능 | Obsidian 플러그인 | ✅ |
@@ -116,6 +114,16 @@ pnpm add @petrify/watcher-chokidar
 | Output Directories | 변환된 파일이 저장될 vault 내 경로 (매핑별 지정) |
 | OCR Provider | tesseract (로컬) |
 | Confidence Threshold | OCR 신뢰도 임계값 (0-100) |
+
+### Google Drive 연동
+
+Google Drive for Desktop으로 로컬 동기화된 폴더를 Watch Directory로 지정하면 자동 변환이 동작합니다.
+
+1. [Google Drive for Desktop](https://www.google.com/drive/download/) 설치
+2. 필기 노트 파일이 있는 Google Drive 폴더를 로컬 동기화 설정
+3. Petrify 설정의 Watch Directory에 동기화된 로컬 경로를 지정
+   - macOS: `~/Library/CloudStorage/GoogleDrive-<계정>/My Drive/<폴더>`
+   - Windows: `G:\My Drive\<폴더>` (드라이브 문자는 설정에 따라 다름)
 
 ### 요구사항
 
