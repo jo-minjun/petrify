@@ -137,7 +137,7 @@ export class GoogleVisionOcr implements OcrPort {
     return (block.paragraphs ?? [])
       .flatMap((p) => p.words ?? [])
       .map((w) => (w.symbols ?? []).map((s) => s.text ?? '').join(''))
-      .join('');
+      .join(' ');
   }
 
   private extractBoundingBox(vertices?: VisionVertex[]): { x: number; y: number; width: number; height: number } {

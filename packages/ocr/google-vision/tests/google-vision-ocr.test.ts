@@ -97,4 +97,46 @@ describe('GoogleVisionOcr', () => {
       height: 40,
     });
   });
+
+  it('API 키를 쿼리 파라미터로 전달한다', async () => {
+    const spy = mockFetchSuccess(MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'my-api-key' });
+
+    await ocr.recognize(new ArrayBuffer(100));
+
+    expect(spy).toHaveBeenCalledWith(
+      'https://vision.googleapis.com/v1/images:annotate?key=my-api-key',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  it('languageHints를 imageContext에 전달한다', async () => {
+    const spy = mockFetchSuccess(MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', languageHints: ['ko', 'en'] });
+
+    await ocr.recognize(new ArrayBuffer(100));
+
+    const body = JSON.parse(spy.mock.calls[0][1]!.body as string);
+    expect(body.requests[0].imageContext).toEqual({ languageHints: ['ko', 'en'] });
+  });
+
+  it('OcrOptions.language가 config.languageHints를 오버라이드한다', async () => {
+    const spy = mockFetchSuccess(MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', languageHints: ['ko', 'en'] });
+
+    await ocr.recognize(new ArrayBuffer(100), { language: 'ja' });
+
+    const body = JSON.parse(spy.mock.calls[0][1]!.body as string);
+    expect(body.requests[0].imageContext).toEqual({ languageHints: ['ja'] });
+  });
+
+  it('languageHints 미지정 시 imageContext를 포함하지 않는다', async () => {
+    const spy = mockFetchSuccess(MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+
+    await ocr.recognize(new ArrayBuffer(100));
+
+    const body = JSON.parse(spy.mock.calls[0][1]!.body as string);
+    expect(body.requests[0].imageContext).toBeUndefined();
+  });
 });
