@@ -1,9 +1,9 @@
-import { Notice, Plugin } from 'obsidian';
+import { Notice, Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
 import { ViwoodsParser } from '@petrify/parser-viwoods';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import { ConversionPipeline } from '@petrify/core';
-import type { WatcherPort } from '@petrify/core';
+import type { WatcherPort, FileChangeEvent } from '@petrify/core';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
@@ -21,11 +21,25 @@ export default class PetrifyPlugin extends Plugin {
   private watchers: WatcherPort[] = [];
   private pipeline!: ConversionPipeline;
   private ocr: TesseractOcr | null = null;
+  private isSyncing = false;
+  private ribbonIconEl: HTMLElement | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     await this.initializeOcr();
     this.initializePipeline();
+
+    this.ribbonIconEl = this.addRibbonIcon('refresh-cw', 'Petrify: Sync', async () => {
+      await this.syncAll();
+    });
+
+    this.addCommand({
+      id: 'petrify-sync',
+      name: 'Sync',
+      callback: async () => {
+        await this.syncAll();
+      },
+    });
 
     this.addSettingTab(
       new PetrifySettingsTab(this.app, this, {
@@ -88,11 +102,27 @@ export default class PetrifyPlugin extends Plugin {
       const watcher = new ChokidarWatcher(mapping.watchDir);
 
       watcher.onFileChange(async (event) => {
-        const result = await this.pipeline.handleFileChange(event);
-        if (result) {
-          const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
-          const outputPath = this.getOutputPath(event.name, mapping.outputDir);
-          await this.saveToVault(outputPath, frontmatter + result);
+        console.log(`[Petrify] 파일 감지: ${event.name} (${event.extension})`);
+
+        try {
+          const notice = new Notice(`[Petrify] 변환 중: ${event.name}`, 0);
+          const result = await this.pipeline.handleFileChange(event);
+
+          if (result) {
+            const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
+            const outputPath = this.getOutputPath(event.name, mapping.outputDir);
+            await this.saveToVault(outputPath, frontmatter + result);
+            notice.setMessage(`[Petrify] 변환 완료: ${event.name}`);
+            console.log(`[Petrify] 변환 완료: ${event.name} → ${outputPath}`);
+          } else {
+            console.log(`[Petrify] 스킵: ${event.name} (미지원 확장자 또는 이미 최신)`);
+            notice.hide();
+          }
+
+          setTimeout(() => notice.hide(), 3000);
+        } catch (error) {
+          console.error(`[Petrify] 변환 실패: ${event.name}`, error);
+          new Notice(`[Petrify] 변환 실패: ${event.name}`);
         }
       });
 
@@ -137,8 +167,91 @@ export default class PetrifyPlugin extends Plugin {
     await this.startWatchers();
   }
 
+  private async syncAll(): Promise<void> {
+    if (this.isSyncing) {
+      new Notice('Sync already in progress');
+      return;
+    }
+
+    this.isSyncing = true;
+    if (this.ribbonIconEl) {
+      setIcon(this.ribbonIconEl, 'loader');
+    }
+
+    let synced = 0;
+    let failed = 0;
+
+    try {
+      for (const mapping of this.settings.watchMappings) {
+        if (!mapping.enabled) continue;
+        if (!mapping.watchDir || !mapping.outputDir) continue;
+
+        let entries: string[];
+        try {
+          entries = await fs.readdir(mapping.watchDir);
+        } catch {
+          failed++;
+          continue;
+        }
+
+        for (const entry of entries) {
+          const ext = path.extname(entry).toLowerCase();
+          if (ext !== '.note') continue;
+
+          const filePath = path.join(mapping.watchDir, entry);
+          let stat: { mtimeMs: number };
+          try {
+            stat = await fs.stat(filePath);
+          } catch {
+            failed++;
+            continue;
+          }
+
+          const event: FileChangeEvent = {
+            id: filePath,
+            name: entry,
+            extension: ext,
+            mtime: stat.mtimeMs,
+            readData: () => fs.readFile(filePath).then((buf) => buf.buffer as ArrayBuffer),
+          };
+
+          try {
+            const result = await this.pipeline.handleFileChange(event);
+            if (result) {
+              const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
+              const outputPath = this.getOutputPath(event.name, mapping.outputDir);
+              await this.saveToVault(outputPath, frontmatter + result);
+              synced++;
+            }
+          } catch {
+            failed++;
+          }
+        }
+      }
+    } finally {
+      this.isSyncing = false;
+      if (this.ribbonIconEl) {
+        setIcon(this.ribbonIconEl, 'refresh-cw');
+      }
+    }
+
+    if (synced === 0 && failed === 0) {
+      new Notice('No files to sync');
+    } else if (failed === 0) {
+      new Notice(`Synced ${synced} file(s)`);
+    } else if (synced === 0) {
+      new Notice(`Sync failed: ${failed} file(s) failed`);
+    } else {
+      new Notice(`Synced ${synced} file(s), ${failed} failed`);
+    }
+  }
+
   private async loadSettings(): Promise<void> {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings.watchMappings = this.settings.watchMappings.map((m) => ({
+      ...m,
+      enabled: m.enabled ?? true,
+    }));
   }
 
   private async saveSettings(): Promise<void> {
