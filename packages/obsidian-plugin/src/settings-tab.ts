@@ -90,12 +90,12 @@ export class PetrifySettingsTab extends PluginSettingTab {
       .setDesc('Select OCR engine')
       .addDropdown((dropdown) =>
         dropdown
-          .addOption('gutenye', 'Gutenye (Local)')
+          .addOption('tesseract', 'Tesseract.js (Local)')
           .addOption('google-vision', 'Google Vision API')
           .addOption('azure-ocr', 'Azure OCR')
           .setValue(settings.ocr.provider)
           .onChange(async (value) => {
-            settings.ocr.provider = value as 'gutenye' | 'google-vision' | 'azure-ocr';
+            settings.ocr.provider = value as 'tesseract' | 'google-vision' | 'azure-ocr';
             await this.callbacks.saveSettings(settings);
             this.display();
           })

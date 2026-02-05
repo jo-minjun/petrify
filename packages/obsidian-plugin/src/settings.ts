@@ -9,7 +9,7 @@ export interface OcrProviderConfig {
 }
 
 export interface OcrSettings {
-  provider: 'gutenye' | 'google-vision' | 'azure-ocr';
+  provider: 'tesseract' | 'google-vision' | 'azure-ocr';
   confidenceThreshold: number;
   providerConfig: OcrProviderConfig;
 }
@@ -22,7 +22,7 @@ export interface PetrifySettings {
 export const DEFAULT_SETTINGS: PetrifySettings = {
   watchMappings: [],
   ocr: {
-    provider: 'gutenye',
+    provider: 'tesseract',
     confidenceThreshold: 50,
     providerConfig: {},
   },
