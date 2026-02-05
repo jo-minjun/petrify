@@ -1,6 +1,7 @@
 export interface PetrifyFrontmatter {
   source: string;
   mtime: number;
+  keep?: boolean;
 }
 
 export function createFrontmatter(meta: PetrifyFrontmatter): string {
@@ -28,8 +29,11 @@ export function parseFrontmatter(content: string): PetrifyFrontmatter | null {
     return null;
   }
 
+  const keepMatch = frontmatter.match(/keep:\s*(true|false)/);
+
   return {
     source: sourceMatch[1].trim(),
     mtime: parseInt(mtimeMatch[1], 10),
+    ...(keepMatch && { keep: keepMatch[1] === 'true' }),
   };
 }
