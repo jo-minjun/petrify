@@ -70,9 +70,6 @@ importers:
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
-      lz-string:
-        specifier: ^1.5.0
-        version: 1.5.0
 
   packages/watcher/chokidar:
     dependencies:
