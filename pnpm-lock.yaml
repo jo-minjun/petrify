@@ -36,9 +36,9 @@ importers:
       '@petrify/parser-viwoods':
         specifier: workspace:*
         version: link:../parser/viwoods
-      chokidar:
-        specifier: ^5.0.0
-        version: 5.0.0
+      '@petrify/watcher-chokidar':
+        specifier: workspace:*
+        version: link:../watcher/chokidar
       tesseract.js:
         specifier: ^7.0.0
         version: 7.0.0
@@ -73,6 +73,19 @@ importers:
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0
+
+  packages/watcher/chokidar:
+    dependencies:
+      '@petrify/core':
+        specifier: workspace:*
+        version: link:../../core
+      chokidar:
+        specifier: ^5.0.0
+        version: 5.0.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.31
 
 packages:
 
