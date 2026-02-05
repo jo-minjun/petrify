@@ -49,7 +49,6 @@ export interface ExcalidrawData {
   readonly files: Readonly<Record<string, ExcalidrawFileEntry>>;
 }
 
-// TODO(2026-02-05, minjun.jo): Task 3에서 image element 생성 로직으로 리팩토링 예정
 export class ExcalidrawGenerator {
   /** 페이지 간 세로 간격 (px) */
   static readonly PAGE_GAP = 100;
