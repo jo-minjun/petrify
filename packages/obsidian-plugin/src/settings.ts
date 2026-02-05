@@ -13,6 +13,7 @@ export interface OcrSettings {
 export interface PetrifySettings {
   watchMappings: WatchMapping[];
   ocr: OcrSettings;
+  deleteConvertedOnSourceDelete: boolean;
 }
 
 export const DEFAULT_SETTINGS: PetrifySettings = {
@@ -20,4 +21,5 @@ export const DEFAULT_SETTINGS: PetrifySettings = {
   ocr: {
     confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD,
   },
+  deleteConvertedOnSourceDelete: false,
 };
