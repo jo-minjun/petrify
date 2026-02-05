@@ -12,17 +12,12 @@ export class ConversionPipeline {
   private readonly parserMap: Map<string, ParserPort>;
 
   constructor(
-    parsers: ParserPort[],
+    parsers: Map<string, ParserPort>,
     private readonly ocr: OcrPort | null,
     private readonly conversionState: ConversionStatePort,
     private readonly options: ConversionPipelineOptions,
   ) {
-    this.parserMap = new Map();
-    for (const parser of parsers) {
-      for (const ext of parser.extensions) {
-        this.parserMap.set(ext.toLowerCase(), parser);
-      }
-    }
+    this.parserMap = parsers;
   }
 
   async handleFileChange(event: FileChangeEvent): Promise<string | null> {

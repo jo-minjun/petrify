@@ -62,7 +62,7 @@ describe('ConversionPipeline', () => {
 
   it('지원하는 확장자의 파일을 변환한다', async () => {
     const pipeline = new ConversionPipeline(
-      [parser], ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent();
 
@@ -75,7 +75,7 @@ describe('ConversionPipeline', () => {
 
   it('지원하지 않는 확장자면 null을 반환한다', async () => {
     const pipeline = new ConversionPipeline(
-      [parser], ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ extension: '.txt', name: 'file.txt' });
 
@@ -90,7 +90,7 @@ describe('ConversionPipeline', () => {
       getLastConvertedMtime: vi.fn().mockResolvedValue(1700000000000),
     };
     const pipeline = new ConversionPipeline(
-      [parser], ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ mtime: 1700000000000 });
 
@@ -105,7 +105,7 @@ describe('ConversionPipeline', () => {
       getLastConvertedMtime: vi.fn().mockResolvedValue(1699999999999),
     };
     const pipeline = new ConversionPipeline(
-      [parser], ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ mtime: 1700000000000 });
 
@@ -118,7 +118,7 @@ describe('ConversionPipeline', () => {
   it('지원하지 않는 확장자면 스킵 로그를 출력한다', async () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const pipeline = new ConversionPipeline(
-      [parser], ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ extension: '.txt', name: 'file.txt' });
 
@@ -134,7 +134,7 @@ describe('ConversionPipeline', () => {
       getLastConvertedMtime: vi.fn().mockResolvedValue(1700000000000),
     };
     const pipeline = new ConversionPipeline(
-      [parser], ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ mtime: 1700000000000 });
 
@@ -146,7 +146,7 @@ describe('ConversionPipeline', () => {
 
   it('OCR 없이 동작한다', async () => {
     const pipeline = new ConversionPipeline(
-      [parser], null, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), null, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent();
 
