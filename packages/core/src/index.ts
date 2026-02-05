@@ -2,7 +2,8 @@ export * from './models/index.js';
 
 export { ExcalidrawGenerator } from './excalidraw/generator.js';
 export { ExcalidrawMdGenerator } from './excalidraw/md-generator.js';
-export type { ExcalidrawData, ExcalidrawElement } from './excalidraw/generator.js';
+export { uint8ArrayToBase64 } from './excalidraw/base64.js';
+export type { ExcalidrawData, ExcalidrawElement, ExcalidrawFileEntry } from './excalidraw/generator.js';
 export type { OcrTextResult } from './excalidraw/md-generator.js';
 
 export type { ParserPort } from './ports/parser.js';

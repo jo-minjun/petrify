@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import LZString from 'lz-string';
 import { ExcalidrawMdGenerator } from '../../src/excalidraw';
-import type { ExcalidrawData, OcrTextResult } from '../../src/excalidraw';
+import type { ExcalidrawData, ExcalidrawElement, ExcalidrawFileEntry, OcrTextResult } from '../../src/excalidraw';
 
 describe('ExcalidrawMdGenerator', () => {
   it('올바른 마크다운 구조 생성', () => {
@@ -31,7 +31,7 @@ describe('ExcalidrawMdGenerator', () => {
       type: 'excalidraw',
       version: 2,
       source: 'test',
-      elements: [{ id: 'test', type: 'freedraw' } as any],
+      elements: [{ id: 'test', type: 'image' } as ExcalidrawElement],
       appState: {},
       files: {},
     };
@@ -48,7 +48,7 @@ describe('ExcalidrawMdGenerator', () => {
       type: 'excalidraw',
       version: 2,
       source: 'test',
-      elements: [{ id: 'test123', type: 'freedraw', x: 100, y: 200 } as any],
+      elements: [{ id: 'test123', type: 'image', x: 100, y: 200 } as ExcalidrawElement],
       appState: { viewBackgroundColor: '#ffffff' },
       files: {},
     };
@@ -63,6 +63,34 @@ describe('ExcalidrawMdGenerator', () => {
     const restored = JSON.parse(decompressed!);
 
     expect(restored).toEqual(originalData);
+  });
+
+  it('files 객체가 압축 데이터에 포함됨', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const fileEntry: ExcalidrawFileEntry = {
+      mimeType: 'image/png',
+      id: 'file-1',
+      dataURL: 'data:image/png;base64,iVBOR',
+      created: 1700000000000,
+    };
+    const data: ExcalidrawData = {
+      type: 'excalidraw',
+      version: 2,
+      source: 'test',
+      elements: [],
+      appState: {},
+      files: { 'file-1': fileEntry },
+    };
+
+    const md = generator.generate(data);
+
+    const match = md.match(/```compressed-json\n(.+?)\n```/s);
+    expect(match).not.toBeNull();
+
+    const decompressed = LZString.decompressFromBase64(match![1]);
+    const restored = JSON.parse(decompressed!);
+
+    expect(restored.files['file-1']).toEqual(fileEntry);
   });
 });
 
