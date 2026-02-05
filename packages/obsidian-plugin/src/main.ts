@@ -11,6 +11,7 @@ import { PetrifySettingsTab } from './settings-tab.js';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { FrontmatterConversionState } from './frontmatter-conversion-state.js';
 import { createFrontmatter } from './utils/frontmatter.js';
+import { createLogger } from './logger.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
@@ -23,6 +24,9 @@ export default class PetrifyPlugin extends Plugin {
   private ocr: TesseractOcr | null = null;
   private isSyncing = false;
   private ribbonIconEl: HTMLElement | null = null;
+  private readonly watcherLog = createLogger('Watcher');
+  private readonly convertLog = createLogger('Convert');
+  private readonly syncLog = createLogger('Sync');
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -102,30 +106,23 @@ export default class PetrifyPlugin extends Plugin {
       const watcher = new ChokidarWatcher(mapping.watchDir);
 
       watcher.onFileChange(async (event) => {
-        console.log(`[Petrify] 파일 감지: ${event.name} (${event.extension})`);
+        this.watcherLog.info(`File detected: ${event.name}`);
 
         try {
-          const notice = new Notice(`[Petrify] 변환 중: ${event.name}`, 0);
           const converted = await this.processFile(event, mapping.outputDir);
 
           if (converted) {
-            notice.setMessage(`[Petrify] 변환 완료: ${event.name}`);
-            console.log(`[Petrify] 변환 완료: ${event.name}`);
-          } else {
-            console.log(`[Petrify] 스킵: ${event.name} (미지원 확장자 또는 이미 최신)`);
-            notice.hide();
+            this.convertLog.notify(`Converted: ${event.name}`);
           }
-
-          setTimeout(() => notice.hide(), 3000);
         } catch (error) {
-          console.error(`[Petrify] 변환 실패: ${event.name}`, error);
-          new Notice(`[Petrify] 변환 실패: ${event.name}`);
+          this.convertLog.error(`Conversion failed: ${event.name}`, error);
+          this.convertLog.notify(`Conversion failed: ${event.name}`);
         }
       });
 
       watcher.onError((error) => {
-        new Notice(`[Petrify] 오류: ${error.message}`);
-        console.error('[Petrify]', error);
+        this.watcherLog.error(`Watch error: ${error.message}`, error);
+        this.watcherLog.notify(`Watch error: ${error.message}`);
       });
 
       await watcher.start();
@@ -139,6 +136,7 @@ export default class PetrifyPlugin extends Plugin {
     const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
     const outputPath = this.getOutputPath(event.name, outputDir);
     await this.saveToVault(outputPath, frontmatter + result);
+    this.convertLog.info(`Converted: ${event.name}`);
     return true;
   }
 
