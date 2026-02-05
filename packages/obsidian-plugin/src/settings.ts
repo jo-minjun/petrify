@@ -4,6 +4,7 @@ export interface WatchMapping {
   watchDir: string;
   outputDir: string;
   enabled: boolean;
+  parserId: string;
 }
 
 export interface OcrSettings {
