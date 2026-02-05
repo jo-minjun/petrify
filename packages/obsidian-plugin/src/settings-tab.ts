@@ -1,12 +1,11 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { DEFAULT_SETTINGS } from './settings.js';
-import type { PetrifySettings } from './settings.js';
 import { ParserId } from './parser-registry.js';
+import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
 
 export interface SettingsTabCallbacks {
-  getSettings: () => PetrifySettings;
-  saveSettings: (settings: PetrifySettings) => Promise<void>;
-  saveDataOnly: (settings: PetrifySettings) => Promise<void>;
+  readonly getSettings: () => PetrifySettings;
+  readonly saveSettings: (settings: PetrifySettings) => Promise<void>;
+  readonly saveDataOnly: (settings: PetrifySettings) => Promise<void>;
 }
 
 export class PetrifySettingsTab extends PluginSettingTab {

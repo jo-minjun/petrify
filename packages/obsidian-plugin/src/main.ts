@@ -1,18 +1,19 @@
-import { Plugin, setIcon } from 'obsidian';
-import type { DataAdapter } from 'obsidian';
-import { ChokidarWatcher } from '@petrify/watcher-chokidar';
-import { ConversionPipeline } from '@petrify/core';
-import type { WatcherPort, FileChangeEvent, ParserPort } from '@petrify/core';
-import { createParserMap, ParserId } from './parser-registry.js';
-import { DropHandler } from './drop-handler.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { Plugin, setIcon } from 'obsidian';
+import type { DataAdapter } from 'obsidian';
+import { ConversionPipeline } from '@petrify/core';
+import type { FileChangeEvent, ParserPort, WatcherPort } from '@petrify/core';
+import { TesseractOcr } from '@petrify/ocr-tesseract';
+import { ChokidarWatcher } from '@petrify/watcher-chokidar';
+import { DropHandler } from './drop-handler.js';
+import { FrontmatterConversionState } from './frontmatter-conversion-state.js';
+import { createLogger } from './logger.js';
+import { createParserMap, ParserId } from './parser-registry.js';
 import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
-import { TesseractOcr } from '@petrify/ocr-tesseract';
-import { FrontmatterConversionState } from './frontmatter-conversion-state.js';
 import { createFrontmatter, parseFrontmatter } from './utils/frontmatter.js';
-import { createLogger } from './logger.js';
+import { saveToVault } from './utils/vault.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
@@ -157,7 +158,7 @@ export default class PetrifyPlugin extends Plugin {
     if (!result) return false;
     const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
     const outputPath = this.getOutputPath(event.name, outputDir);
-    await this.saveToVault(outputPath, frontmatter + result);
+    await saveToVault(this.app, outputPath, frontmatter + result);
     this.convertLog.info(`Converted: ${event.name}`);
     return true;
   }
@@ -190,18 +191,6 @@ export default class PetrifyPlugin extends Plugin {
   private getOutputPath(name: string, outputDir: string): string {
     const fileName = path.basename(name, path.extname(name));
     return path.join(outputDir, `${fileName}.excalidraw.md`);
-  }
-
-  private async saveToVault(outputPath: string, content: string): Promise<void> {
-    const dir = path.dirname(outputPath);
-    if (!(await this.app.vault.adapter.exists(dir))) {
-      await this.app.vault.createFolder(dir);
-    }
-    if (await this.app.vault.adapter.exists(outputPath)) {
-      await this.app.vault.adapter.write(outputPath, content);
-    } else {
-      await this.app.vault.create(outputPath, content);
-    }
   }
 
   private async restart(): Promise<void> {

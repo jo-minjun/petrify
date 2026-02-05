@@ -27,15 +27,19 @@ packages/
 ├── core/                 # @petrify/core
 ├── parser/
 │   └── viwoods/          # @petrify/parser-viwoods
-└── ocr/
-    └── gutenye/          # @petrify/ocr-gutenye
+├── ocr/
+│   └── tesseract/        # @petrify/ocr-tesseract
+├── watcher/
+│   └── chokidar/         # @petrify/watcher-chokidar
+└── obsidian-plugin/      # @petrify/obsidian-plugin
 ```
 
 | 패키지 | 역할 |
 |--------|------|
 | `@petrify/core` | 중간 표현 모델, Excalidraw 변환, 포트 인터페이스 |
 | `@petrify/parser-viwoods` | viwoods .note 파일 파서 (ParserPort 구현) |
-| `@petrify/ocr-gutenye` | @gutenye/ocr-browser 래핑 OCR (OcrPort 구현) |
+| `@petrify/ocr-tesseract` | Tesseract.js 래핑 OCR (OcrPort 구현) |
+| `@petrify/watcher-chokidar` | chokidar 래핑 파일 감시 (WatcherPort 구현) |
 
 ## DO
 
@@ -61,7 +65,8 @@ packages/
     "paths": {
       "@petrify/core": ["packages/core/src/index.ts"],
       "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
-      "@petrify/ocr-gutenye": ["packages/ocr/gutenye/src/index.ts"]
+      "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
+      "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"]
     }
   }
   ```

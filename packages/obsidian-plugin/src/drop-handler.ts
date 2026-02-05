@@ -1,9 +1,10 @@
+import * as path from 'path';
 import type { App } from 'obsidian';
-import type { ParserPort, ConversionPipeline } from '@petrify/core';
+import type { ConversionPipeline, ParserPort } from '@petrify/core';
+import { createLogger } from './logger.js';
 import { ParserSelectModal } from './parser-select-modal.js';
 import { createFrontmatter } from './utils/frontmatter.js';
-import { createLogger } from './logger.js';
-import * as path from 'path';
+import { saveToVault } from './utils/vault.js';
 
 const log = createLogger('Drop');
 
@@ -48,7 +49,7 @@ export class DropHandler {
         const outputName = `${baseName}.excalidraw.md`;
         const outputPath = dropFolder ? `${dropFolder}/${outputName}` : outputName;
 
-        await this.saveToVault(outputPath, frontmatter + result);
+        await saveToVault(this.app, outputPath, frontmatter + result);
         converted++;
         log.info(`Converted: ${file.name}`);
       } catch (error) {
@@ -76,16 +77,10 @@ export class DropHandler {
   }
 
   private filterSupportedFiles(files: FileList): File[] {
-    const result: File[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    return Array.from(files).filter((file) => {
       const ext = path.extname(file.name).toLowerCase();
-      const parsers = this.pipeline.getParsersForExtension(ext);
-      if (parsers.length > 0) {
-        result.push(file);
-      }
-    }
-    return result;
+      return this.pipeline.getParsersForExtension(ext).length > 0;
+    });
   }
 
   private async resolveParser(
@@ -112,17 +107,5 @@ export class DropHandler {
       this.parserChoices.set(ext, result.parser);
     }
     return result.parser;
-  }
-
-  private async saveToVault(outputPath: string, content: string): Promise<void> {
-    const dir = path.dirname(outputPath);
-    if (dir && dir !== '.' && !(await this.app.vault.adapter.exists(dir))) {
-      await this.app.vault.createFolder(dir);
-    }
-    if (await this.app.vault.adapter.exists(outputPath)) {
-      await this.app.vault.adapter.write(outputPath, content);
-    } else {
-      await this.app.vault.create(outputPath, content);
-    }
   }
 }

@@ -32,6 +32,8 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 | 기능 | Excalidraw 변환 | ✅ |
 | 기능 | OCR 텍스트 추출 | ✅ |
 | 기능 | Obsidian 플러그인 | ✅ |
+| 기능 | 드래그 & 드롭 변환 | ✅ |
+| 기능 | 원본 삭제 시 변환 파일 정리 | ✅ |
 
 ✅ 지원 | ❌ 미지원
 
@@ -103,8 +105,10 @@ pnpm add @petrify/watcher-chokidar
 - **파일 감시**: WatcherPort 기반 실시간 파일 변경 감지 (현재 chokidar 어댑터)
 - **다중 폴더 매핑**: 여러 외부 폴더를 각각 다른 vault 폴더로 매핑
 - **자동 변환**: ConversionPipeline이 확장자 필터링 → mtime 스킵 → 변환 자동 처리
+- **드래그 & 드롭**: 파일 탐색기에 필기 파일을 드롭하면 해당 위치에 즉시 변환
 - **OCR 지원**: 손글씨 텍스트 추출 (Tesseract.js)
 - **중복 방지**: ConversionStatePort 기반 mtime 비교로 이미 변환된 파일 재처리 안함
+- **원본 삭제 연동**: 원본 파일 삭제 시 변환 파일도 함께 정리 (설정에서 활성화)
 
 ### 설정
 
@@ -112,7 +116,18 @@ pnpm add @petrify/watcher-chokidar
 |------|------|
 | Watch Directories | 감시할 외부 폴더 경로 (다중 설정 가능) |
 | Output Directories | 변환된 파일이 저장될 vault 내 경로 (매핑별 지정) |
+| Parser | 각 감시 폴더에서 사용할 파서 선택 (viwoods 등) |
 | Confidence Threshold | OCR 신뢰도 임계값 (0-100) |
+| Delete on source delete | 원본 삭제 시 변환 파일도 삭제 (기본: 비활성화) |
+
+### 드래그 & 드롭
+
+파일 탐색기에 필기 파일(.note 등)을 드래그 & 드롭하면 드롭한 위치에 `.excalidraw.md` 파일이 생성됩니다.
+
+- 지원 확장자 파일만 처리, 그 외는 Obsidian 기본 동작
+- 같은 확장자에 여러 파서가 있으면 선택 모달 표시
+- "Apply to all" 옵션으로 같은 확장자 파일 일괄 적용 가능
+- 드롭 변환 파일은 `keep: true` 프론트매터로 자동 삭제 방지
 
 ### Google Drive 연동
 

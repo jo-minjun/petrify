@@ -1,7 +1,7 @@
 export interface PetrifyFrontmatter {
-  source: string | null;
-  mtime: number | null;
-  keep?: boolean;
+  readonly source: string | null;
+  readonly mtime: number | null;
+  readonly keep?: boolean;
 }
 
 export function createFrontmatter(meta: PetrifyFrontmatter): string {

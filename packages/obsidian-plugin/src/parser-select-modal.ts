@@ -2,8 +2,8 @@ import { App, Modal, Setting } from 'obsidian';
 import type { ParserPort } from '@petrify/core';
 
 export interface ParserSelectResult {
-  parser: ParserPort;
-  applyToAll: boolean;
+  readonly parser: ParserPort;
+  readonly applyToAll: boolean;
 }
 
 export class ParserSelectModal extends Modal {

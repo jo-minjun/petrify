@@ -2,7 +2,13 @@ import { Notice } from 'obsidian';
 
 type Namespace = 'Watcher' | 'Sync' | 'Convert' | 'Drop';
 
-export function createLogger(namespace: Namespace) {
+export interface Logger {
+  info(msg: string): void;
+  error(msg: string, err?: unknown): void;
+  notify(msg: string, timeout?: number): Notice;
+}
+
+export function createLogger(namespace: Namespace): Logger {
   const prefix = `[Petrify:${namespace}]`;
   return {
     info: (msg: string) => console.log(`${prefix} ${msg}`),
