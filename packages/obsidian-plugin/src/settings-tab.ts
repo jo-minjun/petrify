@@ -1,6 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { DEFAULT_SETTINGS } from './settings.js';
 import type { PetrifySettings } from './settings.js';
+import { ParserId } from './parser-registry.js';
 
 export interface SettingsTabCallbacks {
   getSettings: () => PetrifySettings;
@@ -65,6 +66,20 @@ export class PetrifySettingsTab extends PluginSettingTab {
             })
         );
 
+      new Setting(mappingContainer)
+        .setName('Parser')
+        .setDesc('File format parser for this directory')
+        .addDropdown((dropdown) => {
+          for (const id of Object.values(ParserId)) {
+            dropdown.addOption(id, id);
+          }
+          dropdown.setValue(mapping.parserId || ParserId.Viwoods);
+          dropdown.onChange(async (value) => {
+            settings.watchMappings[index].parserId = value;
+            await this.callbacks.saveSettings(settings);
+          });
+        });
+
       new Setting(mappingContainer).addButton((btn) =>
         btn
           .setButtonText('Remove')
@@ -79,7 +94,12 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     new Setting(containerEl).addButton((btn) =>
       btn.setButtonText('Add Watch Directory').onClick(async () => {
-        settings.watchMappings.push({ watchDir: '', outputDir: '', enabled: false });
+        settings.watchMappings.push({
+          watchDir: '',
+          outputDir: '',
+          enabled: false,
+          parserId: ParserId.Viwoods,
+        });
         await this.callbacks.saveSettings(settings);
         this.display();
       })
