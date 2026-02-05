@@ -1,4 +1,4 @@
-import type { Note, Page, Stroke } from '../models/index.js';
+import type { Note } from '../models/index.js';
 
 export interface ExcalidrawElement {
   readonly type: string;
@@ -39,115 +39,22 @@ export interface ExcalidrawData {
   readonly files: Readonly<Record<string, unknown>>;
 }
 
+// TODO(2026-02-05, minjun.jo): Task 3에서 image element 생성 로직으로 리팩토링 예정
 export class ExcalidrawGenerator {
   /** 페이지 간 세로 간격 (px) */
   static readonly PAGE_GAP = 100;
-  /**
-   * 스트로크 폭 변환 비율
-   * Viwoods 스트로크 폭을 Excalidraw에 맞게 축소 (width / 6)
-   */
-  static readonly STROKE_WIDTH_DIVISOR = 6;
-  /** 최소 스트로크 폭 (px) - 0이 되지 않도록 보장 */
-  static readonly MIN_STROKE_WIDTH = 1;
-  /**
-   * 일정한 획 굵기를 위한 압력 값
-   * 실험적으로 결정: 0.5가 원본과 가장 유사한 결과
-   */
-  private static readonly PRESSURE_VALUE = 0.5;
-  /** Excalidraw seed 최대값 (Int32 최대값) */
-  private static readonly MAX_SEED = 2147483647;
 
   generate(note: Note): ExcalidrawData {
-    let yOffset = 0;
-    const elements = note.pages.flatMap((page) => {
-      const pageElements = this.generatePageElements(page, yOffset);
-      yOffset += page.height + ExcalidrawGenerator.PAGE_GAP;
-      return pageElements;
-    });
-
     return {
       type: 'excalidraw',
       version: 2,
       source: 'petrify-converter',
-      elements,
+      elements: [],
       appState: {
         gridSize: null,
         viewBackgroundColor: '#ffffff',
       },
       files: {},
     };
-  }
-
-  private generatePageElements(page: Page, yOffset: number): ExcalidrawElement[] {
-    return page.strokes.map((stroke) => this.createFreedraw(stroke, yOffset));
-  }
-
-  createFreedraw(stroke: Stroke, yOffset: number): ExcalidrawElement {
-    if (stroke.points.length === 0) {
-      return this.createFreedrawElement(0, yOffset, [], 0, 0, stroke);
-    }
-
-    const firstPoint = stroke.points[0];
-    const x = firstPoint.x;
-    const y = firstPoint.y + yOffset;
-    const points = stroke.points.map((p) => [p.x - firstPoint.x, p.y - firstPoint.y]);
-    const xs = points.map((p) => p[0]);
-    const ys = points.map((p) => p[1]);
-    const width = Math.max(...xs) - Math.min(...xs);
-    const height = Math.max(...ys) - Math.min(...ys);
-
-    return this.createFreedrawElement(x, y, points, width, height, stroke);
-  }
-
-  private createFreedrawElement(
-    x: number,
-    y: number,
-    points: number[][],
-    width: number,
-    height: number,
-    stroke: Stroke
-  ): ExcalidrawElement {
-    return {
-      type: 'freedraw',
-      id: this.generateId(),
-      x,
-      y,
-      width,
-      height,
-      strokeColor: stroke.color,
-      backgroundColor: 'transparent',
-      fillStyle: 'solid',
-      strokeWidth: this.scaleStrokeWidth(stroke.width),
-      strokeStyle: 'solid',
-      roughness: 0,
-      opacity: stroke.opacity,
-      angle: 0,
-      points,
-      pressures: Array(points.length).fill(ExcalidrawGenerator.PRESSURE_VALUE),
-      simulatePressure: false,
-      seed: this.generateSeed(),
-      version: 1,
-      versionNonce: this.generateSeed(),
-      isDeleted: false,
-      groupIds: [],
-      frameId: null,
-      boundElements: null,
-      updated: 1,
-      link: null,
-      locked: false,
-    };
-  }
-
-  private scaleStrokeWidth(width: number): number {
-    const scaled = Math.floor(width / ExcalidrawGenerator.STROKE_WIDTH_DIVISOR);
-    return Math.max(ExcalidrawGenerator.MIN_STROKE_WIDTH, scaled);
-  }
-
-  private generateId(): string {
-    return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
-  }
-
-  private generateSeed(): number {
-    return Math.floor(Math.random() * ExcalidrawGenerator.MAX_SEED) + 1;
   }
 }

@@ -4,45 +4,7 @@ import type { ParserPort } from '../src/ports/parser.js';
 import type { OcrPort, OcrResult } from '../src/ports/ocr.js';
 import type { ConversionStatePort } from '../src/ports/conversion-state.js';
 import type { FileChangeEvent } from '../src/ports/watcher.js';
-import type { Note, Stroke } from '../src/models/index.js';
-
-const mockContext = {
-  beginPath: vi.fn(),
-  moveTo: vi.fn(),
-  lineTo: vi.fn(),
-  stroke: vi.fn(),
-  clearRect: vi.fn(),
-  fillRect: vi.fn(),
-  fillStyle: '',
-  strokeStyle: '',
-  lineWidth: 0,
-  lineCap: '' as CanvasLineCap,
-  lineJoin: '' as CanvasLineJoin,
-  globalAlpha: 1,
-};
-
-const mockCanvas = {
-  getContext: vi.fn(() => mockContext),
-  width: 0,
-  height: 0,
-  toBlob: vi.fn((callback: (blob: Blob | null) => void) => {
-    callback(new Blob(['test'], { type: 'image/png' }));
-  }),
-};
-
-vi.stubGlobal('document', {
-  createElement: vi.fn(() => mockCanvas),
-});
-
-const testStroke: Stroke = {
-  points: [
-    { x: 0, y: 0, timestamp: 0 },
-    { x: 100, y: 100, timestamp: 1 },
-  ],
-  color: '#000000',
-  width: 2,
-  opacity: 100,
-};
+import type { Note } from '../src/models/index.js';
 
 const mockNote: Note = {
   title: 'Test Note',
@@ -52,7 +14,8 @@ const mockNote: Note = {
     id: 'page-1',
     width: 100,
     height: 100,
-    strokes: [testStroke],
+    imageData: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+    order: 0,
   }],
 };
 

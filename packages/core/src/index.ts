@@ -24,5 +24,3 @@ export { ConversionPipeline } from './conversion-pipeline.js';
 export type { ConversionPipelineOptions } from './conversion-pipeline.js';
 
 export { filterOcrByConfidence } from './ocr/filter.js';
-
-export { StrokeRenderer } from './rendering/index.js';

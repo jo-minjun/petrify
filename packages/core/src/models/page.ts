@@ -1,8 +1,7 @@
-import type { Stroke } from './stroke.js';
-
 export interface Page {
   readonly id: string;
-  readonly strokes: Stroke[];
+  readonly imageData: Uint8Array;
+  readonly order: number;
   readonly width: number;
   readonly height: number;
 }

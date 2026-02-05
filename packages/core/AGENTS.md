@@ -2,7 +2,7 @@
 
 ## 패키지 역할
 
-- 중간 표현 모델 정의 (Note, Page, Stroke)
+- 중간 표현 모델 정의 (Note, Page)
 - Excalidraw 변환 로직
 - 포트 인터페이스 정의 (ParserPort, OcrPort)
 
@@ -10,7 +10,7 @@
 
 | 디렉터리 | 역할 |
 |----------|------|
-| `models/` | 중간 표현 모델 (Note, Page, Stroke) |
+| `models/` | 중간 표현 모델 (Note, Page) |
 | `excalidraw/` | Excalidraw JSON/MD 변환 로직 |
 | `ports/` | 외부 의존성 인터페이스 (ParserPort, OcrPort) |
 | `api.ts` | 공개 API (convert, convertToMd) |
