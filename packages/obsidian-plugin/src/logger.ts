@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian';
 
-type Namespace = 'Watcher' | 'Sync' | 'Convert';
+type Namespace = 'Watcher' | 'Sync' | 'Convert' | 'Drop';
 
 export function createLogger(namespace: Namespace) {
   const prefix = `[Petrify:${namespace}]`;
