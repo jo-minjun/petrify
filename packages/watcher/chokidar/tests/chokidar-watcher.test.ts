@@ -25,4 +25,10 @@ describe('ChokidarWatcher', () => {
 
     expect(true).toBe(true);
   });
+
+  it('onFileDelete 핸들러를 등록할 수 있다', () => {
+    const deleteHandler = vi.fn();
+    watcher.onFileDelete(deleteHandler);
+    expect(true).toBe(true);
+  });
 });

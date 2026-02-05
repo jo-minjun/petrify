@@ -2,17 +2,22 @@ import { watch } from 'chokidar';
 import type { FSWatcher } from 'chokidar';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { WatcherPort, FileChangeEvent } from '@petrify/core';
+import type { WatcherPort, FileChangeEvent, FileDeleteEvent } from '@petrify/core';
 
 export class ChokidarWatcher implements WatcherPort {
   private watcher: FSWatcher | null = null;
   private fileHandler: ((event: FileChangeEvent) => Promise<void>) | null = null;
+  private deleteHandler: ((event: FileDeleteEvent) => Promise<void>) | null = null;
   private errorHandler: ((error: Error) => void) | null = null;
 
   constructor(private readonly dir: string) {}
 
   onFileChange(handler: (event: FileChangeEvent) => Promise<void>): void {
     this.fileHandler = handler;
+  }
+
+  onFileDelete(handler: (event: FileDeleteEvent) => Promise<void>): void {
+    this.deleteHandler = handler;
   }
 
   onError(handler: (error: Error) => void): void {
@@ -29,6 +34,7 @@ export class ChokidarWatcher implements WatcherPort {
 
     this.watcher.on('add', (filePath, stats) => this.handleFileEvent(filePath, stats));
     this.watcher.on('change', (filePath, stats) => this.handleFileEvent(filePath, stats));
+    this.watcher.on('unlink', (filePath) => this.handleDeleteEvent(filePath));
     this.watcher.on('error', (error: unknown) => {
       const err = error instanceof Error ? error : new Error(String(error));
       this.errorHandler?.(err);
@@ -56,6 +62,20 @@ export class ChokidarWatcher implements WatcherPort {
 
     try {
       await this.fileHandler?.(event);
+    } catch (error) {
+      this.errorHandler?.(error as Error);
+    }
+  }
+
+  private async handleDeleteEvent(filePath: string): Promise<void> {
+    const event: FileDeleteEvent = {
+      id: filePath,
+      name: path.basename(filePath),
+      extension: path.extname(filePath).toLowerCase(),
+    };
+
+    try {
+      await this.deleteHandler?.(event);
     } catch (error) {
       this.errorHandler?.(error as Error);
     }
