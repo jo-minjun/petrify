@@ -10,7 +10,7 @@ import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { FrontmatterConversionState } from './frontmatter-conversion-state.js';
-import { createFrontmatter } from './utils/frontmatter.js';
+import { createFrontmatter, parseFrontmatter } from './utils/frontmatter.js';
 import { createLogger } from './logger.js';
 
 interface FileSystemAdapter extends DataAdapter {
@@ -120,6 +120,13 @@ export default class PetrifyPlugin extends Plugin {
         }
       });
 
+      watcher.onFileDelete(async (event) => {
+        if (!this.settings.deleteConvertedOnSourceDelete) return;
+
+        const outputPath = this.getOutputPath(event.name, mapping.outputDir);
+        await this.handleDeletedSource(outputPath);
+      });
+
       watcher.onError((error) => {
         this.watcherLog.error(`Watch error: ${error.message}`, error);
         this.watcherLog.notify(`Watch error: ${error.message}`);
@@ -138,6 +145,24 @@ export default class PetrifyPlugin extends Plugin {
     await this.saveToVault(outputPath, frontmatter + result);
     this.convertLog.info(`Converted: ${event.name}`);
     return true;
+  }
+
+  private async handleDeletedSource(outputPath: string): Promise<void> {
+    if (!(await this.app.vault.adapter.exists(outputPath))) return;
+
+    const content = await this.app.vault.adapter.read(outputPath);
+    const frontmatter = parseFrontmatter(content);
+
+    if (frontmatter?.keep) {
+      this.convertLog.info(`Kept (protected): ${outputPath}`);
+      return;
+    }
+
+    const file = this.app.vault.getAbstractFileByPath(outputPath);
+    if (file) {
+      await this.app.vault.trash(file, true);
+      this.convertLog.info(`Deleted: ${outputPath}`);
+    }
   }
 
   private getOutputPathForId(id: string): string {
