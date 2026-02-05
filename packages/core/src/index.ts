@@ -20,6 +20,9 @@ export {
 export { convert, convertToMd, convertToMdWithOcr } from './api.js';
 export type { ConvertOptions } from './api.js';
 
+export { ConversionPipeline } from './conversion-pipeline.js';
+export type { ConversionPipelineOptions } from './conversion-pipeline.js';
+
 export { filterOcrByConfidence } from './ocr/filter.js';
 
 export { StrokeRenderer } from './rendering/index.js';
