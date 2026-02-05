@@ -1,7 +1,6 @@
 import type { App } from 'obsidian';
 import type { ParserPort, ConversionPipeline } from '@petrify/core';
 import { ParserSelectModal } from './parser-select-modal.js';
-import type { ParserSelectResult } from './parser-select-modal.js';
 import { createFrontmatter } from './utils/frontmatter.js';
 import { createLogger } from './logger.js';
 import * as path from 'path';
@@ -92,9 +91,9 @@ export class DropHandler {
   private async resolveParser(
     fileName: string,
     ext: string,
-  ): Promise<ParserPort | null> {
+  ): Promise<ParserPort | undefined> {
     const parsers = this.pipeline.getParsersForExtension(ext);
-    if (parsers.length === 0) return null;
+    if (parsers.length === 0) return undefined;
     if (parsers.length === 1) return parsers[0];
 
     const parserEntries = parsers.map((parser) => {
@@ -106,9 +105,9 @@ export class DropHandler {
 
     const modal = new ParserSelectModal(this.app, fileName, ext, parserEntries);
     modal.open();
-    const result: ParserSelectResult | null = await modal.waitForSelection();
+    const result = await modal.waitForSelection();
 
-    if (!result) return null;
+    if (!result) return undefined;
     if (result.applyToAll) {
       this.parserChoices.set(ext, result.parser);
     }
