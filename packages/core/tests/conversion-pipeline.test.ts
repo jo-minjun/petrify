@@ -155,4 +155,36 @@ describe('ConversionPipeline', () => {
     expect(result).not.toBeNull();
     expect(result).toContain('# Excalidraw Data');
   });
+
+  describe('getParsersForExtension', () => {
+    it('등록된 확장자의 파서를 반환한다', () => {
+      const pipeline = new ConversionPipeline(
+        new Map([['.note', parser]]),
+        ocr, conversionState, { confidenceThreshold: 50 }
+      );
+
+      const result = pipeline.getParsersForExtension('.note');
+      expect(result).toEqual([parser]);
+    });
+
+    it('등록되지 않은 확장자는 빈 배열을 반환한다', () => {
+      const pipeline = new ConversionPipeline(
+        new Map([['.note', parser]]),
+        ocr, conversionState, { confidenceThreshold: 50 }
+      );
+
+      const result = pipeline.getParsersForExtension('.txt');
+      expect(result).toEqual([]);
+    });
+
+    it('대소문자를 무시하고 조회한다', () => {
+      const pipeline = new ConversionPipeline(
+        new Map([['.note', parser]]),
+        ocr, conversionState, { confidenceThreshold: 50 }
+      );
+
+      const result = pipeline.getParsersForExtension('.NOTE');
+      expect(result).toEqual([parser]);
+    });
+  });
 });

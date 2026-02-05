@@ -20,6 +20,11 @@ export class ConversionPipeline {
     this.parserMap = parsers;
   }
 
+  getParsersForExtension(ext: string): ParserPort[] {
+    const parser = this.parserMap.get(ext.toLowerCase());
+    return parser ? [parser] : [];
+  }
+
   async handleFileChange(event: FileChangeEvent): Promise<string | null> {
     const parser = this.parserMap.get(event.extension.toLowerCase());
     if (!parser) {
