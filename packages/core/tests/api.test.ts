@@ -11,6 +11,8 @@ const mockContext = {
   lineTo: vi.fn(),
   stroke: vi.fn(),
   clearRect: vi.fn(),
+  fillRect: vi.fn(),
+  fillStyle: '',
   strokeStyle: '',
   lineWidth: 0,
   lineCap: '' as CanvasLineCap,

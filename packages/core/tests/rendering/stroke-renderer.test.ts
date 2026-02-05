@@ -9,6 +9,8 @@ const mockContext = {
   lineTo: vi.fn(),
   stroke: vi.fn(),
   clearRect: vi.fn(),
+  fillRect: vi.fn(),
+  fillStyle: '',
   strokeStyle: '',
   lineWidth: 0,
   lineCap: '' as CanvasLineCap,
@@ -75,6 +77,30 @@ describe('StrokeRenderer', () => {
     expect(mockContext.strokeStyle).toBe('#FF0000');
     expect(mockContext.lineWidth).toBe(5);
     expect(mockContext.globalAlpha).toBe(0.5);
+  });
+
+  it('렌더링 시 흰색 배경을 먼저 채운다', () => {
+    const strokes: Stroke[] = [
+      {
+        points: [
+          { x: 0, y: 0, timestamp: 0 },
+          { x: 50, y: 50, timestamp: 1 },
+        ],
+        color: '#000000',
+        width: 2,
+        opacity: 100,
+      },
+    ];
+
+    const renderer = new StrokeRenderer();
+    renderer.render(strokes, 200, 200);
+
+    expect(mockContext.fillStyle).toBe('#ffffff');
+    expect(mockContext.fillRect).toHaveBeenCalledWith(0, 0, 200, 200);
+
+    const fillRectOrder = mockContext.fillRect.mock.invocationCallOrder[0];
+    const beginPathOrder = mockContext.beginPath.mock.invocationCallOrder[0];
+    expect(fillRectOrder).toBeLessThan(beginPathOrder);
   });
 
   it('toArrayBuffer로 PNG 데이터 반환', async () => {

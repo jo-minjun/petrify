@@ -14,7 +14,8 @@ export class StrokeRenderer {
       throw new Error('Canvas 2D context를 가져올 수 없습니다');
     }
 
-    this.ctx.clearRect(0, 0, width, height);
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillRect(0, 0, width, height);
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
 
