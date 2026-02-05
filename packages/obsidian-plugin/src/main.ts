@@ -1,9 +1,10 @@
 import { Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
-import { ViwoodsParser } from '@petrify/parser-viwoods';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import { ConversionPipeline } from '@petrify/core';
-import type { WatcherPort, FileChangeEvent } from '@petrify/core';
+import type { WatcherPort, FileChangeEvent, ParserPort } from '@petrify/core';
+import { createParserMap, ParserId } from './parser-registry.js';
+import { DropHandler } from './drop-handler.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
@@ -22,6 +23,8 @@ export default class PetrifyPlugin extends Plugin {
   private watchers: WatcherPort[] = [];
   private pipeline!: ConversionPipeline;
   private ocr: TesseractOcr | null = null;
+  private parserMap!: Map<string, ParserPort>;
+  private dropHandler!: DropHandler;
   private isSyncing = false;
   private ribbonIconEl: HTMLElement | null = null;
   private readonly watcherLog = createLogger('Watcher');
@@ -60,6 +63,9 @@ export default class PetrifyPlugin extends Plugin {
       })
     );
 
+    this.dropHandler = new DropHandler(this.app, this.pipeline, this.parserMap);
+    this.registerDomEvent(document, 'drop', this.dropHandler.handleDrop);
+
     await this.startWatchers();
   }
 
@@ -90,8 +96,17 @@ export default class PetrifyPlugin extends Plugin {
       return fs.readFile(fullPath, 'utf-8');
     });
 
+    this.parserMap = createParserMap();
+
+    const extensionMap = new Map<string, ParserPort>();
+    for (const [, parser] of this.parserMap) {
+      for (const ext of parser.extensions) {
+        extensionMap.set(ext.toLowerCase(), parser);
+      }
+    }
+
     this.pipeline = new ConversionPipeline(
-      [new ViwoodsParser()],
+      extensionMap,
       this.ocr,
       conversionState,
       { confidenceThreshold: this.settings.ocr.confidenceThreshold },
@@ -218,6 +233,14 @@ export default class PetrifyPlugin extends Plugin {
         if (!mapping.enabled) continue;
         if (!mapping.watchDir || !mapping.outputDir) continue;
 
+        const parserForMapping = this.parserMap.get(mapping.parserId);
+        if (!parserForMapping) {
+          this.syncLog.error(`Unknown parser: ${mapping.parserId}`);
+          failed++;
+          continue;
+        }
+        const supportedExts = parserForMapping.extensions.map(e => e.toLowerCase());
+
         let entries: string[];
         try {
           entries = await fs.readdir(mapping.watchDir);
@@ -229,7 +252,7 @@ export default class PetrifyPlugin extends Plugin {
 
         for (const entry of entries) {
           const ext = path.extname(entry).toLowerCase();
-          if (ext !== '.note') continue;
+          if (!supportedExts.includes(ext)) continue;
 
           const filePath = path.join(mapping.watchDir, entry);
           let stat: { mtimeMs: number };
@@ -318,6 +341,7 @@ export default class PetrifyPlugin extends Plugin {
     this.settings.watchMappings = this.settings.watchMappings.map((m) => ({
       ...m,
       enabled: m.enabled ?? true,
+      parserId: m.parserId ?? ParserId.Viwoods,
     }));
   }
 
