@@ -1,12 +1,12 @@
 {
   "watchMappings": [
     {
-      "watchDir": "/Users/minjun.jo/Library/CloudStorage/GoogleDrive-alswns9288@gmail.com/내 드라이브/Viwoods-Note/Aipaper Mini/S5AA4905M00327/Paper",
+      "watchDir": "/Users/minjun.jo/Library/CloudStorage/GoogleDrive-alswns9288@gmail.com/내 드라이브/Viwoods-Note/Aipaper Mini/S5AA4905M00327/Paper",
       "outputDir": "/test",
       "enabled": true
     },
     {
-      "watchDir": "/Users/minjun.jo/Library/CloudStorage/GoogleDrive-alswns9288@gmail.com/내 드라이브/Viwoods-Note/Aipaper Mini/S5AA4905M00327/Paper/Projects",
+      "watchDir": "/Users/minjun.jo/Library/CloudStorage/GoogleDrive-alswns9288@gmail.com/내 드라이브/Viwoods-Note/Aipaper Mini/S5AA4905M00327/Paper/Projects",
       "outputDir": "/test/project",
       "enabled": true
     }
