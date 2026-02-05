@@ -106,14 +106,11 @@ export default class PetrifyPlugin extends Plugin {
 
         try {
           const notice = new Notice(`[Petrify] 변환 중: ${event.name}`, 0);
-          const result = await this.pipeline.handleFileChange(event);
+          const converted = await this.processFile(event, mapping.outputDir);
 
-          if (result) {
-            const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
-            const outputPath = this.getOutputPath(event.name, mapping.outputDir);
-            await this.saveToVault(outputPath, frontmatter + result);
+          if (converted) {
             notice.setMessage(`[Petrify] 변환 완료: ${event.name}`);
-            console.log(`[Petrify] 변환 완료: ${event.name} → ${outputPath}`);
+            console.log(`[Petrify] 변환 완료: ${event.name}`);
           } else {
             console.log(`[Petrify] 스킵: ${event.name} (미지원 확장자 또는 이미 최신)`);
             notice.hide();
@@ -134,6 +131,15 @@ export default class PetrifyPlugin extends Plugin {
       await watcher.start();
       this.watchers.push(watcher);
     }
+  }
+
+  private async processFile(event: FileChangeEvent, outputDir: string): Promise<boolean> {
+    const result = await this.pipeline.handleFileChange(event);
+    if (!result) return false;
+    const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
+    const outputPath = this.getOutputPath(event.name, outputDir);
+    await this.saveToVault(outputPath, frontmatter + result);
+    return true;
   }
 
   private getOutputPathForId(id: string): string {
@@ -216,11 +222,8 @@ export default class PetrifyPlugin extends Plugin {
           };
 
           try {
-            const result = await this.pipeline.handleFileChange(event);
-            if (result) {
-              const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
-              const outputPath = this.getOutputPath(event.name, mapping.outputDir);
-              await this.saveToVault(outputPath, frontmatter + result);
+            const converted = await this.processFile(event, mapping.outputDir);
+            if (converted) {
               synced++;
             }
           } catch {
