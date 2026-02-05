@@ -139,4 +139,16 @@ describe('GoogleVisionOcr', () => {
     const body = JSON.parse(spy.mock.calls[0][1]!.body as string);
     expect(body.requests[0].imageContext).toBeUndefined();
   });
+
+  it('confidenceThreshold 이하 region을 필터링한다', async () => {
+    mockFetchSuccess(MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+
+    // MOCK_VISION_RESPONSE의 두 번째 block confidence는 0.93 → 93
+    const result = await ocr.recognize(new ArrayBuffer(100), { confidenceThreshold: 95 });
+
+    expect(result.regions).toHaveLength(1);
+    expect(result.regions[0].text).toBe('안녕하세요');
+    expect(result.text).toBe('안녕하세요');
+  });
 });
