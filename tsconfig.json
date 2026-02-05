@@ -14,6 +14,7 @@
       "@petrify/core": ["packages/core/src/index.ts"],
       "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
       "@petrify/ocr-gutenye": ["packages/ocr/gutenye/src/index.ts"],
+      "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
       "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"]
     }
   },

@@ -62,6 +62,15 @@ importers:
         specifier: workspace:*
         version: link:../../core
 
+  packages/ocr/tesseract:
+    dependencies:
+      '@petrify/core':
+        specifier: workspace:*
+        version: link:../../core
+      tesseract.js:
+        specifier: ^7.0.0
+        version: 7.0.0
+
   packages/parser/viwoods:
     dependencies:
       '@petrify/core':
