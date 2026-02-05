@@ -6,8 +6,15 @@ export interface FileChangeEvent {
   readData(): Promise<ArrayBuffer>;
 }
 
+export interface FileDeleteEvent {
+  readonly id: string;
+  readonly name: string;
+  readonly extension: string;
+}
+
 export interface WatcherPort {
   onFileChange(handler: (event: FileChangeEvent) => Promise<void>): void;
+  onFileDelete(handler: (event: FileDeleteEvent) => Promise<void>): void;
   onError(handler: (error: Error) => void): void;
   start(): Promise<void>;
   stop(): Promise<void>;

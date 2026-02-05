@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { WatcherPort, FileChangeEvent } from '../../src/ports/watcher.js';
+import type { WatcherPort, FileChangeEvent, FileDeleteEvent } from '../../src/ports/watcher.js';
 
 describe('WatcherPort', () => {
   it('FileChangeEvent는 readData를 통해 lazy하게 데이터를 읽는다', async () => {
@@ -29,6 +29,7 @@ describe('WatcherPort', () => {
 
     const watcher: WatcherPort = {
       onFileChange(handler) { fileHandler = handler; },
+      onFileDelete() {},
       onError(handler) { errorHandler = handler; },
       async start() { started = true; },
       async stop() { stopped = true; },
@@ -45,5 +46,20 @@ describe('WatcherPort', () => {
 
     expect(fileHandler).not.toBeNull();
     expect(errorHandler).not.toBeNull();
+  });
+
+  it('WatcherPort 구현체는 onFileDelete 핸들러를 등록할 수 있다', async () => {
+    let deleteHandler: ((event: FileDeleteEvent) => Promise<void>) | null = null;
+
+    const watcher: WatcherPort = {
+      onFileChange() {},
+      onFileDelete(handler) { deleteHandler = handler; },
+      onError() {},
+      async start() {},
+      async stop() {},
+    };
+
+    watcher.onFileDelete(async () => {});
+    expect(deleteHandler).not.toBeNull();
   });
 });
