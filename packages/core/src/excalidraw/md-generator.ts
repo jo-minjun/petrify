@@ -16,12 +16,7 @@ export class ExcalidrawMdGenerator {
     const embeddedSection = this.formatEmbeddedFiles(embeddedFiles);
     const ocrSection = this.formatOcrSection(ocrResults);
 
-    return `---
-excalidraw-plugin: parsed
-tags:
----
-
-${ocrSection}
+    return `${ocrSection}
 # Excalidraw Data
 
 ## Text Elements

@@ -106,7 +106,7 @@ describe('ConversionPipeline', () => {
     const result = await pipeline.handleFileChange(event);
 
     expect(result).not.toBeNull();
-    expect(result).toContain('excalidraw-plugin: parsed');
+    expect(result).toContain('# Excalidraw Data');
     expect(event.readData).toHaveBeenCalled();
   });
 
@@ -161,6 +161,6 @@ describe('ConversionPipeline', () => {
     const result = await pipeline.handleFileChange(event);
 
     expect(result).not.toBeNull();
-    expect(result).toContain('excalidraw-plugin: parsed');
+    expect(result).toContain('# Excalidraw Data');
   });
 });

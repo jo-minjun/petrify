@@ -169,8 +169,8 @@ describe('convertToMdWithOcr integration', () => {
       mockOcr
     );
 
-    // 구조 검증
-    expect(md).toMatch(/^---\nexcalidraw-plugin: parsed/);
+    // 구조 검증: core는 프론트매터 없이 데이터만 생성
+    expect(md).not.toContain('excalidraw-plugin: parsed');
     expect(md).toContain('## OCR Text');
     expect(md).toContain('# Excalidraw Data');
     expect(md).toContain('## Text Elements');

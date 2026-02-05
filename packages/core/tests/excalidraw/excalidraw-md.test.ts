@@ -17,8 +17,8 @@ describe('ExcalidrawMdGenerator', () => {
 
     const md = generator.generate(data);
 
-    expect(md).toContain('---');
-    expect(md).toContain('excalidraw-plugin: parsed');
+    expect(md).not.toContain('---');
+    expect(md).not.toContain('excalidraw-plugin: parsed');
     expect(md).toContain('# Excalidraw Data');
     expect(md).toContain('## Text Elements');
     expect(md).toContain('## Drawing');
