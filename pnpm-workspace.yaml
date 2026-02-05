@@ -2,4 +2,5 @@ packages:
   - 'packages/core'
   - 'packages/parser/*'
   - 'packages/ocr/*'
+  - 'packages/watcher/*'
   - 'packages/obsidian-plugin'
