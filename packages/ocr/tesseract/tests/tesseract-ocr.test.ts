@@ -22,18 +22,8 @@ describe('TesseractOcr', () => {
     vi.clearAllMocks();
     mockRecognize.mockResolvedValue({
       data: {
-        lines: [
-          {
-            text: '안녕하세요 ',
-            confidence: 92,
-            bbox: { x0: 10, y0: 20, x1: 110, y1: 50 },
-          },
-          {
-            text: '테스트 ',
-            confidence: 30,
-            bbox: { x0: 10, y0: 60, x1: 90, y1: 90 },
-          },
-        ],
+        text: '안녕하세요\n테스트\n',
+        confidence: 61,
       },
     });
   });
@@ -52,19 +42,19 @@ describe('TesseractOcr', () => {
     expect(result.regions).toHaveLength(2);
     expect(result.regions[0]).toEqual({
       text: '안녕하세요',
-      confidence: 92,
-      x: 10,
-      y: 20,
-      width: 100,
-      height: 30,
+      confidence: 61,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
     });
     expect(result.regions[1]).toEqual({
       text: '테스트',
-      confidence: 30,
-      x: 10,
-      y: 60,
-      width: 80,
-      height: 30,
+      confidence: 61,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
     });
     expect(result.text).toBe('안녕하세요\n테스트');
     expect(result.confidence).toBe(61);
@@ -74,12 +64,11 @@ describe('TesseractOcr', () => {
     const ocr = new TesseractOcr();
     const image = new ArrayBuffer(100);
 
-    const result = await ocr.recognize(image, { confidenceThreshold: 50 });
+    const result = await ocr.recognize(image, { confidenceThreshold: 70 });
 
-    expect(result.regions).toHaveLength(1);
-    expect(result.regions[0].text).toBe('안녕하세요');
-    expect(result.text).toBe('안녕하세요');
-    expect(result.confidence).toBe(92);
+    expect(result.regions).toHaveLength(0);
+    expect(result.text).toBe('');
+    expect(result.confidence).toBe(61);
   });
 
   it('terminate: worker 정리', async () => {

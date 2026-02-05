@@ -1,4 +1,4 @@
-import Tesseract, { createWorker, type Worker, type Line } from 'tesseract.js';
+import Tesseract, { createWorker, type Worker } from 'tesseract.js';
 import type { OcrPort, OcrResult, OcrRegion, OcrOptions } from '@petrify/core';
 
 export interface TesseractOcrConfig {
@@ -39,31 +39,33 @@ export class TesseractOcr implements OcrPort {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = result.data as any;
-    const lines = (data.lines ?? []) as Line[];
-    const allRegions: OcrRegion[] = lines.map((line) => ({
-      text: line.text.trim(),
-      confidence: line.confidence ?? 0,
-      x: line.bbox.x0,
-      y: line.bbox.y0,
-      width: line.bbox.x1 - line.bbox.x0,
-      height: line.bbox.y1 - line.bbox.y0,
+
+    // Tesseract.js v7: data.lines 없음, data.text로 직접 추출
+    const textLines = (data.text as string ?? '')
+      .split('\n')
+      .map((line: string) => line.trim())
+      .filter((line: string) => line.length > 0);
+
+    const confidence = typeof data.confidence === 'number' ? data.confidence : undefined;
+
+    const regions: OcrRegion[] = textLines.map((line: string) => ({
+      text: line,
+      confidence: confidence ?? 0,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
     }));
 
-    const regions = allRegions.filter(
+    const filteredRegions = regions.filter(
       (r) => r.confidence == null || r.confidence >= threshold
     );
-    const text = regions.map((r) => r.text).join('\n');
-
-    const regionsWithConfidence = regions.filter((r) => r.confidence != null);
-    const avgConfidence =
-      regionsWithConfidence.length > 0
-        ? regionsWithConfidence.reduce((sum, r) => sum + r.confidence!, 0) / regionsWithConfidence.length
-        : undefined;
+    const text = filteredRegions.map((r) => r.text).join('\n');
 
     return {
       text,
-      confidence: avgConfidence,
-      regions,
+      confidence,
+      regions: filteredRegions,
     };
   }
 
