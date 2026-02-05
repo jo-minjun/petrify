@@ -1,4 +1,5 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { DEFAULT_SETTINGS } from './settings.js';
 import type { PetrifySettings } from './settings.js';
 
 export interface SettingsTabCallbacks {
@@ -91,7 +92,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         text.inputEl.max = '100';
         text.inputEl.step = '1';
         text
-          .setPlaceholder('50')
+          .setPlaceholder(String(DEFAULT_SETTINGS.ocr.confidenceThreshold))
           .setValue(String(settings.ocr.confidenceThreshold))
           .onChange(async (value) => {
             const num = Number(value);
