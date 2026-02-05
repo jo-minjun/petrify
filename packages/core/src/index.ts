@@ -8,6 +8,7 @@ export type { OcrTextResult } from './excalidraw/md-generator.js';
 export type { ParserPort } from './ports/parser.js';
 export type { OcrPort, OcrResult, OcrRegion, OcrOptions } from './ports/ocr.js';
 export type { WatcherPort, FileChangeEvent } from './ports/watcher.js';
+export type { ConversionStatePort } from './ports/conversion-state.js';
 
 export {
   InvalidFileFormatError,
