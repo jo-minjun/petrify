@@ -151,4 +151,53 @@ describe('GoogleVisionOcr', () => {
     expect(result.regions[0].text).toBe('안녕하세요');
     expect(result.text).toBe('안녕하세요');
   });
+
+  it('텍스트 없는 이미지 → 빈 결과 반환', async () => {
+    mockFetchSuccess({ responses: [{}] });
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+
+    const result = await ocr.recognize(new ArrayBuffer(100));
+
+    expect(result.text).toBe('');
+    expect(result.regions).toHaveLength(0);
+    expect(result.confidence).toBeUndefined();
+  });
+
+  it('API 인증 실패(403) → OcrInitializationError', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('Forbidden', { status: 403 })
+    );
+    const ocr = new GoogleVisionOcr({ apiKey: 'invalid-key' });
+
+    await expect(ocr.recognize(new ArrayBuffer(100)))
+      .rejects.toThrow('Vision API 인증 실패 (403)');
+  });
+
+  it('API 에러 응답(500) → OcrRecognitionError', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('Internal Server Error', { status: 500 })
+    );
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+
+    await expect(ocr.recognize(new ArrayBuffer(100)))
+      .rejects.toThrow('Vision API 에러 (500)');
+  });
+
+  it('네트워크 실패 → OcrRecognitionError', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+
+    await expect(ocr.recognize(new ArrayBuffer(100)))
+      .rejects.toThrow('Vision API 요청 실패: Network error');
+  });
+
+  it('응답 body에 error 필드 → OcrRecognitionError', async () => {
+    mockFetchSuccess({
+      responses: [{ error: { message: 'Bad image', code: 400 } }],
+    });
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+
+    await expect(ocr.recognize(new ArrayBuffer(100)))
+      .rejects.toThrow('Vision API 에러: Bad image');
+  });
 });
