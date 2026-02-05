@@ -11,7 +11,7 @@ export interface ConvertOptions {
   ocrConfidenceThreshold?: number;
 }
 
-const DEFAULT_CONFIDENCE_THRESHOLD = 50;
+export const DEFAULT_CONFIDENCE_THRESHOLD = 50;
 
 export async function convert(
   data: ArrayBuffer,
