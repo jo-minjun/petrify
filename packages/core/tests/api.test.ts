@@ -96,6 +96,143 @@ describe('convertToMdWithOcr', () => {
     expect(result).toContain('경계');
     expect(result).not.toContain('미만');
   });
+
+  it('OCR에 imageData가 ArrayBuffer로 직접 전달됨', async () => {
+    const imageBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    const noteWithImage: Note = {
+      title: 'Test',
+      createdAt: new Date('2026-02-03'),
+      modifiedAt: new Date('2026-02-03'),
+      pages: [{
+        id: 'page-1',
+        width: 100,
+        height: 100,
+        imageData: imageBytes,
+        order: 0,
+      }],
+    };
+
+    const parser: ParserPort = {
+      extensions: ['.note'],
+      parse: vi.fn().mockResolvedValue(noteWithImage),
+    };
+
+    const ocrSpy: OcrPort = {
+      recognize: vi.fn().mockResolvedValue({
+        text: '',
+        regions: [],
+      }),
+    };
+
+    await convertToMdWithOcr(new ArrayBuffer(0), parser, ocrSpy);
+
+    expect(ocrSpy.recognize).toHaveBeenCalledOnce();
+    const passedBuffer = (ocrSpy.recognize as ReturnType<typeof vi.fn>).mock.calls[0][0] as ArrayBuffer;
+    expect(passedBuffer).toBeInstanceOf(ArrayBuffer);
+    expect(new Uint8Array(passedBuffer)).toEqual(imageBytes);
+  });
+
+  it('다중 페이지 OCR 결과가 모두 포함됨', async () => {
+    const multiPageNote: Note = {
+      title: 'Multi Page',
+      createdAt: new Date('2026-02-03'),
+      modifiedAt: new Date('2026-02-03'),
+      pages: [
+        {
+          id: 'page-1',
+          width: 100,
+          height: 100,
+          imageData: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+          order: 0,
+        },
+        {
+          id: 'page-2',
+          width: 100,
+          height: 100,
+          imageData: new Uint8Array([0x89, 0x50, 0x4e, 0x48]),
+          order: 1,
+        },
+        {
+          id: 'page-3',
+          width: 100,
+          height: 100,
+          imageData: new Uint8Array([0x89, 0x50, 0x4e, 0x49]),
+          order: 2,
+        },
+      ],
+    };
+
+    const parser: ParserPort = {
+      extensions: ['.note'],
+      parse: vi.fn().mockResolvedValue(multiPageNote),
+    };
+
+    const ocr: OcrPort = {
+      recognize: vi.fn()
+        .mockResolvedValueOnce({
+          text: '첫번째',
+          regions: [{ text: '페이지1 텍스트', x: 0, y: 0, width: 10, height: 10, confidence: 90 }],
+        })
+        .mockResolvedValueOnce({
+          text: '두번째',
+          regions: [{ text: '페이지2 텍스트', x: 0, y: 0, width: 10, height: 10, confidence: 90 }],
+        })
+        .mockResolvedValueOnce({
+          text: '세번째',
+          regions: [{ text: '페이지3 텍스트', x: 0, y: 0, width: 10, height: 10, confidence: 90 }],
+        }),
+    };
+
+    const result = await convertToMdWithOcr(new ArrayBuffer(0), parser, ocr);
+
+    expect(ocr.recognize).toHaveBeenCalledTimes(3);
+    expect(result).toContain('페이지1 텍스트');
+    expect(result).toContain('페이지2 텍스트');
+    expect(result).toContain('페이지3 텍스트');
+    expect(result).toContain('<!-- Page 1 -->');
+    expect(result).toContain('<!-- Page 2 -->');
+    expect(result).toContain('<!-- Page 3 -->');
+  });
+
+  it('imageData가 빈 페이지는 OCR을 스킵함', async () => {
+    const noteWithEmptyPage: Note = {
+      title: 'Mixed Pages',
+      createdAt: new Date('2026-02-03'),
+      modifiedAt: new Date('2026-02-03'),
+      pages: [
+        {
+          id: 'page-1',
+          width: 100,
+          height: 100,
+          imageData: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+          order: 0,
+        },
+        {
+          id: 'page-2',
+          width: 100,
+          height: 100,
+          imageData: new Uint8Array([]),
+          order: 1,
+        },
+      ],
+    };
+
+    const parser: ParserPort = {
+      extensions: ['.note'],
+      parse: vi.fn().mockResolvedValue(noteWithEmptyPage),
+    };
+
+    const ocr: OcrPort = {
+      recognize: vi.fn().mockResolvedValue({
+        text: '첫번째만',
+        regions: [{ text: '텍스트', x: 0, y: 0, width: 10, height: 10, confidence: 90 }],
+      }),
+    };
+
+    await convertToMdWithOcr(new ArrayBuffer(0), parser, ocr);
+
+    expect(ocr.recognize).toHaveBeenCalledOnce();
+  });
 });
 
 describe('convertToMdWithOcr integration', () => {

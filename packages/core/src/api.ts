@@ -30,7 +30,6 @@ export async function convertToMd(
   return mdGenerator.generate(excalidrawData);
 }
 
-// TODO(2026-02-05, minjun.jo): Task 4에서 imageData 기반 OCR 처리로 리팩토링 예정
 export async function convertToMdWithOcr(
   data: ArrayBuffer,
   parser: ParserPort,
@@ -43,18 +42,19 @@ export async function convertToMdWithOcr(
   const generator = new ExcalidrawGenerator();
   const excalidrawData = generator.generate(note);
 
-  const firstPage = note.pages[0];
-  if (!firstPage || firstPage.imageData.length === 0) {
-    const mdGenerator = new ExcalidrawMdGenerator();
-    return mdGenerator.generate(excalidrawData);
+  const ocrResults: OcrTextResult[] = [];
+
+  for (const page of note.pages) {
+    if (page.imageData.length === 0) continue;
+
+    const imageBuffer = new Uint8Array(page.imageData).buffer;
+    const ocrResult = await ocr.recognize(imageBuffer);
+    const filteredTexts = filterOcrByConfidence(ocrResult.regions, threshold);
+
+    if (filteredTexts.length > 0) {
+      ocrResults.push({ pageIndex: page.order, texts: filteredTexts });
+    }
   }
-
-  const ocrResult = await ocr.recognize(firstPage.imageData.buffer as ArrayBuffer);
-  const filteredTexts = filterOcrByConfidence(ocrResult.regions, threshold);
-
-  const ocrResults: OcrTextResult[] = filteredTexts.length > 0
-    ? [{ pageIndex: 0, texts: filteredTexts }]
-    : [];
 
   const mdGenerator = new ExcalidrawMdGenerator();
   return mdGenerator.generate(excalidrawData, undefined, ocrResults);
