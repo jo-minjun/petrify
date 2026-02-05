@@ -85,7 +85,11 @@ export class PetrifySettingsTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Confidence Threshold')
       .setDesc('Minimum OCR confidence (0-100)')
-      .addText((text) =>
+      .addText((text) => {
+        text.inputEl.type = 'number';
+        text.inputEl.min = '0';
+        text.inputEl.max = '100';
+        text.inputEl.step = '1';
         text
           .setPlaceholder('50')
           .setValue(String(settings.ocr.confidenceThreshold))
@@ -95,7 +99,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
               settings.ocr.confidenceThreshold = num;
               await this.callbacks.saveSettings(settings);
             }
-          })
-      );
+          });
+      });
   }
 }
