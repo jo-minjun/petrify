@@ -1,4 +1,4 @@
-import { Notice, Plugin, setIcon } from 'obsidian';
+import { Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
 import { ViwoodsParser } from '@petrify/parser-viwoods';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
@@ -173,11 +173,13 @@ export default class PetrifyPlugin extends Plugin {
 
   private async syncAll(): Promise<void> {
     if (this.isSyncing) {
-      new Notice('Sync already in progress');
+      this.syncLog.info('Sync already in progress');
+      this.syncLog.notify('Sync already in progress');
       return;
     }
 
     this.isSyncing = true;
+    this.syncLog.info('Sync started');
     if (this.ribbonIconEl) {
       setIcon(this.ribbonIconEl, 'loader');
     }
@@ -194,6 +196,7 @@ export default class PetrifyPlugin extends Plugin {
         try {
           entries = await fs.readdir(mapping.watchDir);
         } catch {
+          this.syncLog.error(`Directory unreadable: ${mapping.watchDir}`);
           failed++;
           continue;
         }
@@ -207,6 +210,7 @@ export default class PetrifyPlugin extends Plugin {
           try {
             stat = await fs.stat(filePath);
           } catch {
+            this.syncLog.error(`File stat failed: ${entry}`);
             failed++;
             continue;
           }
@@ -224,7 +228,8 @@ export default class PetrifyPlugin extends Plugin {
             if (converted) {
               synced++;
             }
-          } catch {
+          } catch (error) {
+            this.convertLog.error(`Conversion failed: ${entry}`, error);
             failed++;
           }
         }
@@ -236,15 +241,9 @@ export default class PetrifyPlugin extends Plugin {
       }
     }
 
-    if (synced === 0 && failed === 0) {
-      new Notice('No files to sync');
-    } else if (failed === 0) {
-      new Notice(`Synced ${synced} file(s)`);
-    } else if (synced === 0) {
-      new Notice(`Sync failed: ${failed} file(s) failed`);
-    } else {
-      new Notice(`Synced ${synced} file(s), ${failed} failed`);
-    }
+    const summary = `Sync complete: ${synced} converted, ${failed} failed`;
+    this.syncLog.info(summary);
+    this.syncLog.notify(summary);
   }
 
   private async loadSettings(): Promise<void> {
