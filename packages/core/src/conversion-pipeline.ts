@@ -25,6 +25,18 @@ export class ConversionPipeline {
     return parser ? [parser] : [];
   }
 
+  async convertDroppedFile(
+    data: ArrayBuffer,
+    parser: ParserPort,
+  ): Promise<string> {
+    if (this.ocr) {
+      return convertToMdWithOcr(data, parser, this.ocr, {
+        ocrConfidenceThreshold: this.options.confidenceThreshold,
+      });
+    }
+    return convertToMd(data, parser);
+  }
+
   async handleFileChange(event: FileChangeEvent): Promise<string | null> {
     const parser = this.parserMap.get(event.extension.toLowerCase());
     if (!parser) {

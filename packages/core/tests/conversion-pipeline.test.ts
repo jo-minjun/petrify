@@ -187,4 +187,46 @@ describe('ConversionPipeline', () => {
       expect(result).toEqual([parser]);
     });
   });
+
+  describe('convertDroppedFile', () => {
+    it('지정된 파서로 변환하여 마크다운을 반환한다', async () => {
+      const pipeline = new ConversionPipeline(
+        new Map([['.note', parser]]),
+        ocr, conversionState, { confidenceThreshold: 50 }
+      );
+
+      const result = await pipeline.convertDroppedFile(
+        new ArrayBuffer(0), parser
+      );
+
+      expect(result).toContain('# Excalidraw Data');
+    });
+
+    it('OCR이 있으면 OCR 결과를 포함한다', async () => {
+      const pipeline = new ConversionPipeline(
+        new Map([['.note', parser]]),
+        ocr, conversionState, { confidenceThreshold: 50 }
+      );
+
+      const result = await pipeline.convertDroppedFile(
+        new ArrayBuffer(0), parser
+      );
+
+      expect(result).toContain('테스트');
+    });
+
+    it('OCR이 없으면 OCR 없이 변환한다', async () => {
+      const pipeline = new ConversionPipeline(
+        new Map([['.note', parser]]),
+        null, conversionState, { confidenceThreshold: 50 }
+      );
+
+      const result = await pipeline.convertDroppedFile(
+        new ArrayBuffer(0), parser
+      );
+
+      expect(result).toContain('# Excalidraw Data');
+      expect(result).not.toContain('테스트');
+    });
+  });
 });
