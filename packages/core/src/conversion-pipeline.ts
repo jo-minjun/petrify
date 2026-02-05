@@ -27,10 +27,16 @@ export class ConversionPipeline {
 
   async handleFileChange(event: FileChangeEvent): Promise<string | null> {
     const parser = this.parserMap.get(event.extension.toLowerCase());
-    if (!parser) return null;
+    if (!parser) {
+      console.log(`[Petrify:Convert] Skipped (unsupported): ${event.name}`);
+      return null;
+    }
 
     const lastMtime = await this.conversionState.getLastConvertedMtime(event.id);
-    if (lastMtime !== undefined && event.mtime <= lastMtime) return null;
+    if (lastMtime !== undefined && event.mtime <= lastMtime) {
+      console.log(`[Petrify:Convert] Skipped (up-to-date): ${event.name}`);
+      return null;
+    }
 
     const data = await event.readData();
 

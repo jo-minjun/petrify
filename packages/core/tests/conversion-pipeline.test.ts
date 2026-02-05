@@ -152,6 +152,35 @@ describe('ConversionPipeline', () => {
     expect(event.readData).toHaveBeenCalled();
   });
 
+  it('지원하지 않는 확장자면 스킵 로그를 출력한다', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const pipeline = new ConversionPipeline(
+      [parser], ocr, conversionState, { confidenceThreshold: 50 }
+    );
+    const event = createEvent({ extension: '.txt', name: 'file.txt' });
+
+    await pipeline.handleFileChange(event);
+
+    expect(consoleSpy).toHaveBeenCalledWith('[Petrify:Convert] Skipped (unsupported): file.txt');
+    consoleSpy.mockRestore();
+  });
+
+  it('mtime이 같거나 이전이면 최신 스킵 로그를 출력한다', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    conversionState = {
+      getLastConvertedMtime: vi.fn().mockResolvedValue(1700000000000),
+    };
+    const pipeline = new ConversionPipeline(
+      [parser], ocr, conversionState, { confidenceThreshold: 50 }
+    );
+    const event = createEvent({ mtime: 1700000000000 });
+
+    await pipeline.handleFileChange(event);
+
+    expect(consoleSpy).toHaveBeenCalledWith('[Petrify:Convert] Skipped (up-to-date): file.note');
+    consoleSpy.mockRestore();
+  });
+
   it('OCR 없이 동작한다', async () => {
     const pipeline = new ConversionPipeline(
       [parser], null, conversionState, { confidenceThreshold: 50 }
