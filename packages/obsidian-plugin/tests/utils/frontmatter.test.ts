@@ -17,6 +17,21 @@ describe('frontmatter', () => {
       expect(result).toContain('mtime: 1705315800000');
       expect(result).toContain('excalidraw-plugin: parsed');
     });
+
+    it('keep: true 프론트매터를 생성한다', () => {
+      const result = createFrontmatter({ source: null, mtime: null, keep: true });
+
+      expect(result).toContain('source: null');
+      expect(result).toContain('mtime: null');
+      expect(result).toContain('keep: true');
+      expect(result).toContain('excalidraw-plugin: parsed');
+    });
+
+    it('keep이 없으면 keep 필드를 생략한다', () => {
+      const result = createFrontmatter({ source: '/path/to/file', mtime: 123 });
+
+      expect(result).not.toContain('keep');
+    });
   });
 
   describe('parseFrontmatter', () => {
@@ -83,6 +98,24 @@ excalidraw-plugin: parsed
       const result = parseFrontmatter(content);
 
       expect(result).toBeNull();
+    });
+
+    it('source: null과 mtime: null을 파싱한다', () => {
+      const content = `---
+petrify:
+  source: null
+  mtime: null
+  keep: true
+excalidraw-plugin: parsed
+---
+
+content`;
+
+      const result = parseFrontmatter(content);
+      expect(result).not.toBeNull();
+      expect(result!.source).toBeNull();
+      expect(result!.mtime).toBeNull();
+      expect(result!.keep).toBe(true);
     });
   });
 });

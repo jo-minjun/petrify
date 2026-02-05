@@ -1,14 +1,15 @@
 export interface PetrifyFrontmatter {
-  source: string;
-  mtime: number;
+  source: string | null;
+  mtime: number | null;
   keep?: boolean;
 }
 
 export function createFrontmatter(meta: PetrifyFrontmatter): string {
+  const keepLine = meta.keep ? '\n  keep: true' : '';
   return `---
 petrify:
   source: ${meta.source}
-  mtime: ${meta.mtime}
+  mtime: ${meta.mtime}${keepLine}
 excalidraw-plugin: parsed
 ---
 
@@ -23,17 +24,19 @@ export function parseFrontmatter(content: string): PetrifyFrontmatter | null {
 
   const frontmatter = frontmatterMatch[1];
   const sourceMatch = frontmatter.match(/source:\s*(.+)/);
-  const mtimeMatch = frontmatter.match(/mtime:\s*(\d+)/);
+  const mtimeMatch = frontmatter.match(/mtime:\s*(.+)/);
 
   if (!sourceMatch || !mtimeMatch) {
     return null;
   }
 
+  const sourceValue = sourceMatch[1].trim();
+  const mtimeValue = mtimeMatch[1].trim();
   const keepMatch = frontmatter.match(/keep:\s*(true|false)/);
 
   return {
-    source: sourceMatch[1].trim(),
-    mtime: parseInt(mtimeMatch[1], 10),
+    source: sourceValue === 'null' ? null : sourceValue,
+    mtime: mtimeValue === 'null' ? null : parseInt(mtimeValue, 10),
     ...(keepMatch && { keep: keepMatch[1] === 'true' }),
   };
 }

@@ -10,7 +10,7 @@ export class FrontmatterConversionState implements ConversionStatePort {
     try {
       const content = await this.readFile(id);
       const meta = parseFrontmatter(content);
-      return meta?.mtime;
+      return meta?.mtime ?? undefined;
     } catch {
       return undefined;
     }
