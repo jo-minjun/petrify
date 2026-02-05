@@ -211,6 +211,7 @@ export default class PetrifyPlugin extends Plugin {
 
     let synced = 0;
     let failed = 0;
+    let deleted = 0;
 
     try {
       for (const mapping of this.settings.watchMappings) {
@@ -258,6 +259,47 @@ export default class PetrifyPlugin extends Plugin {
             failed++;
           }
         }
+
+        if (this.settings.deleteConvertedOnSourceDelete) {
+          const adapter = this.app.vault.adapter as FileSystemAdapter;
+          const vaultPath = adapter.getBasePath();
+
+          let outputFiles: string[];
+          try {
+            outputFiles = await fs.readdir(path.join(vaultPath, mapping.outputDir));
+          } catch {
+            continue;
+          }
+
+          for (const outputFile of outputFiles) {
+            if (!outputFile.endsWith('.excalidraw.md')) continue;
+
+            const outputPath = path.join(mapping.outputDir, outputFile);
+            const fullOutputPath = path.join(vaultPath, outputPath);
+
+            let content: string;
+            try {
+              content = await fs.readFile(fullOutputPath, 'utf-8');
+            } catch {
+              continue;
+            }
+
+            const frontmatter = parseFrontmatter(content);
+            if (!frontmatter?.source) continue;
+            if (frontmatter.keep) continue;
+
+            try {
+              await fs.access(frontmatter.source);
+            } catch {
+              const file = this.app.vault.getAbstractFileByPath(outputPath);
+              if (file) {
+                await this.app.vault.trash(file, true);
+                this.convertLog.info(`Cleaned orphan: ${outputPath}`);
+                deleted++;
+              }
+            }
+          }
+        }
       }
     } finally {
       this.isSyncing = false;
@@ -266,7 +308,7 @@ export default class PetrifyPlugin extends Plugin {
       }
     }
 
-    const summary = `Sync complete: ${synced} converted, ${failed} failed`;
+    const summary = `Sync complete: ${synced} converted, ${deleted} deleted, ${failed} failed`;
     this.syncLog.info(summary);
     this.syncLog.notify(summary);
   }
