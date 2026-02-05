@@ -22,6 +22,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     this.displayWatchMappings(containerEl);
     this.displayOcrSettings(containerEl);
+    this.displayDeleteSettings(containerEl);
   }
 
   private displayWatchMappings(containerEl: HTMLElement): void {
@@ -83,6 +84,27 @@ export class PetrifySettingsTab extends PluginSettingTab {
         this.display();
       })
     );
+  }
+
+  private displayDeleteSettings(containerEl: HTMLElement): void {
+    containerEl.createEl('h2', { text: 'File Management' });
+
+    const settings = this.callbacks.getSettings();
+
+    new Setting(containerEl)
+      .setName('Delete converted files on source delete')
+      .setDesc(
+        'When a source file is deleted, move the converted .excalidraw.md file to trash. '
+        + 'Add "keep: true" to a file\'s petrify frontmatter to protect it.'
+      )
+      .addToggle((toggle) =>
+        toggle
+          .setValue(settings.deleteConvertedOnSourceDelete)
+          .onChange(async (value) => {
+            settings.deleteConvertedOnSourceDelete = value;
+            await this.callbacks.saveSettings(settings);
+          }),
+      );
   }
 
   private displayOcrSettings(containerEl: HTMLElement): void {
