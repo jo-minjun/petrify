@@ -3,6 +3,7 @@ import { DEFAULT_CONFIDENCE_THRESHOLD } from '@petrify/core';
 export interface WatchMapping {
   watchDir: string;
   outputDir: string;
+  enabled: boolean;
 }
 
 export interface OcrSettings {

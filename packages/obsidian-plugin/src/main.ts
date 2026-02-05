@@ -35,6 +35,10 @@ export default class PetrifyPlugin extends Plugin {
           await this.saveSettings();
           await this.restart();
         },
+        saveDataOnly: async (settings) => {
+          this.settings = settings;
+          await this.saveSettings();
+        },
       })
     );
 
@@ -78,7 +82,8 @@ export default class PetrifyPlugin extends Plugin {
 
   private async startWatchers(): Promise<void> {
     for (const mapping of this.settings.watchMappings) {
-      if (!mapping.watchDir) continue;
+      if (!mapping.enabled) continue;
+      if (!mapping.watchDir || !mapping.outputDir) continue;
 
       const watcher = new ChokidarWatcher(mapping.watchDir);
 

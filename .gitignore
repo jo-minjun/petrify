@@ -19,3 +19,4 @@ coverage/
 
 # Output files
 output.excalidraw
+packages/obsidian-plugin/data.json

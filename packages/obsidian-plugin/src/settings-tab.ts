@@ -5,6 +5,7 @@ import type { PetrifySettings } from './settings.js';
 export interface SettingsTabCallbacks {
   getSettings: () => PetrifySettings;
   saveSettings: (settings: PetrifySettings) => Promise<void>;
+  saveDataOnly: (settings: PetrifySettings) => Promise<void>;
 }
 
 export class PetrifySettingsTab extends PluginSettingTab {
@@ -34,13 +35,19 @@ export class PetrifySettingsTab extends PluginSettingTab {
       new Setting(mappingContainer)
         .setName(`Watch Directory ${index + 1}`)
         .setDesc('External folder to watch for handwriting files')
+        .addToggle((toggle) =>
+          toggle.setValue(mapping.enabled).onChange(async (value) => {
+            settings.watchMappings[index].enabled = value;
+            await this.callbacks.saveSettings(settings);
+          })
+        )
         .addText((text) =>
           text
             .setPlaceholder('/path/to/watch')
             .setValue(mapping.watchDir)
             .onChange(async (value) => {
               settings.watchMappings[index].watchDir = value;
-              await this.callbacks.saveSettings(settings);
+              await this.callbacks.saveDataOnly(settings);
             })
         );
 
@@ -53,7 +60,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
             .setValue(mapping.outputDir)
             .onChange(async (value) => {
               settings.watchMappings[index].outputDir = value;
-              await this.callbacks.saveSettings(settings);
+              await this.callbacks.saveDataOnly(settings);
             })
         );
 
@@ -71,7 +78,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     new Setting(containerEl).addButton((btn) =>
       btn.setButtonText('Add Watch Directory').onClick(async () => {
-        settings.watchMappings.push({ watchDir: '', outputDir: '' });
+        settings.watchMappings.push({ watchDir: '', outputDir: '', enabled: false });
         await this.callbacks.saveSettings(settings);
         this.display();
       })
