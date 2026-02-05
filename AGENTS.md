@@ -53,7 +53,7 @@ packages/
   }
   ```
 
-- vitest 설정은 루트 vitest.config.ts에서만 관리
+- vitest 설정은 루트 vitest.config.ts에서 관리. 외부 모듈 alias 등 패키지 고유 설정이 필요한 경우에만 개별 패키지에 vitest.config.ts 추가 허용
 
 - 루트 tsconfig.json paths에 모든 워크스페이스 패키지 경로 명시
   ```json
@@ -133,6 +133,6 @@ packages/
 - 필수 데이터 실패를 silent fail로 처리하지 않기
 - vitest globals: true 사용하지 않기
 - 개별 패키지에 공통 devDependencies(typescript, vitest, tsup) 추가하지 않기
-- 개별 패키지에 vitest.config.ts 파일 생성하지 않기
+- 개별 패키지에 vitest.config.ts 불필요하게 생성하지 않기 (루트 설정으로 충분한 경우)
 - pnpm 사용 시 package-lock.json 남겨두지 않기
 - core 패키지에서 어댑터 의존성 추가하지 않기 (devDependencies 포함)
