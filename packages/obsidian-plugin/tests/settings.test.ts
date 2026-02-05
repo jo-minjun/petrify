@@ -7,7 +7,6 @@ describe('PetrifySettings', () => {
   });
 
   it('DEFAULT_SETTINGS는 기본 OCR 설정을 가진다', () => {
-    expect(DEFAULT_SETTINGS.ocr.provider).toBe('tesseract');
     expect(DEFAULT_SETTINGS.ocr.confidenceThreshold).toBe(50);
   });
 });

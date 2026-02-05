@@ -112,7 +112,6 @@ pnpm add @petrify/watcher-chokidar
 |------|------|
 | Watch Directories | 감시할 외부 폴더 경로 (다중 설정 가능) |
 | Output Directories | 변환된 파일이 저장될 vault 내 경로 (매핑별 지정) |
-| OCR Provider | tesseract (로컬) |
 | Confidence Threshold | OCR 신뢰도 임계값 (0-100) |
 
 ### Google Drive 연동

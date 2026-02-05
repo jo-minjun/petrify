@@ -1,9 +1,6 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import type { PetrifySettings } from './settings.js';
 
-// TODO(2026-02-03, minjun.jo): API 키를 Obsidian SecretStorage로 마이그레이션 고려
-// 현재 API 키는 settings.json에 평문으로 저장됨
-
 export interface SettingsTabCallbacks {
   getSettings: () => PetrifySettings;
   saveSettings: (settings: PetrifySettings) => Promise<void>;
@@ -86,86 +83,19 @@ export class PetrifySettingsTab extends PluginSettingTab {
     const settings = this.callbacks.getSettings();
 
     new Setting(containerEl)
-      .setName('OCR Provider')
-      .setDesc('Select OCR engine')
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption('tesseract', 'Tesseract.js (Local)')
-          .addOption('google-vision', 'Google Vision API')
-          .addOption('azure-ocr', 'Azure OCR')
-          .setValue(settings.ocr.provider)
-          .onChange(async (value) => {
-            settings.ocr.provider = value as 'tesseract' | 'google-vision' | 'azure-ocr';
-            await this.callbacks.saveSettings(settings);
-            this.display();
-          })
-      );
-
-    new Setting(containerEl)
       .setName('Confidence Threshold')
       .setDesc('Minimum OCR confidence (0-100)')
-      .addSlider((slider) =>
-        slider
-          .setLimits(0, 100, 5)
-          .setValue(settings.ocr.confidenceThreshold)
-          .setDynamicTooltip()
+      .addText((text) =>
+        text
+          .setPlaceholder('50')
+          .setValue(String(settings.ocr.confidenceThreshold))
           .onChange(async (value) => {
-            settings.ocr.confidenceThreshold = value;
-            await this.callbacks.saveSettings(settings);
+            const num = Number(value);
+            if (!Number.isNaN(num) && num >= 0 && num <= 100) {
+              settings.ocr.confidenceThreshold = num;
+              await this.callbacks.saveSettings(settings);
+            }
           })
       );
-
-    this.displayProviderConfig(containerEl, settings);
-  }
-
-  private displayProviderConfig(containerEl: HTMLElement, settings: PetrifySettings): void {
-    if (settings.ocr.provider === 'google-vision') {
-      new Setting(containerEl)
-        .setName('Google Vision API Key')
-        .setDesc('API key for Google Cloud Vision')
-        .addText((text) =>
-          text
-            .setPlaceholder('Enter API key')
-            .setValue(settings.ocr.providerConfig.googleVision?.apiKey ?? '')
-            .onChange(async (value) => {
-              settings.ocr.providerConfig.googleVision = { apiKey: value };
-              await this.callbacks.saveSettings(settings);
-            })
-        );
-    }
-
-    if (settings.ocr.provider === 'azure-ocr') {
-      new Setting(containerEl)
-        .setName('Azure OCR API Key')
-        .addText((text) =>
-          text
-            .setPlaceholder('Enter API key')
-            .setValue(settings.ocr.providerConfig.azureOcr?.apiKey ?? '')
-            .onChange(async (value) => {
-              settings.ocr.providerConfig.azureOcr = {
-                ...settings.ocr.providerConfig.azureOcr,
-                apiKey: value,
-                endpoint: settings.ocr.providerConfig.azureOcr?.endpoint ?? '',
-              };
-              await this.callbacks.saveSettings(settings);
-            })
-        );
-
-      new Setting(containerEl)
-        .setName('Azure OCR Endpoint')
-        .addText((text) =>
-          text
-            .setPlaceholder('https://your-resource.cognitiveservices.azure.com')
-            .setValue(settings.ocr.providerConfig.azureOcr?.endpoint ?? '')
-            .onChange(async (value) => {
-              settings.ocr.providerConfig.azureOcr = {
-                ...settings.ocr.providerConfig.azureOcr,
-                apiKey: settings.ocr.providerConfig.azureOcr?.apiKey ?? '',
-                endpoint: value,
-              };
-              await this.callbacks.saveSettings(settings);
-            })
-        );
-    }
   }
 }
