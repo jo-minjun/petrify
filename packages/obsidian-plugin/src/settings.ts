@@ -1,3 +1,5 @@
+import { DEFAULT_CONFIDENCE_THRESHOLD } from '@petrify/core';
+
 export interface WatchMapping {
   watchDir: string;
   outputDir: string;
@@ -15,6 +17,6 @@ export interface PetrifySettings {
 export const DEFAULT_SETTINGS: PetrifySettings = {
   watchMappings: [],
   ocr: {
-    confidenceThreshold: 50,
+    confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD,
   },
 };

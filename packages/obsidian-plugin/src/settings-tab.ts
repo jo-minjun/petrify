@@ -1,4 +1,5 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { DEFAULT_SETTINGS } from './settings.js';
 import type { PetrifySettings } from './settings.js';
 
 export interface SettingsTabCallbacks {
@@ -85,9 +86,13 @@ export class PetrifySettingsTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Confidence Threshold')
       .setDesc('Minimum OCR confidence (0-100)')
-      .addText((text) =>
+      .addText((text) => {
+        text.inputEl.type = 'number';
+        text.inputEl.min = '0';
+        text.inputEl.max = '100';
+        text.inputEl.step = '1';
         text
-          .setPlaceholder('50')
+          .setPlaceholder(String(DEFAULT_SETTINGS.ocr.confidenceThreshold))
           .setValue(String(settings.ocr.confidenceThreshold))
           .onChange(async (value) => {
             const num = Number(value);
@@ -95,7 +100,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
               settings.ocr.confidenceThreshold = num;
               await this.callbacks.saveSettings(settings);
             }
-          })
-      );
+          });
+      });
   }
 }
