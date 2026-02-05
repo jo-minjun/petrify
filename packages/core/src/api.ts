@@ -30,7 +30,6 @@ export async function convertToMd(
   return mdGenerator.generate(excalidrawData);
 }
 
-// TODO(2026-02-05, minjun.jo): Task 4에서 imageData 기반 OCR 처리로 리팩토링 예정
 export async function convertToMdWithOcr(
   data: ArrayBuffer,
   parser: ParserPort,
@@ -56,7 +55,6 @@ export async function convertToMdWithOcr(
       ocrResults.push({ pageIndex: page.order, texts: filteredTexts });
     }
   }
-
 
   const mdGenerator = new ExcalidrawMdGenerator();
   return mdGenerator.generate(excalidrawData, undefined, ocrResults);
