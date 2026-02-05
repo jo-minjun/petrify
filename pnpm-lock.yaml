@@ -33,15 +33,15 @@ importers:
       '@petrify/core':
         specifier: workspace:*
         version: link:../core
+      '@petrify/ocr-tesseract':
+        specifier: workspace:*
+        version: link:../ocr/tesseract
       '@petrify/parser-viwoods':
         specifier: workspace:*
         version: link:../parser/viwoods
       '@petrify/watcher-chokidar':
         specifier: workspace:*
         version: link:../watcher/chokidar
-      tesseract.js:
-        specifier: ^7.0.0
-        version: 7.0.0
     devDependencies:
       '@types/node':
         specifier: ^20.0.0

@@ -13,7 +13,7 @@
     "@petrify/core": "workspace:*",
     "@petrify/parser-viwoods": "workspace:*",
     "@petrify/watcher-chokidar": "workspace:*",
-    "tesseract.js": "^7.0.0"
+    "@petrify/ocr-tesseract": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

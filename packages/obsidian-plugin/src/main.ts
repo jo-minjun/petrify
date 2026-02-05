@@ -8,7 +8,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
-import { TesseractOcr } from './tesseract-ocr.js';
+import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { FrontmatterConversionState } from './frontmatter-conversion-state.js';
 import { createFrontmatter } from './utils/frontmatter.js';
 
