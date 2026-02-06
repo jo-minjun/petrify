@@ -129,7 +129,7 @@ export class PetrifyService {
     }
 
     try {
-      return this.generator.generate(note, outputName, ocrResults);
+      return await this.generator.generate(note, outputName, ocrResults);
     } catch (error) {
       throw new ConversionError('generate', error);
     }
