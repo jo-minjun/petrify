@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@petrify/core": "workspace:*",
+    "google-auth-library": "^9.0.0",
     "googleapis": "^144.0.0"
   },
   "devDependencies": {
