@@ -37,6 +37,9 @@ export class TesseractOcr implements OcrPort {
     }
 
     const result = await this.worker?.recognize(new Blob([image]));
+    if (!result) {
+      return { text: '', confidence: 0, regions: [] };
+    }
     const threshold = options?.confidenceThreshold ?? 0;
 
     const { text: rawText, confidence } = result.data;

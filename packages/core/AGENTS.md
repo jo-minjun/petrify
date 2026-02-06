@@ -4,14 +4,14 @@
 
 - 중간 표현 모델 정의 (Note, Page)
 - PetrifyService (핵심 오케스트레이션 서비스)
-- 포트 인터페이스 정의 (ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort, FileSystemPort)
+- 포트 인터페이스 정의 (ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort)
 
 ## 주요 모듈
 
 | 디렉터리/파일 | 역할 |
 |----------|------|
 | `models/` | 중간 표현 모델 (Note, Page) |
-| `ports/` | 외부 의존성 인터페이스 (ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort, FileSystemPort) |
+| `ports/` | 외부 의존성 인터페이스 (ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort) |
 | `ocr/` | OCR 결과 필터링 유틸리티 |
 | `petrify-service.ts` | 핵심 변환 오케스트레이터 (ParserPort, OcrPort, FileGeneratorPort 조합) |
 | `api.ts` | 공개 상수 (DEFAULT_CONFIDENCE_THRESHOLD) |
@@ -34,4 +34,3 @@
 ## DON'T
 
 - 특정 파서/어댑터 직접 import하지 않기
-- 외부 파일 시스템 직접 접근하지 않기 (포트로 추상화)

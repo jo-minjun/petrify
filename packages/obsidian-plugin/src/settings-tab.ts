@@ -181,7 +181,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
     const updateSaveButton = () => {
       if (!saveButton) return;
       const isGoogleVision = this.pendingProvider === 'google-vision';
-      const hasApiKey = this.pendingApiKey?.trim().length > 0;
+      const hasApiKey = (this.pendingApiKey?.trim().length ?? 0) > 0;
       const canSave = !isGoogleVision || hasApiKey;
       saveButton.disabled = !canSave;
       saveButton.toggleClass('is-disabled', !canSave);
@@ -226,7 +226,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
       for (const option of LANGUAGE_HINT_OPTIONS) {
         languageSetting.addToggle((toggle) => {
           toggle
-            .setValue(this.pendingLanguageHints?.includes(option.value))
+            .setValue(this.pendingLanguageHints?.includes(option.value) ?? false)
             .setTooltip(option.label)
             .onChange((enabled) => {
               if (enabled) {
@@ -234,9 +234,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
                   this.pendingLanguageHints?.push(option.value);
                 }
               } else {
-                this.pendingLanguageHints = this.pendingLanguageHints?.filter(
-                  (h) => h !== option.value,
-                );
+                this.pendingLanguageHints =
+                  this.pendingLanguageHints?.filter((h) => h !== option.value) ?? null;
               }
             });
         });
