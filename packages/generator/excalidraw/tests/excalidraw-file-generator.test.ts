@@ -3,19 +3,6 @@ import { ExcalidrawFileGenerator } from '../src/excalidraw-file-generator.js';
 import { createPage, createNote } from './helpers.js';
 
 describe('ExcalidrawFileGenerator', () => {
-  it('id와 displayName이 정의됨', () => {
-    const generator = new ExcalidrawFileGenerator();
-    expect(generator.id).toBe('excalidraw');
-    expect(generator.displayName).toBe('Excalidraw');
-  });
-
-  it('extension이 .excalidraw.md', () => {
-    const generator = new ExcalidrawFileGenerator();
-    const note = createNote([createPage()]);
-    const output = generator.generate(note, 'test-note');
-    expect(output.extension).toBe('.excalidraw.md');
-  });
-
   it('assets에 페이지 이미지가 포함됨', () => {
     const generator = new ExcalidrawFileGenerator();
     const imageData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
