@@ -3,6 +3,7 @@ import type { Note, FileGeneratorPort, GeneratorOutput, OcrTextResult } from '@p
 export class MarkdownFileGenerator implements FileGeneratorPort {
   readonly id = 'markdown';
   readonly displayName = 'Markdown';
+  readonly extension = '.md';
 
   generate(note: Note, outputName: string, ocrResults?: OcrTextResult[]): GeneratorOutput {
     const assets = new Map<string, Uint8Array>();

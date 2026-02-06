@@ -37,6 +37,7 @@ function createMockGenerator(): FileGeneratorPort {
   return {
     id: 'test-generator',
     displayName: 'Test Generator',
+    extension: '.excalidraw.md',
     generate: vi.fn().mockReturnValue(mockOutput),
   };
 }

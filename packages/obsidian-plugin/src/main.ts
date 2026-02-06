@@ -220,12 +220,12 @@ export default class PetrifyPlugin extends Plugin {
     const mapping = this.settings.watchMappings.find((m) => id.startsWith(m.watchDir));
     if (!mapping) return '';
     const fileName = path.basename(id, path.extname(id));
-    return path.join(mapping.outputDir, `${fileName}.excalidraw.md`);
+    return path.join(mapping.outputDir, `${fileName}${this.generator.extension}`);
   }
 
   private getOutputPath(name: string, outputDir: string): string {
     const fileName = path.basename(name, path.extname(name));
-    return path.join(outputDir, `${fileName}.excalidraw.md`);
+    return path.join(outputDir, `${fileName}${this.generator.extension}`);
   }
 
   private async restart(): Promise<void> {
@@ -319,7 +319,7 @@ export default class PetrifyPlugin extends Plugin {
           }
 
           for (const outputFile of outputFiles) {
-            if (!outputFile.endsWith('.excalidraw.md')) continue;
+            if (!outputFile.endsWith(this.generator.extension)) continue;
 
             const outputPath = path.join(mapping.outputDir, outputFile);
             const fullOutputPath = path.join(vaultPath, outputPath);
@@ -343,6 +343,16 @@ export default class PetrifyPlugin extends Plugin {
                 await this.app.vault.trash(file, true);
                 this.convertLog.info(`Cleaned orphan: ${outputPath}`);
                 deleted++;
+
+                const baseName = outputFile.replace(this.generator.extension, '');
+                const assetsDir = path.join(mapping.outputDir, 'assets', baseName);
+                const assetsFullPath = path.join(vaultPath, assetsDir);
+                try {
+                  await fs.rm(assetsFullPath, { recursive: true });
+                  this.convertLog.info(`Cleaned orphan assets: ${assetsDir}`);
+                } catch {
+                  // ignore if assets folder doesn't exist
+                }
               }
             }
           }

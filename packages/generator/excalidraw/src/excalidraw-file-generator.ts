@@ -5,6 +5,7 @@ import { ExcalidrawMdGenerator } from './md-generator.js';
 export class ExcalidrawFileGenerator implements FileGeneratorPort {
   readonly id = 'excalidraw';
   readonly displayName = 'Excalidraw';
+  readonly extension = '.excalidraw.md';
 
   private readonly excalidrawGenerator = new ExcalidrawGenerator();
   private readonly mdGenerator = new ExcalidrawMdGenerator();
