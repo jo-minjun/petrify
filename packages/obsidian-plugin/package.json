@@ -13,7 +13,8 @@
     "@petrify/core": "workspace:*",
     "@petrify/parser-viwoods": "workspace:*",
     "@petrify/watcher-chokidar": "workspace:*",
-    "@petrify/ocr-tesseract": "workspace:*"
+    "@petrify/ocr-tesseract": "workspace:*",
+    "@petrify/ocr-google-vision": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
