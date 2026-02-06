@@ -1,8 +1,8 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import esbuild from 'esbuild';
-import process from 'process';
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const prod = process.argv[2] === 'production';
@@ -13,7 +13,7 @@ async function copyTesseractFiles() {
   // Worker 파일 복사
   const workerSrc = path.resolve(
     __dirname,
-    '../../node_modules/.pnpm/tesseract.js@7.0.0/node_modules/tesseract.js/dist/worker.min.js'
+    '../../node_modules/.pnpm/tesseract.js@7.0.0/node_modules/tesseract.js/dist/worker.min.js',
   );
   await fs.copyFile(workerSrc, path.join(targetDir, 'worker.min.js'));
   console.log('Copied worker.min.js');
@@ -21,7 +21,7 @@ async function copyTesseractFiles() {
   // Core 파일들 복사
   const coreDir = path.resolve(
     __dirname,
-    '../../node_modules/.pnpm/tesseract.js-core@7.0.0/node_modules/tesseract.js-core'
+    '../../node_modules/.pnpm/tesseract.js-core@7.0.0/node_modules/tesseract.js-core',
   );
   const coreTargetDir = path.join(targetDir, 'tesseract-core');
 
@@ -51,7 +51,7 @@ const tesseractObsidianPlugin = {
       if (args.importer.includes('tesseract.js')) {
         const browserWorkerPath = path.resolve(
           path.dirname(args.importer),
-          './worker/browser/index.js'
+          './worker/browser/index.js',
         );
         return { path: browserWorkerPath };
       }

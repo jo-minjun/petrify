@@ -1,11 +1,12 @@
-import * as path from 'path';
+import * as path from 'node:path';
 import type {
-  PetrifyService,
-  ParserPort,
-  FileGeneratorPort,
   ConversionMetadataPort,
   FileChangeEvent,
+  FileGeneratorPort,
+  ParserPort,
+  PetrifyService,
 } from '@petrify/core';
+import type { SaveConversionFn } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import type { Logger } from './logger.js';
 import type { WatchMapping } from './settings.js';
@@ -37,6 +38,7 @@ export class SyncOrchestrator {
     private readonly generator: FileGeneratorPort,
     private readonly fs: SyncFileSystem,
     private readonly vault: VaultOperations,
+    private readonly saveResult: SaveConversionFn,
     private readonly syncLog: Logger,
     private readonly convertLog: Logger,
   ) {}
@@ -63,7 +65,7 @@ export class SyncOrchestrator {
         failed++;
         continue;
       }
-      const supportedExts = parserForMapping.extensions.map(e => e.toLowerCase());
+      const supportedExts = parserForMapping.extensions.map((e) => e.toLowerCase());
 
       let entries: string[];
       try {
@@ -99,8 +101,10 @@ export class SyncOrchestrator {
         };
 
         try {
-          const outputPath = await this.petrifyService.handleFileChange(event, mapping.outputDir);
-          if (outputPath) {
+          const result = await this.petrifyService.handleFileChange(event);
+          if (result) {
+            const baseName = entry.replace(/\.[^/.]+$/, '');
+            const outputPath = await this.saveResult(result, mapping.outputDir, baseName);
             this.convertLog.info(`Converted: ${entry} -> ${outputPath}`);
             synced++;
           }

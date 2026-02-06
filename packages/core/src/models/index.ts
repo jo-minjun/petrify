@@ -1,2 +1,2 @@
-export * from './page.js';
 export * from './note.js';
+export * from './page.js';

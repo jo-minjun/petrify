@@ -39,18 +39,3 @@ export class ConversionError extends Error {
     this.cause = cause;
   }
 }
-
-export type FileSystemOperation = 'read' | 'write' | 'mkdir' | 'delete' | 'stat';
-
-export class FileSystemError extends Error {
-  readonly operation: FileSystemOperation;
-  readonly path: string;
-
-  constructor(operation: FileSystemOperation, filePath: string, cause?: unknown) {
-    super(`File system ${operation} failed: ${filePath}`);
-    this.name = 'FileSystemError';
-    this.operation = operation;
-    this.path = filePath;
-    this.cause = cause;
-  }
-}

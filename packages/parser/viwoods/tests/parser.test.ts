@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { NoteParser } from '../src/parser';
+import { describe, expect, it } from 'vitest';
 import { InvalidFileFormatError, ParseError } from '../src/exceptions';
+import { NoteParser } from '../src/parser';
 
 function createMockZip(options: {
   noteInfo?: Record<string, unknown>;
@@ -140,7 +140,7 @@ describe('NoteParser', () => {
       const parser = new NoteParser();
       await expect(parser.parse(data)).rejects.toThrow(ParseError);
       await expect(parser.parse(data)).rejects.toThrow(
-        'Screenshot not found for page missing-page'
+        'Screenshot not found for page missing-page',
       );
     });
 

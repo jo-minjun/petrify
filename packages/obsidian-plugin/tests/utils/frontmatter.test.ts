@@ -1,8 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import {
-  createFrontmatter,
-  parseFrontmatter,
-} from '../../src/utils/frontmatter.js';
+import { describe, expect, it } from 'vitest';
+import { createFrontmatter, parseFrontmatter } from '../../src/utils/frontmatter.js';
 
 describe('frontmatter', () => {
   describe('createFrontmatter', () => {
@@ -113,9 +110,9 @@ content`;
 
       const result = parseFrontmatter(content);
       expect(result).not.toBeNull();
-      expect(result!.source).toBeNull();
-      expect(result!.mtime).toBeNull();
-      expect(result!.keep).toBe(true);
+      expect(result?.source).toBeNull();
+      expect(result?.mtime).toBeNull();
+      expect(result?.keep).toBe(true);
     });
   });
 });

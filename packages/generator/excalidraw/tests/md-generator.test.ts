@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import LZString from 'lz-string';
-import { ExcalidrawMdGenerator } from '../src/md-generator.js';
-import type { ExcalidrawData, ExcalidrawElement, ExcalidrawFileEntry } from '../src/excalidraw-generator.js';
 import type { OcrTextResult } from '@petrify/core';
+import LZString from 'lz-string';
+import { describe, expect, it } from 'vitest';
+import type {
+  ExcalidrawData,
+  ExcalidrawElement,
+  ExcalidrawFileEntry,
+} from '../src/excalidraw-generator.js';
+import { ExcalidrawMdGenerator } from '../src/md-generator.js';
 
 describe('ExcalidrawMdGenerator', () => {
   it('올바른 마크다운 구조 생성', () => {
@@ -59,7 +63,7 @@ describe('ExcalidrawMdGenerator', () => {
     const match = md.match(/```compressed-json\n(.+?)\n```/s);
     expect(match).not.toBeNull();
 
-    const compressed = match![1];
+    const compressed = match?.[1];
     const decompressed = LZString.decompressFromBase64(compressed);
     const restored = JSON.parse(decompressed!);
 
@@ -88,7 +92,7 @@ describe('ExcalidrawMdGenerator', () => {
     const match = md.match(/```compressed-json\n(.+?)\n```/s);
     expect(match).not.toBeNull();
 
-    const decompressed = LZString.decompressFromBase64(match![1]);
+    const decompressed = LZString.decompressFromBase64(match?.[1]);
     const restored = JSON.parse(decompressed!);
 
     expect(restored.files['file-1']).toEqual(fileEntry);
@@ -106,9 +110,7 @@ describe('OCR Text Section', () => {
       appState: { viewBackgroundColor: '#ffffff' },
       files: {},
     };
-    const ocrResults: OcrTextResult[] = [
-      { pageIndex: 0, texts: ['테스트 텍스트'] }
-    ];
+    const ocrResults: OcrTextResult[] = [{ pageIndex: 0, texts: ['테스트 텍스트'] }];
 
     const md = generator.generate(data, undefined, ocrResults);
 
@@ -165,7 +167,7 @@ describe('OCR Text Section', () => {
       files: {},
     };
     const ocrResults: OcrTextResult[] = [
-      { pageIndex: 0, texts: ['첫 번째 텍스트', '두 번째 텍스트'] }
+      { pageIndex: 0, texts: ['첫 번째 텍스트', '두 번째 텍스트'] },
     ];
 
     const md = generator.generate(data, undefined, ocrResults);
@@ -187,7 +189,7 @@ describe('OCR Text Section', () => {
     };
     const ocrResults: OcrTextResult[] = [
       { pageIndex: 0, texts: ['페이지1 텍스트'] },
-      { pageIndex: 1, texts: ['페이지2 텍스트A', '페이지2 텍스트B'] }
+      { pageIndex: 1, texts: ['페이지2 텍스트A', '페이지2 텍스트B'] },
     ];
 
     const md = generator.generate(data, undefined, ocrResults);

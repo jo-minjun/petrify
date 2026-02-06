@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { ExcalidrawFileGenerator } from '../src/excalidraw-file-generator.js';
-import { createPage, createNote } from './helpers.js';
+import { createNote, createPage } from './helpers.js';
 
 describe('ExcalidrawFileGenerator', () => {
   it('assets에 페이지 이미지가 포함됨', () => {

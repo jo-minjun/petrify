@@ -1,10 +1,8 @@
-import type { ConversionMetadataPort, ConversionMetadata } from '@petrify/core';
-import { parseFrontmatter, createFrontmatter } from './utils/frontmatter.js';
+import type { ConversionMetadata, ConversionMetadataPort } from '@petrify/core';
+import { createFrontmatter, parseFrontmatter } from './utils/frontmatter.js';
 
 export class FrontmatterMetadataAdapter implements ConversionMetadataPort {
-  constructor(
-    private readonly readFile: (path: string) => Promise<string>,
-  ) {}
+  constructor(private readonly readFile: (path: string) => Promise<string>) {}
 
   async getMetadata(id: string): Promise<ConversionMetadata | undefined> {
     try {
