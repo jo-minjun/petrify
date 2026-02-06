@@ -4,32 +4,27 @@ Convert handwritten note app files to Obsidian Excalidraw.
 
 ## Introduction
 
-Petrify lets you manage files from various handwriting note apps in a single format (Excalidraw) within Obsidian.
+Petrify converts handwriting note files into Excalidraw or Markdown format within Obsidian. It watches external folders for changes and automatically converts new or updated files into your vault.
 
 **Currently supported:**
-- Parser: viwoods (.note)
-- OCR: Tesseract.js, Google Cloud Vision
-- Generator: Excalidraw, Markdown
-- Watcher: chokidar (local filesystem)
-- Obsidian plugin (watch external folders → auto-convert)
+- Parser: Viwoods (.note)
+- OCR: Tesseract.js (local), Google Cloud Vision (API)
+- Output: Excalidraw (.excalidraw.md), Markdown (.md)
 
 **Planned:**
 - Watch files inside Obsidian Vault (VaultWatcher)
-
-Parsers, OCR engines, Generators, and Watchers can be extended independently via the port/adapter pattern. OCR extracts handwritten text so your notes become searchable in Obsidian.
+- Additional parsers for other handwriting note apps
 
 ## Obsidian Plugin
 
-Watches handwritten note files in external folders and automatically converts them to Excalidraw format in your Obsidian vault.
-
 ### Features
 
-- **File watching**: Real-time file change detection via WatcherPort (currently chokidar adapter)
-- **Multi-folder mapping**: Map multiple external folders to different vault folders
-- **Auto-conversion**: PetrifyService handles extension filtering → mtime skip → conversion automatically
-- **Drag & drop**: Drop handwriting files into the file explorer for instant conversion at that location
-- **OCR support**: Handwritten text extraction (Tesseract.js / Google Cloud Vision)
-- **Duplicate prevention**: Skips already-converted files by comparing mtime via ConversionMetadataPort
+- **File watching**: Watch external folders and automatically convert new or updated files
+- **Multi-folder mapping**: Map multiple external folders to different vault folders, each with its own parser
+- **Drag & drop**: Drop handwriting files into the file explorer to convert them at the drop location
+- **Sync command**: Manually trigger a full sync via the ribbon icon or command palette (`Petrify: Sync`)
+- **OCR**: Extract handwritten text so your notes become searchable in Obsidian
+- **Duplicate prevention**: Skips already-converted files by comparing modification time
 - **Source delete sync**: Optionally remove converted files when the source file is deleted
 
 ### Settings
@@ -37,25 +32,27 @@ Watches handwritten note files in external folders and automatically converts th
 | Setting | Description |
 |---------|-------------|
 | Output Format | Output file format (Excalidraw / Markdown) |
-| Watch Directories | External folder paths to watch (multiple supported) |
+| Watch Directories | External folder paths to watch (multiple mappings supported) |
 | Output Directories | Vault paths for converted files (per mapping) |
-| Parser | Parser to use for each watch folder (e.g. viwoods) |
+| Parser | Parser to use for each watch folder (currently Viwoods only) |
 | OCR Provider | OCR engine (Tesseract / Google Vision) |
-| Confidence Threshold | OCR confidence threshold (0-100) |
+| Google Vision API Key | API key for Google Cloud Vision (shown when Google Vision is selected) |
+| Language Hints | OCR language hints for Google Vision (Korean, English, Japanese, Chinese) |
+| Confidence Threshold | OCR confidence threshold (0–100, default: 50) |
 | Delete on source delete | Delete converted file when source is deleted (default: off) |
 
 ### Drag & Drop
 
-Drag and drop handwriting files (.note, etc.) into the file explorer to create `.excalidraw.md` files at the drop location.
+Drag and drop handwriting files (.note) into the file explorer to create converted files at the drop location.
 
 - Only supported extensions are processed; others fall through to Obsidian's default behavior
 - If multiple parsers match the same extension, a selection modal is shown
 - "Apply to all" option to batch-apply the same parser to files with the same extension
-- Drop-converted files get `keep: true` frontmatter to prevent auto-deletion
+- Drop-converted files are protected from auto-deletion
 
-### Google Drive Integration
+### Tip: Google Drive
 
-Point a Watch Directory at a locally synced Google Drive for Desktop folder for automatic conversion.
+If you use Google Drive for Desktop to sync your handwriting files locally, you can point a Watch Directory at the synced folder for automatic conversion.
 
 1. Install [Google Drive for Desktop](https://www.google.com/drive/download/)
 2. Set up local sync for the Google Drive folder containing your handwriting files
