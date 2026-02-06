@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { ExcalidrawGenerator } from '../../src/excalidraw';
-import type { ExcalidrawFileEntry } from '../../src/excalidraw';
-import type { Note, Page } from '../../src/models';
+import { ExcalidrawGenerator } from '../src/excalidraw-generator.js';
+import type { ExcalidrawFileEntry } from '../src/excalidraw-generator.js';
+import type { Note, Page } from '@petrify/core';
 
 function createPage(overrides: Partial<Page> = {}): Page {
   return {

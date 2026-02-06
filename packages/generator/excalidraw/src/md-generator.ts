@@ -1,5 +1,5 @@
 import LZString from 'lz-string';
-import type { ExcalidrawData } from './generator.js';
+import type { ExcalidrawData } from './excalidraw-generator.js';
 
 export interface OcrTextResult {
   pageIndex: number;

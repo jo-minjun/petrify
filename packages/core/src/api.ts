@@ -1,9 +1,13 @@
 import type { ParserPort } from './ports/parser.js';
 import type { OcrPort } from './ports/ocr.js';
-import { ExcalidrawGenerator } from './excalidraw/generator.js';
-import { ExcalidrawMdGenerator } from './excalidraw/md-generator.js';
-import type { ExcalidrawData } from './excalidraw/generator.js';
-import type { OcrTextResult } from './excalidraw/md-generator.js';
+import {
+  ExcalidrawGenerator,
+  ExcalidrawMdGenerator,
+} from '@petrify/generator-excalidraw';
+import type {
+  ExcalidrawData,
+  OcrTextResult,
+} from '@petrify/generator-excalidraw';
 import { filterOcrByConfidence } from './ocr/filter.js';
 
 export interface ConvertOptions {

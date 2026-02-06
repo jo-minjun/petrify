@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import LZString from 'lz-string';
-import { ExcalidrawMdGenerator } from '../../src/excalidraw';
-import type { ExcalidrawData, ExcalidrawElement, ExcalidrawFileEntry, OcrTextResult } from '../../src/excalidraw';
+import { ExcalidrawMdGenerator } from '../src/md-generator.js';
+import type { ExcalidrawData, ExcalidrawElement, ExcalidrawFileEntry } from '../src/excalidraw-generator.js';
+import type { OcrTextResult } from '../src/md-generator.js';
 
 describe('ExcalidrawMdGenerator', () => {
   it('올바른 마크다운 구조 생성', () => {
@@ -96,7 +97,6 @@ describe('ExcalidrawMdGenerator', () => {
 
 describe('OCR Text Section', () => {
   it('OcrTextResult 타입이 정상 동작', () => {
-    // 타입 체크: OcrTextResult 인터페이스가 올바르게 정의되었는지 확인
     const ocrResult: OcrTextResult = {
       pageIndex: 0,
       texts: ['테스트 텍스트'],
@@ -169,7 +169,6 @@ describe('OCR Text Section', () => {
     expect(md).toContain('## OCR Text');
     expect(md).toContain('<!-- Page 1 -->');
     expect(md).toContain('테스트 텍스트');
-    // OCR 섹션이 # Excalidraw Data 앞에 있는지 확인
     const ocrIndex = md.indexOf('## OCR Text');
     const excalidrawIndex = md.indexOf('# Excalidraw Data');
     expect(ocrIndex).toBeLessThan(excalidrawIndex);

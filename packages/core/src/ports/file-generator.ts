@@ -1,5 +1,9 @@
 import type { Note } from '../models/index.js';
-import type { OcrTextResult } from '../excalidraw/md-generator.js';
+
+export interface OcrTextResult {
+  pageIndex: number;
+  texts: string[];
+}
 
 export interface GeneratorOutput {
   readonly content: string;
@@ -12,5 +16,3 @@ export interface FileGeneratorPort {
   readonly displayName: string;
   generate(note: Note, outputName: string, ocrResults?: OcrTextResult[]): GeneratorOutput;
 }
-
-export type { OcrTextResult };

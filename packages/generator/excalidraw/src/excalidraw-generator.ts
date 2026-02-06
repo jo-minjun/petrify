@@ -1,5 +1,4 @@
-import type { Note } from '../models/index.js';
-import type { Page } from '../models/page.js';
+import type { Note, Page } from '@petrify/core';
 import { uint8ArrayToBase64 } from './base64.js';
 
 export interface ExcalidrawElement {
