@@ -131,6 +131,8 @@ describe('ExcalidrawGenerator', () => {
       const doc = await generator.generate(note);
 
       expect(Object.keys(doc.files)).toHaveLength(2);
+      expect(doc.files[doc.elements[0].fileId]).toBeDefined();
+      expect(doc.files[doc.elements[1].fileId]).toBeDefined();
     });
 
     it('element의 fileId와 files 객체의 키가 일치', async () => {
