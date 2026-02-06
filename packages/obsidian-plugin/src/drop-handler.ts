@@ -1,10 +1,8 @@
 import * as path from 'path';
 import type { App } from 'obsidian';
-import type { ConversionPipeline, ParserPort } from '@petrify/core';
+import type { PetrifyService, ParserPort } from '@petrify/core';
 import { createLogger } from './logger.js';
 import { ParserSelectModal } from './parser-select-modal.js';
-import { createFrontmatter } from './utils/frontmatter.js';
-import { saveGeneratorOutput } from './utils/save-output.js';
 
 const log = createLogger('Drop');
 
@@ -13,7 +11,7 @@ export class DropHandler {
 
   constructor(
     private readonly app: App,
-    private readonly pipeline: ConversionPipeline,
+    private readonly petrifyService: PetrifyService,
     private readonly parserMap: Map<string, ParserPort>,
   ) {}
 
@@ -44,14 +42,8 @@ export class DropHandler {
 
         const data = await file.arrayBuffer();
         const baseName = path.basename(file.name, ext);
-        const result = await this.pipeline.convertDroppedFile(data, parser, baseName);
-        const frontmatter = createFrontmatter({ source: null, mtime: null, keep: true });
+        const outputPath = await this.petrifyService.convertDroppedFile(data, parser, dropFolder, baseName);
 
-        const outputPath = await saveGeneratorOutput(this.app, result, {
-          outputDir: dropFolder,
-          outputName: baseName,
-          frontmatter,
-        });
         converted++;
         log.info(`Converted: ${file.name} -> ${outputPath}`);
       } catch (error) {
@@ -81,7 +73,7 @@ export class DropHandler {
   private filterSupportedFiles(files: FileList): File[] {
     return Array.from(files).filter((file) => {
       const ext = path.extname(file.name).toLowerCase();
-      return this.pipeline.getParsersForExtension(ext).length > 0;
+      return this.petrifyService.getParsersForExtension(ext).length > 0;
     });
   }
 
@@ -89,7 +81,7 @@ export class DropHandler {
     fileName: string,
     ext: string,
   ): Promise<ParserPort | undefined> {
-    const parsers = this.pipeline.getParsersForExtension(ext);
+    const parsers = this.petrifyService.getParsersForExtension(ext);
     if (parsers.length === 0) return undefined;
     if (parsers.length === 1) return parsers[0];
 

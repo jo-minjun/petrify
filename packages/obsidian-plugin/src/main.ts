@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
-import { ConversionPipeline } from '@petrify/core';
+import { PetrifyService } from '@petrify/core';
 import type { FileChangeEvent, FileGeneratorPort, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
 import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
 import { MarkdownFileGenerator } from '@petrify/generator-markdown';
@@ -10,13 +10,12 @@ import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import { DropHandler } from './drop-handler.js';
-import { FrontmatterConversionState } from './frontmatter-conversion-state.js';
+import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
 import { createLogger } from './logger.js';
+import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
 import { createParserMap, ParserId } from './parser-registry.js';
 import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
-import { createFrontmatter, parseFrontmatter } from './utils/frontmatter.js';
-import { saveGeneratorOutput } from './utils/save-output.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
@@ -35,7 +34,8 @@ function createGenerator(format: OutputFormat): FileGeneratorPort {
 export default class PetrifyPlugin extends Plugin {
   settings!: PetrifySettings;
   private watchers: WatcherPort[] = [];
-  private pipeline!: ConversionPipeline;
+  private petrifyService!: PetrifyService;
+  private metadataAdapter!: FrontmatterMetadataAdapter;
   private ocr: OcrPort | null = null;
   private generator!: FileGeneratorPort;
   private parserMap!: Map<string, ParserPort>;
@@ -49,7 +49,7 @@ export default class PetrifyPlugin extends Plugin {
   async onload(): Promise<void> {
     await this.loadSettings();
     await this.initializeOcr();
-    this.initializePipeline();
+    this.initializeService();
 
     this.ribbonIconEl = this.addRibbonIcon('refresh-cw', 'Petrify: Sync', async () => {
       await this.syncAll();
@@ -78,7 +78,7 @@ export default class PetrifyPlugin extends Plugin {
       })
     );
 
-    this.dropHandler = new DropHandler(this.app, this.pipeline, this.parserMap);
+    this.dropHandler = new DropHandler(this.app, this.petrifyService, this.parserMap);
     this.registerDomEvent(document, 'drop', this.dropHandler.handleDrop);
 
     await this.startWatchers();
@@ -115,15 +115,17 @@ export default class PetrifyPlugin extends Plugin {
     this.ocr = tesseract;
   }
 
-  private initializePipeline(): void {
+  private initializeService(): void {
     const adapter = this.app.vault.adapter as FileSystemAdapter;
     const vaultPath = adapter.getBasePath();
 
-    const conversionState = new FrontmatterConversionState(async (id: string) => {
+    this.metadataAdapter = new FrontmatterMetadataAdapter(async (id: string) => {
       const outputPath = this.getOutputPathForId(id);
       const fullPath = path.join(vaultPath, outputPath);
       return fs.readFile(fullPath, 'utf-8');
     });
+
+    const fileSystemAdapter = new ObsidianFileSystemAdapter(this.app);
 
     this.parserMap = createParserMap();
     this.generator = createGenerator(this.settings.outputFormat);
@@ -135,11 +137,12 @@ export default class PetrifyPlugin extends Plugin {
       }
     }
 
-    this.pipeline = new ConversionPipeline(
+    this.petrifyService = new PetrifyService(
       extensionMap,
       this.generator,
       this.ocr,
-      conversionState,
+      this.metadataAdapter,
+      fileSystemAdapter,
       { confidenceThreshold: this.settings.ocr.confidenceThreshold },
     );
   }
@@ -184,16 +187,9 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async processFile(event: FileChangeEvent, outputDir: string): Promise<boolean> {
-    const result = await this.pipeline.handleFileChange(event);
-    if (!result) return false;
+    const outputPath = await this.petrifyService.handleFileChange(event, outputDir);
+    if (!outputPath) return false;
 
-    const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
-    const baseName = event.name.replace(/\.[^/.]+$/, '');
-    const outputPath = await saveGeneratorOutput(this.app, result, {
-      outputDir,
-      outputName: baseName,
-      frontmatter,
-    });
     this.convertLog.info(`Converted: ${event.name} -> ${outputPath}`);
     return true;
   }
@@ -201,10 +197,8 @@ export default class PetrifyPlugin extends Plugin {
   private async handleDeletedSource(outputPath: string): Promise<void> {
     if (!(await this.app.vault.adapter.exists(outputPath))) return;
 
-    const content = await this.app.vault.adapter.read(outputPath);
-    const frontmatter = parseFrontmatter(content);
-
-    if (frontmatter?.keep) {
+    const canDelete = await this.petrifyService.handleFileDelete(outputPath);
+    if (!canDelete) {
       this.convertLog.info(`Kept (protected): ${outputPath}`);
       return;
     }
@@ -231,7 +225,7 @@ export default class PetrifyPlugin extends Plugin {
   private async restart(): Promise<void> {
     await Promise.all(this.watchers.map((w) => w.stop()));
     this.watchers = [];
-    this.initializePipeline();
+    this.initializeService();
     await this.startWatchers();
   }
 
@@ -322,21 +316,14 @@ export default class PetrifyPlugin extends Plugin {
             if (!outputFile.endsWith(this.generator.extension)) continue;
 
             const outputPath = path.join(mapping.outputDir, outputFile);
-            const fullOutputPath = path.join(vaultPath, outputPath);
+            const canDelete = await this.petrifyService.handleFileDelete(outputPath);
+            if (!canDelete) continue;
 
-            let content: string;
-            try {
-              content = await fs.readFile(fullOutputPath, 'utf-8');
-            } catch {
-              continue;
-            }
-
-            const frontmatter = parseFrontmatter(content);
-            if (!frontmatter?.source) continue;
-            if (frontmatter.keep) continue;
+            const metadata = await this.metadataAdapter.getMetadata(outputPath);
+            if (!metadata?.source) continue;
 
             try {
-              await fs.access(frontmatter.source);
+              await fs.access(metadata.source);
             } catch {
               const file = this.app.vault.getAbstractFileByPath(outputPath);
               if (file) {
