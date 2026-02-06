@@ -1,5 +1,6 @@
 import type { Note, Page } from '@petrify/core';
 import { uint8ArrayToBase64 } from './base64.js';
+import { sha1Hex } from './sha1.js';
 
 export interface ExcalidrawElement {
   readonly type: 'image';
@@ -61,8 +62,8 @@ export class ExcalidrawGenerator {
   /** 페이지 간 세로 간격 (px) */
   static readonly PAGE_GAP = 100;
 
-  generate(note: Note): ExcalidrawData {
-    const { elements, files } = this.buildElementsAndFiles(note, true);
+  async generate(note: Note): Promise<ExcalidrawData> {
+    const { elements, files } = await this.buildElementsAndFiles(note, true);
     return {
       type: 'excalidraw',
       version: 2,
@@ -76,8 +77,8 @@ export class ExcalidrawGenerator {
     };
   }
 
-  generateWithoutFiles(note: Note): ExcalidrawDataWithoutFiles {
-    const { elements } = this.buildElementsAndFiles(note, false);
+  async generateWithoutFiles(note: Note): Promise<ExcalidrawDataWithoutFiles> {
+    const { elements } = await this.buildElementsAndFiles(note, false);
     return {
       type: 'excalidraw',
       version: 2,
@@ -91,10 +92,10 @@ export class ExcalidrawGenerator {
     };
   }
 
-  private buildElementsAndFiles(
+  private async buildElementsAndFiles(
     note: Note,
     includeFiles: boolean,
-  ): { elements: ExcalidrawElement[]; files?: Record<string, ExcalidrawFileEntry> } {
+  ): Promise<{ elements: ExcalidrawElement[]; files?: Record<string, ExcalidrawFileEntry> }> {
     const now = Date.now();
     const elements: ExcalidrawElement[] = [];
     const files: Record<string, ExcalidrawFileEntry> | undefined = includeFiles ? {} : undefined;
@@ -103,7 +104,7 @@ export class ExcalidrawGenerator {
 
     for (let i = 0; i < sortedPages.length; i++) {
       const page = sortedPages[i];
-      const fileId = page.id;
+      const fileId = await sha1Hex(page.imageData);
       const elementId = `element-${page.id}`;
 
       elements.push(this.createImageElement(page, elementId, fileId, i, now));

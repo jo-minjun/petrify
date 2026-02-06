@@ -15,5 +15,9 @@ export interface FileGeneratorPort {
   readonly id: string;
   readonly displayName: string;
   readonly extension: string;
-  generate(note: Note, outputName: string, ocrResults?: OcrTextResult[]): GeneratorOutput;
+  generate(
+    note: Note,
+    outputName: string,
+    ocrResults?: OcrTextResult[],
+  ): GeneratorOutput | Promise<GeneratorOutput>;
 }
