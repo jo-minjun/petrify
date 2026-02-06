@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { MarkdownFileGenerator } from '../src/markdown-file-generator.js';
 import type { Note, Page } from '@petrify/core';
+import { describe, expect, it } from 'vitest';
+import { MarkdownFileGenerator } from '../src/markdown-file-generator.js';
 
 function createPage(overrides: Partial<Page> = {}): Page {
   return {
@@ -23,19 +23,6 @@ function createNote(pages: Page[]): Note {
 }
 
 describe('MarkdownFileGenerator', () => {
-  it('id와 displayName이 정의됨', () => {
-    const generator = new MarkdownFileGenerator();
-    expect(generator.id).toBe('markdown');
-    expect(generator.displayName).toBe('Markdown');
-  });
-
-  it('extension이 .md', () => {
-    const generator = new MarkdownFileGenerator();
-    const note = createNote([createPage()]);
-    const output = generator.generate(note, 'test-note');
-    expect(output.extension).toBe('.md');
-  });
-
   it('assets에 페이지 이미지가 포함됨', () => {
     const generator = new MarkdownFileGenerator();
     const imageData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);

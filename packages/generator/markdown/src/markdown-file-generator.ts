@@ -1,4 +1,4 @@
-import type { Note, FileGeneratorPort, GeneratorOutput, OcrTextResult } from '@petrify/core';
+import type { FileGeneratorPort, GeneratorOutput, Note, OcrTextResult } from '@petrify/core';
 
 export class MarkdownFileGenerator implements FileGeneratorPort {
   readonly id = 'markdown';
@@ -18,16 +18,16 @@ export class MarkdownFileGenerator implements FileGeneratorPort {
 
       const pageOcr = ocrResults?.find((r) => r.pageIndex === page.order);
       if (pageOcr && pageOcr.texts.length > 0) {
-        ocrSection += pageOcr.texts.join('\n') + '\n\n';
+        ocrSection += `${pageOcr.texts.join('\n')}\n\n`;
       }
 
       imageSection += `![[assets/${outputName}/${filename}]]\n`;
     }
 
-    const content = ocrSection + '---\n\n' + imageSection;
+    const content = `${ocrSection}---\n\n${imageSection}`;
 
     return {
-      content: content.trim() + '\n',
+      content: `${content.trim()}\n`,
       assets,
       extension: '.md',
     };

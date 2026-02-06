@@ -1,4 +1,4 @@
-import type { OcrPort, OcrResult, OcrRegion, OcrOptions } from '@petrify/core';
+import type { OcrOptions, OcrPort, OcrRegion, OcrResult } from '@petrify/core';
 import { OcrInitializationError, OcrRecognitionError } from '@petrify/core';
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
@@ -69,18 +69,18 @@ export class GoogleVisionOcr implements OcrPort {
   private async callApi(image: ArrayBuffer, options?: OcrOptions): Promise<VisionResponse> {
     const base64Image = uint8ArrayToBase64(new Uint8Array(image));
 
-    const languageHints = options?.language
-      ? [options.language]
-      : this.config.languageHints;
+    const languageHints = options?.language ? [options.language] : this.config.languageHints;
 
     const body = {
-      requests: [{
-        image: { content: base64Image },
-        features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
-        ...(languageHints?.length && {
-          imageContext: { languageHints },
-        }),
-      }],
+      requests: [
+        {
+          image: { content: base64Image },
+          features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+          ...(languageHints?.length && {
+            imageContext: { languageHints },
+          }),
+        },
+      ],
     };
 
     let res: Response;
@@ -92,7 +92,7 @@ export class GoogleVisionOcr implements OcrPort {
       });
     } catch (error) {
       throw new OcrRecognitionError(
-        `Vision API 요청 실패: ${error instanceof Error ? error.message : String(error)}`
+        `Vision API 요청 실패: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
 
@@ -106,7 +106,7 @@ export class GoogleVisionOcr implements OcrPort {
       throw new OcrRecognitionError(`Vision API 에러 (${res.status}): ${errorBody}`);
     }
 
-    return await res.json() as VisionResponse;
+    return (await res.json()) as VisionResponse;
   }
 
   private mapResponse(response: VisionResponse, confidenceThreshold?: number): OcrResult {
@@ -131,7 +131,7 @@ export class GoogleVisionOcr implements OcrPort {
     }));
 
     const filteredRegions = regions.filter(
-      (r) => r.confidence == null || r.confidence >= threshold
+      (r) => r.confidence == null || r.confidence >= threshold,
     );
     const text = filteredRegions.map((r) => r.text).join('\n');
 
@@ -148,7 +148,12 @@ export class GoogleVisionOcr implements OcrPort {
       .join(' ');
   }
 
-  private extractBoundingBox(vertices?: VisionVertex[]): { x: number; y: number; width: number; height: number } {
+  private extractBoundingBox(vertices?: VisionVertex[]): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } {
     if (!vertices || vertices.length < 4) {
       return { x: 0, y: 0, width: 0, height: 0 };
     }

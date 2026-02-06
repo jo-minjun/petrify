@@ -1,12 +1,19 @@
-import { describe, it, expect } from 'vitest';
-import { PetrifyService } from '../src/petrify-service.js';
-import type { ParserPort } from '../src/ports/parser.js';
-import type { FileGeneratorPort, GeneratorOutput, OcrTextResult } from '../src/ports/file-generator.js';
-import type { ConversionMetadataPort, ConversionMetadata } from '../src/ports/conversion-metadata.js';
-import type { OcrPort, OcrResult } from '../src/ports/ocr.js';
-import type { FileChangeEvent } from '../src/ports/watcher.js';
-import type { Note, Page } from '../src/models/index.js';
+import { describe, expect, it } from 'vitest';
 import { ConversionError, ParseError } from '../src/exceptions.js';
+import type { Note, Page } from '../src/models/index.js';
+import { PetrifyService } from '../src/petrify-service.js';
+import type {
+  ConversionMetadata,
+  ConversionMetadataPort,
+} from '../src/ports/conversion-metadata.js';
+import type {
+  FileGeneratorPort,
+  GeneratorOutput,
+  OcrTextResult,
+} from '../src/ports/file-generator.js';
+import type { OcrPort, OcrResult } from '../src/ports/ocr.js';
+import type { ParserPort } from '../src/ports/parser.js';
+import type { FileChangeEvent } from '../src/ports/watcher.js';
 
 // --- Lightweight Fake 구현 ---
 
@@ -129,10 +136,9 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeMetadata = new FakeMetadata();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(
-      parsers, fakeGenerator, fakeOcr, fakeMetadata,
-      { confidenceThreshold: 50 },
-    );
+    const service = new PetrifyService(parsers, fakeGenerator, fakeOcr, fakeMetadata, {
+      confidenceThreshold: 50,
+    });
 
     const event = createFileChangeEvent();
     const result = await service.handleFileChange(event);
@@ -163,10 +169,9 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeMetadata = new FakeMetadata();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(
-      parsers, fakeGenerator, fakeOcr, fakeMetadata,
-      { confidenceThreshold: 50 },
-    );
+    const service = new PetrifyService(parsers, fakeGenerator, fakeOcr, fakeMetadata, {
+      confidenceThreshold: 50,
+    });
 
     const event = createFileChangeEvent();
     const result = await service.handleFileChange(event);
@@ -183,10 +188,9 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeMetadata = new FakeMetadata();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(
-      parsers, fakeGenerator, null, fakeMetadata,
-      { confidenceThreshold: 50 },
-    );
+    const service = new PetrifyService(parsers, fakeGenerator, null, fakeMetadata, {
+      confidenceThreshold: 50,
+    });
 
     const event = createFileChangeEvent({ mtime: 1000 });
 
@@ -207,10 +211,9 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeMetadata = new FakeMetadata();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(
-      parsers, fakeGenerator, null, fakeMetadata,
-      { confidenceThreshold: 50 },
-    );
+    const service = new PetrifyService(parsers, fakeGenerator, null, fakeMetadata, {
+      confidenceThreshold: 50,
+    });
 
     const event = createFileChangeEvent();
     const result = await service.handleFileChange(event);
@@ -226,10 +229,9 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeGenerator = new FakeGenerator();
     const fakeMetadata = new FakeMetadata();
 
-    const service = new PetrifyService(
-      new Map(), fakeGenerator, null, fakeMetadata,
-      { confidenceThreshold: 50 },
-    );
+    const service = new PetrifyService(new Map(), fakeGenerator, null, fakeMetadata, {
+      confidenceThreshold: 50,
+    });
 
     const data = new ArrayBuffer(8);
     const result = await service.convertDroppedFile(data, fakeParser, 'dropped');
@@ -246,10 +248,9 @@ describe('PetrifyService 통합 테스트', () => {
       mtime: 1000,
     });
 
-    const service = new PetrifyService(
-      new Map(), new FakeGenerator(), null, fakeMetadata,
-      { confidenceThreshold: 50 },
-    );
+    const service = new PetrifyService(new Map(), new FakeGenerator(), null, fakeMetadata, {
+      confidenceThreshold: 50,
+    });
 
     const result = await service.handleFileDelete('output/file.fake.md');
     expect(result).toBe(true);
@@ -264,10 +265,9 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeMetadata = new FakeMetadata();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(
-      parsers, fakeGenerator, null, fakeMetadata,
-      { confidenceThreshold: 50 },
-    );
+    const service = new PetrifyService(parsers, fakeGenerator, null, fakeMetadata, {
+      confidenceThreshold: 50,
+    });
 
     const event = createFileChangeEvent();
 

@@ -1,10 +1,10 @@
-import * as path from 'path';
+import * as path from 'node:path';
 import type {
-  PetrifyService,
-  ParserPort,
-  FileGeneratorPort,
   ConversionMetadataPort,
   FileChangeEvent,
+  FileGeneratorPort,
+  ParserPort,
+  PetrifyService,
 } from '@petrify/core';
 import type { SaveConversionFn } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
@@ -43,10 +43,7 @@ export class SyncOrchestrator {
     private readonly convertLog: Logger,
   ) {}
 
-  async syncAll(
-    watchMappings: WatchMapping[],
-    deleteOnSourceDelete: boolean,
-  ): Promise<SyncResult> {
+  async syncAll(watchMappings: WatchMapping[], deleteOnSourceDelete: boolean): Promise<SyncResult> {
     let synced = 0;
     let failed = 0;
     let deleted = 0;
@@ -61,7 +58,7 @@ export class SyncOrchestrator {
         failed++;
         continue;
       }
-      const supportedExts = parserForMapping.extensions.map(e => e.toLowerCase());
+      const supportedExts = parserForMapping.extensions.map((e) => e.toLowerCase());
 
       let entries: string[];
       try {

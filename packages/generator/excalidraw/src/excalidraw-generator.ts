@@ -156,11 +156,7 @@ export class ExcalidrawGenerator {
     };
   }
 
-  private createFileEntry(
-    page: Page,
-    fileId: string,
-    timestamp: number,
-  ): ExcalidrawFileEntry {
+  private createFileEntry(page: Page, fileId: string, timestamp: number): ExcalidrawFileEntry {
     const base64 = uint8ArrayToBase64(page.imageData);
     return {
       mimeType: 'image/png',

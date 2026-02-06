@@ -1,14 +1,21 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { Plugin, setIcon } from 'obsidian';
-import type { DataAdapter } from 'obsidian';
-import { PetrifyService, ConversionError } from '@petrify/core';
-import type { ConversionResult, FileChangeEvent, FileGeneratorPort, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import type {
+  ConversionResult,
+  FileChangeEvent,
+  FileGeneratorPort,
+  OcrPort,
+  ParserPort,
+  WatcherPort,
+} from '@petrify/core';
+import { ConversionError, PetrifyService } from '@petrify/core';
 import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
 import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
+import type { DataAdapter } from 'obsidian';
+import { Plugin, setIcon } from 'obsidian';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
@@ -17,8 +24,8 @@ import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
 import { createParserMap, ParserId } from './parser-registry.js';
 import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
-import { SyncOrchestrator } from './sync-orchestrator.js';
 import type { SyncFileSystem, VaultOperations } from './sync-orchestrator.js';
+import { SyncOrchestrator } from './sync-orchestrator.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
@@ -28,7 +35,6 @@ function createGenerator(format: OutputFormat): FileGeneratorPort {
   switch (format) {
     case 'markdown':
       return new MarkdownFileGenerator();
-    case 'excalidraw':
     default:
       return new ExcalidrawFileGenerator();
   }
@@ -80,7 +86,7 @@ export default class PetrifyPlugin extends Plugin {
           this.settings = settings;
           await this.saveSettings();
         },
-      })
+      }),
     );
 
     this.dropHandler = new DropHandler(

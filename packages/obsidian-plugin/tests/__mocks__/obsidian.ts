@@ -1,6 +1,4 @@
-export class Notice {
-  constructor(_message: string, _timeout?: number) {}
-}
+export class Notice {}
 
 export class App {}
 export class Plugin {}

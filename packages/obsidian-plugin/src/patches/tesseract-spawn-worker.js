@@ -1,7 +1,5 @@
-'use strict';
-
-const fs = require('fs');
-const { fileURLToPath } = require('url');
+const fs = require('node:fs');
+const { fileURLToPath } = require('node:url');
 
 /**
  * Obsidian(Electron) 환경용 spawnWorker
