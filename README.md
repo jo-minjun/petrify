@@ -8,69 +8,52 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 
 **현재 지원:**
 - Parser: viwoods (.note)
-- OCR: Tesseract.js
+- OCR: Tesseract.js, Google Cloud Vision
+- Generator: Excalidraw, Markdown
 - Watcher: chokidar (로컬 파일시스템)
 - Obsidian 플러그인 (외부 폴더 감시 → 자동 변환)
 
 **계획 중:**
 - Obsidian Vault 내부 파일 감시 (VaultWatcher)
 
-포트/어댑터 패턴으로 Parser, OCR, Watcher를 독립적으로 확장할 수 있습니다. OCR 기능으로 손글씨를 텍스트로 추출하여 Obsidian에서 검색 가능하게 만듭니다.
-
-## 지원 현황
-
-| 구분 | 항목 | 상태 |
-|------|------|------|
-| Parser | viwoods (.note) | ✅ |
-| Parser | supernote | ❌ |
-| Parser | remarkable | ❌ |
-| Parser | etc. | ❌ |
-| OCR | Tesseract.js | ✅ |
-| OCR | etc. | ❌ |
-| Watcher | chokidar (로컬 FS) | ✅ |
-| Watcher | Obsidian Vault | ❌ |
-| 기능 | Excalidraw 변환 | ✅ |
-| 기능 | OCR 텍스트 추출 | ✅ |
-| 기능 | Obsidian 플러그인 | ✅ |
-| 기능 | 드래그 & 드롭 변환 | ✅ |
-| 기능 | 원본 삭제 시 변환 파일 정리 | ✅ |
-
-✅ 지원 | ❌ 미지원
+포트/어댑터 패턴으로 Parser, OCR, Generator, Watcher를 독립적으로 확장할 수 있습니다. OCR 기능으로 손글씨를 텍스트로 추출하여 Obsidian에서 검색 가능하게 만듭니다.
 
 ## 아키텍처
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                         @petrify/core                        │
-│                                                              │
-│  ┌────────────┐ ┌──────────┐ ┌───────────┐ ┌──────────────┐ │
-│  │ ParserPort │ │ OcrPort  │ │WatcherPort│ │Conversion    │ │
-│  └─────┬──────┘ └─────┬────┘ └─────┬─────┘ │  StatePort   │ │
-│        │              │            │        └──────┬───────┘ │
-│        ▼              ▼            ▼               ▼         │
-│  ┌───────────────────────────────────────────────────────┐   │
-│  │                 ConversionPipeline                    │   │
-│  │  filter ext -> check mtime -> parse -> ocr -> convert │   │
-│  └──────────────────────┬────────────────────────────────┘   │
-└─────────────────────────┼────────────────────────────────────┘
-                          │
-         implements       │               implements
-   ┌──────────────────────┼───────────────────────────┐
-   │           │          │          │                 │
-   ▼           ▼          ▼          ▼                 ▼
-┌────────┐ ┌──────────┐ ┌────────┐ ┌─────────────┐
-│ parser │ │   ocr    │ │watcher │ │ Frontmatter │
-│viwoods │ │tesseract │ │chokidar│ │ Conversion  │
-│        │ │          │ │        │ │    State    │
-└────────┘ └──────────┘ └────────┘ └─────────────┘
-                                    └ obsidian-plugin ┘
-                          │
-                          ▼
-                  ┌────────────────┐
-                  │ .excalidraw.md │
-                  │(Obsidian Vault)│
-                  └────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                             @petrify/core                                │
+│                                                                          │
+│  ┌──────────┐ ┌─────────┐ ┌───────────┐ ┌─────────────┐ ┌─────────────┐  │
+│  │ParserPort│ │ OcrPort │ │WatcherPort│ │FileGenerator│ │Conversion   │  │
+│  │          │ │         │ │           │ │    Port     │ │  StatePort  │  │
+│  └────┬─────┘ └────┬────┘ └─────┬─────┘ └──────┬──────┘ └──────┬──────┘  │
+│       │            │            │              │               │         │
+│       ▼            ▼            ▼              ▼               ▼         │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │                       ConversionPipeline                           │  │
+│  │        filter ext -> check mtime -> parse -> ocr -> generate       │  │
+│  └──────────────────────────────┬─────────────────────────────────────┘  │
+└─────────────────────────────────┼────────────────────────────────────────┘
+                                  │
+                                  ▼
+                  ┌───────────────────────────────┐
+                  │  .excalidraw.md  |  .md       │
+                  │       (Obsidian Vault)        │
+                  └───────────────────────────────┘
 ```
+
+### 포트 어댑터
+
+| Port | Adapter | 패키지 |
+|------|---------|--------|
+| ParserPort | viwoods (.note) | @petrify/parser-viwoods |
+| OcrPort | Tesseract.js | @petrify/ocr-tesseract |
+| OcrPort | Google Cloud Vision | @petrify/ocr-google-vision |
+| FileGeneratorPort | Excalidraw (.excalidraw.md) | @petrify/generator-excalidraw |
+| FileGeneratorPort | Markdown (.md) | @petrify/generator-markdown |
+| WatcherPort | chokidar (로컬 FS) | @petrify/watcher-chokidar |
+| ConversionStatePort | Frontmatter 기반 | @petrify/obsidian-plugin |
 
 ## 설치
 
@@ -106,7 +89,7 @@ pnpm add @petrify/watcher-chokidar
 - **다중 폴더 매핑**: 여러 외부 폴더를 각각 다른 vault 폴더로 매핑
 - **자동 변환**: ConversionPipeline이 확장자 필터링 → mtime 스킵 → 변환 자동 처리
 - **드래그 & 드롭**: 파일 탐색기에 필기 파일을 드롭하면 해당 위치에 즉시 변환
-- **OCR 지원**: 손글씨 텍스트 추출 (Tesseract.js)
+- **OCR 지원**: 손글씨 텍스트 추출 (Tesseract.js / Google Cloud Vision)
 - **중복 방지**: ConversionStatePort 기반 mtime 비교로 이미 변환된 파일 재처리 안함
 - **원본 삭제 연동**: 원본 파일 삭제 시 변환 파일도 함께 정리 (설정에서 활성화)
 
@@ -114,9 +97,11 @@ pnpm add @petrify/watcher-chokidar
 
 | 항목 | 설명 |
 |------|------|
+| Output Format | 출력 파일 형식 (Excalidraw / Markdown) |
 | Watch Directories | 감시할 외부 폴더 경로 (다중 설정 가능) |
 | Output Directories | 변환된 파일이 저장될 vault 내 경로 (매핑별 지정) |
 | Parser | 각 감시 폴더에서 사용할 파서 선택 (viwoods 등) |
+| OCR Provider | OCR 엔진 선택 (Tesseract / Google Vision) |
 | Confidence Threshold | OCR 신뢰도 임계값 (0-100) |
 | Delete on source delete | 원본 삭제 시 변환 파일도 삭제 (기본: 비활성화) |
 
@@ -152,27 +137,14 @@ packages/
 ├── parser/
 │   └── viwoods/          # @petrify/parser-viwoods (ParserPort 구현)
 ├── ocr/
-│   └── tesseract/        # @petrify/ocr-tesseract (OcrPort 구현)
+│   ├── tesseract/        # @petrify/ocr-tesseract (OcrPort 구현)
+│   └── google-vision/    # @petrify/ocr-google-vision (OcrPort 구현)
+├── generator/
+│   ├── excalidraw/       # @petrify/generator-excalidraw (FileGeneratorPort 구현)
+│   └── markdown/         # @petrify/generator-markdown (FileGeneratorPort 구현)
 ├── watcher/
 │   └── chokidar/         # @petrify/watcher-chokidar (WatcherPort 구현)
 └── obsidian-plugin/      # Obsidian 플러그인 (조립 + UI)
-```
-
-### 의존성
-
-```
-                    ┌─────────────────────┐
-                    │  obsidian-plugin    │
-                    └─────────┬───────────┘
-                              │
-        ┌──────────┬──────────┼──────────┬──────────┐
-        ▼          ▼          ▼          ▼          ▼
-   ┌─────────┐ ┌──────────┐ ┌─────────┐ ┌─────────┐
-   │ parser  │ │   ocr    │ │ watcher │ │         │
-   │ viwoods │ │tesseract │ │chokidar │ │  core   │
-   └────┬────┘ └────┬─────┘ └────┬────┘ └─────────┘
-        │           │           │           ▲
-        └───────────┴───────────┴───────────┘
 ```
 
 ## 라이선스
