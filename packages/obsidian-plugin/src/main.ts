@@ -12,7 +12,6 @@ import { ConversionError, PetrifyService } from '@petrify/core';
 import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
 import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
-import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import type { OAuth2Client, PageTokenStore, TokenStore } from '@petrify/watcher-google-drive';
 import { GoogleDriveAuth, GoogleDriveWatcher } from '@petrify/watcher-google-drive';
@@ -119,10 +118,15 @@ export default class PetrifyPlugin extends Plugin {
       return;
     }
 
-    // Tesseract (default)
+    // Tesseract (default) — 별도 번들에서 동적 로드
     const adapter = this.app.vault.adapter as FileSystemAdapter;
     const vaultPath = adapter.getBasePath();
     const pluginDir = path.join(vaultPath, '.obsidian', 'plugins', 'petrify');
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { TesseractOcr } = require(path.join(pluginDir, 'tesseract-ocr.cjs')) as {
+      TesseractOcr: typeof import('@petrify/ocr-tesseract').TesseractOcr;
+    };
 
     const workerPath = `file://${path.join(pluginDir, 'worker.min.js')}`;
 
