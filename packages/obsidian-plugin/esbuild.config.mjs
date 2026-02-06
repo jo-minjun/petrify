@@ -25,15 +25,13 @@ async function copyTesseractFiles() {
   );
   const coreTargetDir = path.join(targetDir, 'tesseract-core');
 
-  try {
-    await fs.mkdir(coreTargetDir, { recursive: true });
-  } catch {
-    // 이미 존재
-  }
+  await fs.rm(coreTargetDir, { recursive: true, force: true });
+  await fs.mkdir(coreTargetDir, { recursive: true });
 
+  const allowedPrefixes = ['tesseract-core-lstm', 'tesseract-core-simd-lstm'];
   const coreFiles = await fs.readdir(coreDir);
   for (const file of coreFiles) {
-    if (file.endsWith('.js') || file.endsWith('.wasm')) {
+    if (file === 'index.js' || allowedPrefixes.some((p) => file.startsWith(p))) {
       await fs.copyFile(path.join(coreDir, file), path.join(coreTargetDir, file));
       console.log(`Copied ${file}`);
     }
@@ -69,10 +67,11 @@ const tesseractObsidianPlugin = {
   },
 };
 
+// 메인 빌드 — Tesseract를 external로 마킹하여 main.js에서 제외
 const context = await esbuild.context({
   entryPoints: ['src/main.ts'],
   bundle: true,
-  external: ['obsidian', 'electron'],
+  external: ['obsidian', 'electron', '@petrify/ocr-tesseract'],
   format: 'cjs',
   platform: 'node',
   target: 'es2020',
@@ -82,11 +81,29 @@ const context = await esbuild.context({
   plugins: [tesseractObsidianPlugin],
 });
 
+// Tesseract OCR 별도 CJS 번들 빌드
+async function buildTesseractBundle() {
+  await esbuild.build({
+    entryPoints: ['src/tesseract-loader.ts'],
+    bundle: true,
+    external: ['obsidian', 'electron'],
+    format: 'cjs',
+    platform: 'node',
+    target: 'es2020',
+    outfile: 'tesseract-ocr.cjs',
+    treeShaking: true,
+    plugins: [tesseractObsidianPlugin],
+  });
+  console.log('Built tesseract-ocr.cjs');
+}
+
 if (prod) {
   await context.rebuild();
+  await buildTesseractBundle();
   await copyTesseractFiles();
   process.exit(0);
 } else {
+  await buildTesseractBundle();
   await copyTesseractFiles();
   await context.watch();
   console.log('Watching for changes...');

@@ -4,4 +4,5 @@ node_modules/
 
 # Tesseract.js 빌드 아티팩트
 tesseract-core/
+tesseract-ocr.cjs
 worker.min.js
