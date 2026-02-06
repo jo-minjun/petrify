@@ -138,7 +138,11 @@ describe('SyncOrchestrator', () => {
     mockFs.readdir.mockResolvedValue(['file.note']);
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
-    mockService.handleFileChange.mockResolvedValue({ content: 'test', assets: new Map(), metadata: { source: '/watch/file.note', mtime: 1000 } });
+    mockService.handleFileChange.mockResolvedValue({
+      content: 'test',
+      assets: new Map(),
+      metadata: { source: '/watch/file.note', mtime: 1000 },
+    });
 
     const result = await orchestrator.syncAll([createDefaultMapping()], false);
 
@@ -265,7 +269,11 @@ describe('SyncOrchestrator', () => {
     mockFs.readdir.mockResolvedValue(['file.note']);
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
-    mockService.handleFileChange.mockResolvedValue({ content: 'test', assets: new Map(), metadata: { source: '/watch/file.note', mtime: 1000 } });
+    mockService.handleFileChange.mockResolvedValue({
+      content: 'test',
+      assets: new Map(),
+      metadata: { source: '/watch/file.note', mtime: 1000 },
+    });
 
     const result = await orchestrator.syncAll([mapping1, mapping2], false);
 
@@ -344,7 +352,11 @@ describe('SyncOrchestrator', () => {
       async (event: { readData: () => Promise<ArrayBuffer> }) => {
         const data = await event.readData();
         expect(data).toBe(testBuffer);
-        return { content: 'test', assets: new Map(), metadata: { source: '/watch/file.note', mtime: 2000 } };
+        return {
+          content: 'test',
+          assets: new Map(),
+          metadata: { source: '/watch/file.note', mtime: 2000 },
+        };
       },
     );
 

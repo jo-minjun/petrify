@@ -74,13 +74,9 @@ describe('PetrifyService', () => {
         mtime: 1000,
       });
 
-      const service = new PetrifyService(
-        parsers,
-        createMockGeneratorPort(),
-        null,
-        mockMetadata,
-        { confidenceThreshold: 0.5 },
-      );
+      const service = new PetrifyService(parsers, createMockGeneratorPort(), null, mockMetadata, {
+        confidenceThreshold: 0.5,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
@@ -100,13 +96,9 @@ describe('PetrifyService', () => {
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
 
-      const service = new PetrifyService(
-        new Map(),
-        createMockGeneratorPort(),
-        null,
-        mockMetadata,
-        { confidenceThreshold: 0.5 },
-      );
+      const service = new PetrifyService(new Map(), createMockGeneratorPort(), null, mockMetadata, {
+        confidenceThreshold: 0.5,
+      });
 
       const result = await service.handleFileDelete('output/file.excalidraw.md');
       expect(result).toBe(false);
@@ -120,13 +112,9 @@ describe('PetrifyService', () => {
         keep: true,
       });
 
-      const service = new PetrifyService(
-        new Map(),
-        createMockGeneratorPort(),
-        null,
-        mockMetadata,
-        { confidenceThreshold: 0.5 },
-      );
+      const service = new PetrifyService(new Map(), createMockGeneratorPort(), null, mockMetadata, {
+        confidenceThreshold: 0.5,
+      });
 
       const result = await service.handleFileDelete('output/file.excalidraw.md');
       expect(result).toBe(false);
@@ -139,13 +127,9 @@ describe('PetrifyService', () => {
         mtime: 1000,
       });
 
-      const service = new PetrifyService(
-        new Map(),
-        createMockGeneratorPort(),
-        null,
-        mockMetadata,
-        { confidenceThreshold: 0.5 },
-      );
+      const service = new PetrifyService(new Map(), createMockGeneratorPort(), null, mockMetadata, {
+        confidenceThreshold: 0.5,
+      });
 
       const result = await service.handleFileDelete('output/file.excalidraw.md');
       expect(result).toBe(true);
@@ -241,13 +225,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
 
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
-      const service = new PetrifyService(
-        parsers,
-        mockGenerator,
-        null,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(parsers, mockGenerator, null, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
@@ -260,8 +240,8 @@ describe('PetrifyService', () => {
       const result = await service.handleFileChange(event);
 
       expect(result).not.toBeNull();
-      expect(result!.content).toBe('test-content');
-      expect(result!.metadata).toEqual({
+      expect(result?.content).toBe('test-content');
+      expect(result?.metadata).toEqual({
         source: event.id,
         mtime: event.mtime,
       });
@@ -288,13 +268,9 @@ describe('PetrifyService', () => {
       });
 
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
-      const service = new PetrifyService(
-        parsers,
-        mockGenerator,
-        mockOcr,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(parsers, mockGenerator, mockOcr, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
@@ -337,13 +313,9 @@ describe('PetrifyService', () => {
       });
 
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
-      const service = new PetrifyService(
-        parsers,
-        mockGenerator,
-        mockOcr,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(parsers, mockGenerator, mockOcr, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
@@ -380,13 +352,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
 
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
-      const service = new PetrifyService(
-        parsers,
-        mockGenerator,
-        null,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(parsers, mockGenerator, null, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
@@ -399,7 +367,7 @@ describe('PetrifyService', () => {
       const result = await service.handleFileChange(event);
 
       expect(result).not.toBeNull();
-      expect(result!.assets.get('img.png')).toEqual(new Uint8Array([1, 2, 3]));
+      expect(result?.assets.get('img.png')).toEqual(new Uint8Array([1, 2, 3]));
     });
 
     it('다중 페이지 OCR — 페이지별 OCR 수행', async () => {
@@ -436,13 +404,9 @@ describe('PetrifyService', () => {
         });
 
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
-      const service = new PetrifyService(
-        parsers,
-        mockGenerator,
-        mockOcr,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(parsers, mockGenerator, mockOcr, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
@@ -490,13 +454,9 @@ describe('PetrifyService', () => {
       });
 
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
-      const service = new PetrifyService(
-        parsers,
-        mockGenerator,
-        mockOcr,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(parsers, mockGenerator, mockOcr, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
@@ -523,13 +483,9 @@ describe('PetrifyService', () => {
 
       const mockMetadata = createMockMetadataPort();
 
-      const service = new PetrifyService(
-        new Map(),
-        mockGenerator,
-        null,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(new Map(), mockGenerator, null, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const data = new ArrayBuffer(8);
       const result = await service.convertDroppedFile(data, mockParser, 'dropped');
@@ -572,13 +528,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
 
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
-      const service = new PetrifyService(
-        parsers,
-        createMockGeneratorPort(),
-        null,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(parsers, createMockGeneratorPort(), null, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
@@ -643,13 +595,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
 
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
-      const service = new PetrifyService(
-        parsers,
-        mockGenerator,
-        null,
-        mockMetadata,
-        { confidenceThreshold: 50 },
-      );
+      const service = new PetrifyService(parsers, mockGenerator, null, mockMetadata, {
+        confidenceThreshold: 50,
+      });
 
       const event: FileChangeEvent = {
         id: '/path/to/file.note',

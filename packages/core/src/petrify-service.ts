@@ -105,12 +105,13 @@ export class PetrifyService {
     let ocrResults: OcrTextResult[] | undefined;
 
     if (this.ocr) {
+      const ocr = this.ocr;
       const ocrPages = note.pages.filter((page) => page.imageData.length > 0);
       try {
         const results = await Promise.all(
           ocrPages.map(async (page) => {
             const imageBuffer = new Uint8Array(page.imageData).buffer;
-            const ocrResult = await this.ocr!.recognize(imageBuffer);
+            const ocrResult = await ocr.recognize(imageBuffer);
             const filteredTexts = filterOcrByConfidence(ocrResult.regions, threshold);
             return { pageIndex: page.order, texts: filteredTexts };
           }),

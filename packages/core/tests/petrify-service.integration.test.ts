@@ -144,9 +144,9 @@ describe('PetrifyService 통합 테스트', () => {
     const result = await service.handleFileChange(event);
 
     expect(result).not.toBeNull();
-    expect(result!.content).toContain('My Note');
-    expect(result!.content).toContain('default-ocr-text');
-    expect(result!.content).toContain('Pages: 1');
+    expect(result?.content).toContain('My Note');
+    expect(result?.content).toContain('default-ocr-text');
+    expect(result?.content).toContain('Pages: 1');
   });
 
   it('OCR confidence 필터링이 최종 출력에 반영', async () => {
@@ -177,8 +177,8 @@ describe('PetrifyService 통합 테스트', () => {
     const result = await service.handleFileChange(event);
 
     expect(result).not.toBeNull();
-    expect(result!.content).toContain('high');
-    expect(result!.content).not.toContain('low');
+    expect(result?.content).toContain('high');
+    expect(result?.content).not.toContain('low');
   });
 
   it('메타데이터 라운드트립: mtime 변경 없으면 스킵', async () => {
@@ -219,8 +219,8 @@ describe('PetrifyService 통합 테스트', () => {
     const result = await service.handleFileChange(event);
 
     expect(result).not.toBeNull();
-    expect(result!.assets.has('page-abc.png')).toBe(true);
-    expect(result!.assets.get('page-abc.png')).toEqual(page.imageData);
+    expect(result?.assets.has('page-abc.png')).toBe(true);
+    expect(result?.assets.get('page-abc.png')).toEqual(page.imageData);
   });
 
   it('convertDroppedFile: metadata에 keep=true', async () => {
