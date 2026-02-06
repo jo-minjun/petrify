@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createFrontmatter, parseFrontmatter } from '../../src/utils/frontmatter.js';
+import {
+  createFrontmatter,
+  parseFrontmatter,
+  updateKeepInContent,
+} from '../../src/utils/frontmatter.js';
 
 describe('frontmatter', () => {
   describe('createFrontmatter', () => {
@@ -113,6 +117,96 @@ content`;
       expect(result?.source).toBeNull();
       expect(result?.mtime).toBeNull();
       expect(result?.keep).toBe(true);
+    });
+  });
+
+  describe('updateKeepInContent', () => {
+    it('keep이 없는 frontmatter에 keep: true를 추가한다', () => {
+      const content = `---
+petrify:
+  source: /path/to/file.note
+  mtime: 1705315800000
+excalidraw-plugin: parsed
+---
+
+# Content`;
+
+      const result = updateKeepInContent(content, true);
+
+      expect(result).toContain('keep: true');
+      expect(result).toContain('# Content');
+      expect(result).toContain('source: /path/to/file.note');
+    });
+
+    it('keep: true를 제거한다', () => {
+      const content = `---
+petrify:
+  source: /path/to/file.note
+  mtime: 1705315800000
+  keep: true
+excalidraw-plugin: parsed
+---
+
+# Content`;
+
+      const result = updateKeepInContent(content, false);
+
+      expect(result).not.toContain('keep');
+      expect(result).toContain('# Content');
+      expect(result).toContain('source: /path/to/file.note');
+    });
+
+    it('keep: false를 keep: true로 변경한다', () => {
+      const content = `---
+petrify:
+  source: null
+  mtime: null
+  keep: false
+excalidraw-plugin: parsed
+---
+
+content`;
+
+      const result = updateKeepInContent(content, true);
+
+      expect(result).toContain('keep: true');
+      expect(result).not.toContain('keep: false');
+    });
+
+    it('이미 keep: true인 상태에서 true를 설정하면 변경 없음', () => {
+      const content = `---
+petrify:
+  source: null
+  mtime: null
+  keep: true
+excalidraw-plugin: parsed
+---
+
+content`;
+
+      const result = updateKeepInContent(content, true);
+
+      expect(result).toBe(content);
+    });
+
+    it('frontmatter가 없는 파일은 변경 없이 그대로 반환한다', () => {
+      const content = '# Just a markdown file';
+
+      const result = updateKeepInContent(content, true);
+
+      expect(result).toBe(content);
+    });
+
+    it('petrify 메타데이터가 없는 frontmatter는 변경 없이 반환한다', () => {
+      const content = `---
+excalidraw-plugin: parsed
+---
+
+# Content`;
+
+      const result = updateKeepInContent(content, true);
+
+      expect(result).toBe(content);
     });
   });
 });

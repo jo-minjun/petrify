@@ -40,3 +40,14 @@ export function parseFrontmatter(content: string): PetrifyFrontmatter | null {
     ...(keepMatch && { keep: keepMatch[1] === 'true' }),
   };
 }
+
+export function updateKeepInContent(content: string, keep: boolean): string {
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) return content;
+
+  const meta = parseFrontmatter(content);
+  if (!meta) return content;
+
+  const newFrontmatter = createFrontmatter({ ...meta, keep: keep || undefined });
+  return content.replace(/^---\n[\s\S]*?\n---\n\n/, newFrontmatter);
+}

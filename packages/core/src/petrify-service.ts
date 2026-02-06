@@ -38,8 +38,7 @@ export class PetrifyService {
       return null;
     }
 
-    const lastMetadata = await this.metadataPort.getMetadata(event.id);
-    if (lastMetadata?.mtime != null && event.mtime <= lastMetadata.mtime) {
+    if (await this.shouldSkipConversion(event.id, event.mtime)) {
       return null;
     }
 
@@ -86,6 +85,13 @@ export class PetrifyService {
     if (metadata.keep) return false;
 
     return true;
+  }
+
+  private async shouldSkipConversion(id: string, mtime: number): Promise<boolean> {
+    const metadata = await this.metadataPort.getMetadata(id);
+    if (metadata?.keep) return true;
+    if (metadata?.mtime != null && mtime <= metadata.mtime) return true;
+    return false;
   }
 
   private async convertData(

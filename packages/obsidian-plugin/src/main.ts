@@ -16,7 +16,7 @@ import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import type { OAuth2Client, PageTokenStore, TokenStore } from '@petrify/watcher-google-drive';
 import { GoogleDriveAuth, GoogleDriveWatcher } from '@petrify/watcher-google-drive';
 import type { DataAdapter } from 'obsidian';
-import { Plugin, setIcon } from 'obsidian';
+import { Notice, Plugin, setIcon, TFile } from 'obsidian';
 import { saveConversionResult as saveResult } from './conversion-saver.js';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
@@ -29,6 +29,7 @@ import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './set
 import { PetrifySettingsTab } from './settings-tab.js';
 import type { ReadDirEntry, SyncFileSystem, VaultOperations } from './sync-orchestrator.js';
 import { SyncOrchestrator } from './sync-orchestrator.js';
+import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
@@ -77,6 +78,32 @@ export default class PetrifyPlugin extends Plugin {
         await this.syncAll();
       },
     });
+
+    this.addCommand({
+      id: 'toggle-keep-protection',
+      name: 'Toggle keep protection',
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file || !this.isPetrifyFile(file)) return false;
+        if (!checking) {
+          this.toggleKeep(file);
+        }
+        return true;
+      },
+    });
+
+    this.registerEvent(
+      this.app.workspace.on('file-menu', (menu, file) => {
+        if (!(file instanceof TFile) || !this.isPetrifyFile(file)) return;
+
+        menu.addItem((item) => {
+          item
+            .setTitle('Petrify: Toggle keep protection')
+            .setIcon('shield')
+            .onClick(() => this.toggleKeep(file));
+        });
+      }),
+    );
 
     this.addSettingTab(
       new PetrifySettingsTab(this.app, this, {
@@ -297,6 +324,26 @@ export default class PetrifyPlugin extends Plugin {
       await this.app.vault.trash(file, true);
       this.convertLog.info(`Deleted: ${outputPath}`);
     }
+  }
+
+  private async toggleKeep(file: TFile): Promise<void> {
+    const content = await this.app.vault.read(file);
+    const meta = parseFrontmatter(content);
+    if (!meta) {
+      new Notice('Petrify: Not a petrify-generated file');
+      return;
+    }
+
+    const newKeep = !meta.keep;
+    const updated = updateKeepInContent(content, newKeep);
+    await this.app.vault.modify(file, updated);
+
+    const status = newKeep ? 'protected' : 'unprotected';
+    new Notice(`Petrify: File ${status}`);
+  }
+
+  private isPetrifyFile(file: TFile): boolean {
+    return file.path.endsWith(this.generator.extension);
   }
 
   private getOutputPathForId(id: string): string {
