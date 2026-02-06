@@ -5,6 +5,7 @@ import {
   LANGUAGE_HINT_OPTIONS,
   type LanguageHint,
   type OcrProvider,
+  type OutputFormat,
   type PetrifySettings,
 } from './settings.js';
 
@@ -31,9 +32,30 @@ export class PetrifySettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
+    this.displayGeneralSettings(containerEl);
     this.displayWatchMappings(containerEl);
     this.displayOcrSettings(containerEl);
     this.displayDeleteSettings(containerEl);
+  }
+
+  private displayGeneralSettings(containerEl: HTMLElement): void {
+    containerEl.createEl('h2', { text: 'General Settings' });
+
+    const settings = this.callbacks.getSettings();
+
+    new Setting(containerEl)
+      .setName('출력 포맷')
+      .setDesc('변환 결과 파일 형식')
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption('excalidraw', 'Excalidraw (.excalidraw.md)')
+          .addOption('markdown', 'Markdown (.md)')
+          .setValue(settings.outputFormat)
+          .onChange(async (value) => {
+            settings.outputFormat = value as OutputFormat;
+            await this.callbacks.saveDataOnly(settings);
+          })
+      );
   }
 
   private displayWatchMappings(containerEl: HTMLElement): void {
