@@ -19,10 +19,13 @@ export interface SettingsTabCallbacks {
 export class PetrifySettingsTab extends PluginSettingTab {
   private readonly callbacks: SettingsTabCallbacks;
 
-  private pendingProvider: OcrProvider | null = null;
-  private pendingApiKey: string | null = null;
-  private pendingLanguageHints: LanguageHint[] | null = null;
-  private pendingConfidenceThreshold: number | null = null;
+  private pendingProvider: OcrProvider = DEFAULT_SETTINGS.ocr.provider;
+  private pendingApiKey: string = DEFAULT_SETTINGS.ocr.googleVision.apiKey;
+  private pendingLanguageHints: LanguageHint[] = [
+    ...DEFAULT_SETTINGS.ocr.googleVision.languageHints,
+  ];
+  private pendingConfidenceThreshold: number = DEFAULT_SETTINGS.ocr.confidenceThreshold;
+  private hasPendingOcrEdits = false;
 
   constructor(app: App, plugin: Plugin, callbacks: SettingsTabCallbacks) {
     super(app, plugin);
@@ -234,18 +237,12 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     const settings = this.callbacks.getSettings();
 
-    // Initialize pending state from saved settings only if not already set
-    if (this.pendingProvider === null) {
+    if (!this.hasPendingOcrEdits) {
       this.pendingProvider = settings.ocr.provider;
-    }
-    if (this.pendingApiKey === null) {
       this.pendingApiKey = settings.ocr.googleVision.apiKey;
-    }
-    if (this.pendingLanguageHints === null) {
       this.pendingLanguageHints = [...settings.ocr.googleVision.languageHints];
-    }
-    if (this.pendingConfidenceThreshold === null) {
       this.pendingConfidenceThreshold = settings.ocr.confidenceThreshold;
+      this.hasPendingOcrEdits = true;
     }
 
     let saveButton: HTMLButtonElement | null = null;
@@ -253,7 +250,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
     const updateSaveButton = () => {
       if (!saveButton) return;
       const isGoogleVision = this.pendingProvider === 'google-vision';
-      const hasApiKey = (this.pendingApiKey?.trim().length ?? 0) > 0;
+      const hasApiKey = this.pendingApiKey.trim().length > 0;
       const canSave = !isGoogleVision || hasApiKey;
       saveButton.disabled = !canSave;
       saveButton.toggleClass('is-disabled', !canSave);
@@ -267,7 +264,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         dropdown
           .addOption('tesseract', 'Tesseract (Local)')
           .addOption('google-vision', 'Google Vision API')
-          .setValue(this.pendingProvider!)
+          .setValue(this.pendingProvider)
           .onChange((value) => {
             this.pendingProvider = value as OcrProvider;
             updateSaveButton();
@@ -284,7 +281,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           text.inputEl.type = 'password';
           text
             .setPlaceholder('Enter API key')
-            .setValue(this.pendingApiKey!)
+            .setValue(this.pendingApiKey)
             .onChange((value) => {
               this.pendingApiKey = value;
               updateSaveButton();
@@ -298,16 +295,17 @@ export class PetrifySettingsTab extends PluginSettingTab {
       for (const option of LANGUAGE_HINT_OPTIONS) {
         languageSetting.addToggle((toggle) => {
           toggle
-            .setValue(this.pendingLanguageHints?.includes(option.value) ?? false)
+            .setValue(this.pendingLanguageHints.includes(option.value))
             .setTooltip(option.label)
             .onChange((enabled) => {
               if (enabled) {
-                if (!this.pendingLanguageHints?.includes(option.value)) {
-                  this.pendingLanguageHints?.push(option.value);
+                if (!this.pendingLanguageHints.includes(option.value)) {
+                  this.pendingLanguageHints.push(option.value);
                 }
               } else {
-                this.pendingLanguageHints =
-                  this.pendingLanguageHints?.filter((h) => h !== option.value) ?? null;
+                this.pendingLanguageHints = this.pendingLanguageHints.filter(
+                  (h) => h !== option.value,
+                );
               }
             });
         });
@@ -341,16 +339,12 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .setButtonText('Save OCR Settings')
         .setCta()
         .onClick(async () => {
-          settings.ocr.provider = this.pendingProvider!;
-          settings.ocr.googleVision.apiKey = this.pendingApiKey!;
-          settings.ocr.googleVision.languageHints = this.pendingLanguageHints!;
-          settings.ocr.confidenceThreshold = this.pendingConfidenceThreshold!;
+          settings.ocr.provider = this.pendingProvider;
+          settings.ocr.googleVision.apiKey = this.pendingApiKey;
+          settings.ocr.googleVision.languageHints = this.pendingLanguageHints;
+          settings.ocr.confidenceThreshold = this.pendingConfidenceThreshold;
           await this.callbacks.saveSettings(settings);
-          // Reset pending state after successful save
-          this.pendingProvider = null;
-          this.pendingApiKey = null;
-          this.pendingLanguageHints = null;
-          this.pendingConfidenceThreshold = null;
+          this.hasPendingOcrEdits = false;
         });
     });
 
