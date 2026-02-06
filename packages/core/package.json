@@ -8,12 +8,5 @@
     "build": "tsup src/index.ts --format esm --dts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@petrify/generator-excalidraw": "workspace:*",
-    "lz-string": "^1.5.0"
-  },
-  "devDependencies": {
-    "@types/lz-string": "^1.5.0"
   }
 }

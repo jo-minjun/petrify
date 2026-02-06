@@ -17,8 +17,7 @@ export {
   OcrRecognitionError,
 } from './exceptions.js';
 
-export { convert, convertToMd, convertToMdWithOcr, DEFAULT_CONFIDENCE_THRESHOLD } from './api.js';
-export type { ConvertOptions } from './api.js';
+export { DEFAULT_CONFIDENCE_THRESHOLD } from './api.js';
 
 export { ConversionPipeline } from './conversion-pipeline.js';
 export type { ConversionPipelineOptions } from './conversion-pipeline.js';
