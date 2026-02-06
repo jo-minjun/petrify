@@ -21,6 +21,7 @@ import { Plugin, setIcon } from 'obsidian';
 import { saveConversionResult as saveResult } from './conversion-saver.js';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
+import { processFile as processFileImpl } from './process-file.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
 import { createLogger } from './logger.js';
 import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
@@ -254,13 +255,13 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async processFile(event: FileChangeEvent, outputDir: string): Promise<boolean> {
-    const result = await this.petrifyService.handleFileChange(event);
-    if (!result) return false;
-
-    const baseName = event.name.replace(/\.[^/.]+$/, '');
-    const outputPath = await this.saveConversionResult(result, outputDir, baseName);
-    this.convertLog.info(`Converted: ${event.name} -> ${outputPath}`);
-    return true;
+    return processFileImpl(
+      event,
+      outputDir,
+      this.petrifyService,
+      (result, dir, baseName) => this.saveConversionResult(result, dir, baseName),
+      this.convertLog,
+    );
   }
 
   private async saveConversionResult(
