@@ -15,6 +15,10 @@ export default defineConfig({
         __dirname,
         'packages/watcher/chokidar/src/index.ts',
       ),
+      '@petrify/watcher-google-drive': path.resolve(
+        __dirname,
+        'packages/watcher/google-drive/src/index.ts',
+      ),
       '@petrify/generator-excalidraw': path.resolve(
         __dirname,
         'packages/generator/excalidraw/src/index.ts',

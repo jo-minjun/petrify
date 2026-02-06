@@ -14,11 +14,20 @@ export const LANGUAGE_HINT_OPTIONS: { value: LanguageHint; label: string }[] = [
 
 export type OutputFormat = 'excalidraw' | 'markdown';
 
+export type WatchSourceType = 'local' | 'google-drive';
+
 export interface WatchMapping {
   watchDir: string;
   outputDir: string;
   enabled: boolean;
   parserId: string;
+  sourceType: WatchSourceType;
+}
+
+export interface GoogleDriveSettings {
+  clientId: string;
+  clientSecret: string;
+  pollIntervalMs: number;
 }
 
 export interface OcrSettings {
@@ -35,6 +44,7 @@ export interface PetrifySettings {
   ocr: OcrSettings;
   deleteConvertedOnSourceDelete: boolean;
   outputFormat: OutputFormat;
+  googleDrive: GoogleDriveSettings;
 }
 
 export const DEFAULT_SETTINGS: PetrifySettings = {
@@ -49,4 +59,9 @@ export const DEFAULT_SETTINGS: PetrifySettings = {
   },
   deleteConvertedOnSourceDelete: false,
   outputFormat: 'excalidraw',
+  googleDrive: {
+    clientId: '',
+    clientSecret: '',
+    pollIntervalMs: 30000,
+  },
 };

@@ -47,6 +47,7 @@ Adapters → Core ← Adapters
 | FileGeneratorPort | Excalidraw (.excalidraw.md) | @petrify/generator-excalidraw |
 | FileGeneratorPort | Markdown (.md) | @petrify/generator-markdown |
 | WatcherPort | chokidar (local FS) | @petrify/watcher-chokidar |
+| WatcherPort | Google Drive API | @petrify/watcher-google-drive |
 | ConversionMetadataPort | Frontmatter-based | @petrify/obsidian-plugin |
 
 ### Data Flow
@@ -89,7 +90,8 @@ packages/
 │   ├── excalidraw/       # @petrify/generator-excalidraw (FileGeneratorPort impl)
 │   └── markdown/         # @petrify/generator-markdown (FileGeneratorPort impl)
 ├── watcher/
-│   └── chokidar/         # @petrify/watcher-chokidar (WatcherPort impl)
+│   ├── chokidar/         # @petrify/watcher-chokidar (WatcherPort impl)
+│   └── google-drive/     # @petrify/watcher-google-drive (WatcherPort impl)
 └── obsidian-plugin/      # Obsidian plugin (composition root + UI)
 ```
 
