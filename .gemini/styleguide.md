@@ -1,7 +1,14 @@
 # Petrify Code Review Style Guide
 
-이 프로젝트의 코딩 규칙과 아키텍처 가이드는 리포지토리 루트의 `AGENTS.md`에 정의되어 있습니다.
-코드 리뷰 시 반드시 `AGENTS.md`의 DO/DON'T 규칙을 기준으로 검토하세요.
+이 프로젝트의 코딩 규칙은 `AGENTS.md` 파일들에 정의되어 있습니다.
+코드 리뷰 시 반드시 각 `AGENTS.md`의 DO/DON'T 규칙을 기준으로 검토하세요.
+
+- `AGENTS.md` (루트) — 프로젝트 전체 아키텍처, 공통 코딩 규칙
+- `packages/core/AGENTS.md` — core 패키지 역할, 포트/모델 규칙
+- `packages/core/tests/AGENTS.md` — 테스트 규칙, 유닛/통합 테스트 가이드
+- `packages/parser/AGENTS.md` — 파서 구현 규칙, ParserPort 계약
+
+변경된 파일이 속한 패키지의 `AGENTS.md`를 우선 참조하고, 루트 `AGENTS.md`를 공통 기준으로 적용하세요.
 
 ## 리뷰 중점 사항
 
