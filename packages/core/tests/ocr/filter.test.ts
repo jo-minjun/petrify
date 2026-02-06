@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { filterOcrByConfidence } from '../../src/ocr/filter.js';
 import type { OcrRegion } from '../../src/ports/ocr.js';
 

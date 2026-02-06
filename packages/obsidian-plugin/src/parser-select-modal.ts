@@ -1,5 +1,5 @@
-import { App, Modal, Setting } from 'obsidian';
 import type { ParserPort } from '@petrify/core';
+import { type App, Modal, Setting } from 'obsidian';
 
 export interface ParserSelectResult {
   readonly parser: ParserPort;
@@ -47,26 +47,27 @@ export class ParserSelectModal extends Modal {
       radioGroup.createEl('br');
     }
 
-    new Setting(contentEl)
-      .setName(`Apply to all ${this.extension} files`)
-      .addToggle((toggle) =>
-        toggle.setValue(false).onChange((value) => {
-          this.applyToAll = value;
-        })
-      );
+    new Setting(contentEl).setName(`Apply to all ${this.extension} files`).addToggle((toggle) =>
+      toggle.setValue(false).onChange((value) => {
+        this.applyToAll = value;
+      }),
+    );
 
     new Setting(contentEl)
       .addButton((btn) =>
-        btn.setButtonText('Convert').setCta().onClick(() => {
-          this.resolve?.({ parser: this.selectedParser, applyToAll: this.applyToAll });
-          this.close();
-        })
+        btn
+          .setButtonText('Convert')
+          .setCta()
+          .onClick(() => {
+            this.resolve?.({ parser: this.selectedParser, applyToAll: this.applyToAll });
+            this.close();
+          }),
       )
       .addButton((btn) =>
         btn.setButtonText('Cancel').onClick(() => {
           this.resolve?.(null);
           this.close();
-        })
+        }),
       );
   }
 

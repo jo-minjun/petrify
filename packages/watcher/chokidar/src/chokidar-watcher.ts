@@ -1,8 +1,8 @@
-import { watch } from 'chokidar';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import type { FileChangeEvent, FileDeleteEvent, WatcherPort } from '@petrify/core';
 import type { FSWatcher } from 'chokidar';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import type { WatcherPort, FileChangeEvent, FileDeleteEvent } from '@petrify/core';
+import { watch } from 'chokidar';
 
 export class ChokidarWatcher implements WatcherPort {
   private watcher: FSWatcher | null = null;

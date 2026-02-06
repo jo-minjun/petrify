@@ -1,5 +1,5 @@
+import type { OcrOptions, OcrPort, OcrRegion, OcrResult } from '@petrify/core';
 import Tesseract, { createWorker, type Worker } from 'tesseract.js';
-import type { OcrPort, OcrResult, OcrRegion, OcrOptions } from '@petrify/core';
 
 const DEFAULT_CORE_PATH = 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0/';
 
@@ -36,7 +36,7 @@ export class TesseractOcr implements OcrPort {
       await this.initialize();
     }
 
-    const result = await this.worker!.recognize(new Blob([image]));
+    const result = await this.worker?.recognize(new Blob([image]));
     const threshold = options?.confidenceThreshold ?? 0;
 
     const { text: rawText, confidence } = result.data;
@@ -56,7 +56,7 @@ export class TesseractOcr implements OcrPort {
     }));
 
     const filteredRegions = regions.filter(
-      (r) => r.confidence == null || r.confidence >= threshold
+      (r) => r.confidence == null || r.confidence >= threshold,
     );
     const text = filteredRegions.map((r) => r.text).join('\n');
 

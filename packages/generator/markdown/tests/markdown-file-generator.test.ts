@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { MarkdownFileGenerator } from '../src/markdown-file-generator.js';
 import type { Note, Page } from '@petrify/core';
+import { describe, expect, it } from 'vitest';
+import { MarkdownFileGenerator } from '../src/markdown-file-generator.js';
 
 function createPage(overrides: Partial<Page> = {}): Page {
   return {

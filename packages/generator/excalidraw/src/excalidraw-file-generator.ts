@@ -1,4 +1,4 @@
-import type { Note, FileGeneratorPort, GeneratorOutput, OcrTextResult } from '@petrify/core';
+import type { FileGeneratorPort, GeneratorOutput, Note, OcrTextResult } from '@petrify/core';
 import { ExcalidrawGenerator } from './excalidraw-generator.js';
 import { ExcalidrawMdGenerator } from './md-generator.js';
 

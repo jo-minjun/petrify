@@ -7,7 +7,9 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "check": "biome check .",
+    "check:write": "biome check --write ."
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -16,6 +18,7 @@
     ]
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.14",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",
     "vitest": "^2.0.0"

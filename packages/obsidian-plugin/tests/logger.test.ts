@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLogger } from '../src/logger.js';
 
 vi.mock('obsidian', () => ({
@@ -38,7 +38,10 @@ describe('createLogger', () => {
     const log = createLogger('Convert');
     const err = new Error('fail');
     log.error('Conversion failed: test.note', err);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('[Petrify:Convert] Conversion failed: test.note', err);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Petrify:Convert] Conversion failed: test.note',
+      err,
+    );
   });
 
   it('notify는 Petrify: 접두사로 Notice를 생성한다', () => {

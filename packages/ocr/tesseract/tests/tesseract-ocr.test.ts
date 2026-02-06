@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TesseractOcr } from '../src/tesseract-ocr.js';
 import type { OcrPort } from '@petrify/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { TesseractOcr } from '../src/tesseract-ocr.js';
 
 const mockTerminate = vi.fn(() => Promise.resolve());
 const mockRecognize = vi.fn();
@@ -13,7 +13,7 @@ vi.mock('tesseract.js', () => ({
     Promise.resolve({
       recognize: mockRecognize,
       terminate: mockTerminate,
-    })
+    }),
   ),
 }));
 
@@ -88,11 +88,7 @@ describe('TesseractOcr', () => {
 
     await ocr.recognize(image);
 
-    expect(createWorker).toHaveBeenCalledWith(
-      'kor+eng',
-      expect.anything(),
-      expect.anything(),
-    );
+    expect(createWorker).toHaveBeenCalledWith('kor+eng', expect.anything(), expect.anything());
   });
 
   it('사용자 지정 lang으로 createWorker 호출', async () => {
@@ -102,10 +98,6 @@ describe('TesseractOcr', () => {
 
     await ocr.recognize(image);
 
-    expect(createWorker).toHaveBeenCalledWith(
-      'eng',
-      expect.anything(),
-      expect.anything(),
-    );
+    expect(createWorker).toHaveBeenCalledWith('eng', expect.anything(), expect.anything());
   });
 });

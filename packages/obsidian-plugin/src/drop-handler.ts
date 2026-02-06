@@ -1,7 +1,7 @@
-import * as path from 'path';
-import type { App } from 'obsidian';
+import * as path from 'node:path';
+import type { ParserPort, PetrifyService } from '@petrify/core';
 import { ConversionError } from '@petrify/core';
-import type { PetrifyService, ParserPort } from '@petrify/core';
+import type { App } from 'obsidian';
 import { createLogger } from './logger.js';
 import { ParserSelectModal } from './parser-select-modal.js';
 
@@ -38,12 +38,17 @@ export class DropHandler {
       try {
         const ext = path.extname(file.name).toLowerCase();
         const cached = this.parserChoices.get(ext);
-        const parser = cached ?? await this.resolveParser(file.name, ext);
+        const parser = cached ?? (await this.resolveParser(file.name, ext));
         if (!parser) continue;
 
         const data = await file.arrayBuffer();
         const baseName = path.basename(file.name, ext);
-        const outputPath = await this.petrifyService.convertDroppedFile(data, parser, dropFolder, baseName);
+        const outputPath = await this.petrifyService.convertDroppedFile(
+          data,
+          parser,
+          dropFolder,
+          baseName,
+        );
 
         converted++;
         log.info(`Converted: ${file.name} -> ${outputPath}`);
@@ -82,10 +87,7 @@ export class DropHandler {
     });
   }
 
-  private async resolveParser(
-    fileName: string,
-    ext: string,
-  ): Promise<ParserPort | undefined> {
+  private async resolveParser(fileName: string, ext: string): Promise<ParserPort | undefined> {
     const parsers = this.petrifyService.getParsersForExtension(ext);
     if (parsers.length === 0) return undefined;
     if (parsers.length === 1) return parsers[0];
