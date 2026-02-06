@@ -1,3 +1,5 @@
+export { saveConversionResult } from './conversion-saver.js';
+export type { FileWriter, MetadataFormatter } from './conversion-saver.js';
 export * from './frontmatter-metadata-adapter.js';
 export { default } from './main.js';
 export * from './settings.js';

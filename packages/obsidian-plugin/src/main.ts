@@ -8,7 +8,7 @@ import type {
   ParserPort,
   WatcherPort,
 } from '@petrify/core';
-import { ConversionError, PetrifyService } from '@petrify/core';
+import { PetrifyService } from '@petrify/core';
 import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
 import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
@@ -18,6 +18,7 @@ import type { OAuth2Client, PageTokenStore, TokenStore } from '@petrify/watcher-
 import { GoogleDriveAuth, GoogleDriveWatcher } from '@petrify/watcher-google-drive';
 import type { DataAdapter } from 'obsidian';
 import { Plugin, setIcon } from 'obsidian';
+import { saveConversionResult as saveResult } from './conversion-saver.js';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
@@ -267,24 +268,14 @@ export default class PetrifyPlugin extends Plugin {
     outputDir: string,
     baseName: string,
   ): Promise<string> {
-    try {
-      const outputPath = `${outputDir}/${baseName}${this.generator.extension}`;
-      const frontmatter = this.metadataAdapter.formatMetadata(result.metadata);
-
-      await this.fsAdapter.writeFile(outputPath, frontmatter + result.content);
-
-      if (result.assets.size > 0) {
-        const assetsDir = `${outputDir}/assets/${baseName}`;
-        for (const [name, data] of result.assets) {
-          await this.fsAdapter.writeAsset(assetsDir, name, data);
-        }
-      }
-
-      return outputPath;
-    } catch (error) {
-      if (error instanceof ConversionError) throw error;
-      throw new ConversionError('save', error);
-    }
+    return saveResult(
+      result,
+      outputDir,
+      baseName,
+      this.generator.extension,
+      this.fsAdapter,
+      this.metadataAdapter,
+    );
   }
 
   private async handleDeletedSource(outputPath: string): Promise<void> {
