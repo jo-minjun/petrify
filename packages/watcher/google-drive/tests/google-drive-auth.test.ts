@@ -3,7 +3,9 @@ import { GoogleDriveAuth } from '../src/google-drive-auth.js';
 import type { OAuthTokens, TokenStore } from '../src/types.js';
 
 const mockSetCredentials = vi.fn();
-const mockGenerateAuthUrl = vi.fn().mockReturnValue('https://accounts.google.com/o/oauth2?scope=drive.readonly');
+const mockGenerateAuthUrl = vi
+  .fn()
+  .mockReturnValue('https://accounts.google.com/o/oauth2?scope=drive.readonly');
 const mockOn = vi.fn();
 
 vi.mock('google-auth-library', () => ({
