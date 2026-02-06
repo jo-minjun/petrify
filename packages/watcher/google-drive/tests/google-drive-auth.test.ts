@@ -1,6 +1,18 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GoogleDriveAuth } from '../src/google-drive-auth.js';
 import type { OAuthTokens, TokenStore } from '../src/types.js';
+
+const mockSetCredentials = vi.fn();
+const mockGenerateAuthUrl = vi.fn().mockReturnValue('https://accounts.google.com/o/oauth2?scope=drive.readonly');
+const mockOn = vi.fn();
+
+vi.mock('google-auth-library', () => ({
+  OAuth2Client: vi.fn(() => ({
+    setCredentials: mockSetCredentials,
+    generateAuthUrl: mockGenerateAuthUrl,
+    on: mockOn,
+  })),
+}));
 
 function createInMemoryTokenStore(): TokenStore & { tokens: OAuthTokens | null } {
   return {
