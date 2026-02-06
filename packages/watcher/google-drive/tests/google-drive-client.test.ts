@@ -94,6 +94,14 @@ describe('GoogleDriveClient', () => {
     expect(token).toBe('12345');
   });
 
+  it('getStartPageToken은 토큰이 없으면 에러를 던진다', async () => {
+    mockChanges.getStartPageToken.mockResolvedValue({
+      data: { startPageToken: null },
+    });
+
+    await expect(client.getStartPageToken()).rejects.toThrow('startPageToken');
+  });
+
   it('getChanges는 변경사항 목록을 반환한다', async () => {
     mockChanges.list.mockResolvedValue({
       data: {

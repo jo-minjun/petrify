@@ -40,8 +40,9 @@ export class GoogleDriveClient {
     let pageToken: string | undefined;
 
     do {
+      const safeFolderId = folderId.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
       const res = await this.drive.files.list({
-        q: `'${folderId}' in parents and trashed = false`,
+        q: `'${safeFolderId}' in parents and trashed = false`,
         fields: `nextPageToken, files(${FIELDS_FILE})`,
         pageSize: 100,
         pageToken,
@@ -59,7 +60,10 @@ export class GoogleDriveClient {
 
   async getStartPageToken(): Promise<string> {
     const res = await this.drive.changes.getStartPageToken({});
-    return res.data.startPageToken ?? '';
+    if (!res.data.startPageToken) {
+      throw new Error('Drive API did not return a startPageToken');
+    }
+    return res.data.startPageToken;
   }
 
   async getChanges(pageToken: string): Promise<ChangesResult> {

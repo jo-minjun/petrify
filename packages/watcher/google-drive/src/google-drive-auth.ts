@@ -52,9 +52,15 @@ export class GoogleDriveAuth {
     const client = new OAuth2Client(this.clientId, this.clientSecret, REDIRECT_URI);
     const { tokens } = await client.getToken(code);
 
+    if (!tokens.refresh_token) {
+      throw new Error(
+        'No refresh token received. Revoke app access in your Google Account and re-authenticate.',
+      );
+    }
+
     await this.tokenStore.saveTokens({
       access_token: tokens.access_token ?? '',
-      refresh_token: tokens.refresh_token ?? '',
+      refresh_token: tokens.refresh_token,
       expiry_date: tokens.expiry_date ?? 0,
     });
 

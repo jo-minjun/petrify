@@ -131,7 +131,8 @@ export class SyncOrchestrator {
         for (const outputEntry of outputEntries) {
           if (!outputEntry.name.endsWith(this.generator.extension)) continue;
 
-          const outputPath = path.join(mapping.outputDir, outputEntry.name);
+          const safeName = path.basename(outputEntry.name);
+          const outputPath = path.join(mapping.outputDir, safeName);
           const canDelete = await this.petrifyService.handleFileDelete(outputPath);
           if (!canDelete) continue;
 
@@ -145,7 +146,7 @@ export class SyncOrchestrator {
             this.convertLog.info(`Cleaned orphan: ${outputPath}`);
             deleted++;
 
-            const baseName = outputEntry.name.replace(this.generator.extension, '');
+            const baseName = safeName.replace(this.generator.extension, '');
             const assetsDir = path.join(mapping.outputDir, 'assets', baseName);
             const assetsFullPath = path.join(vaultPath, assetsDir);
             try {
