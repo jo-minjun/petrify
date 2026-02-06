@@ -1,6 +1,12 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { ParserId } from './parser-registry.js';
-import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
+import {
+  DEFAULT_SETTINGS,
+  LANGUAGE_HINT_OPTIONS,
+  type LanguageHint,
+  type OcrProvider,
+  type PetrifySettings,
+} from './settings.js';
 
 export interface SettingsTabCallbacks {
   readonly getSettings: () => PetrifySettings;
@@ -10,6 +16,11 @@ export interface SettingsTabCallbacks {
 
 export class PetrifySettingsTab extends PluginSettingTab {
   private readonly callbacks: SettingsTabCallbacks;
+
+  private pendingProvider: OcrProvider | null = null;
+  private pendingApiKey: string | null = null;
+  private pendingLanguageHints: LanguageHint[] | null = null;
+  private pendingConfidenceThreshold: number | null = null;
 
   constructor(app: App, plugin: Plugin, callbacks: SettingsTabCallbacks) {
     super(app, plugin);
@@ -131,6 +142,86 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     const settings = this.callbacks.getSettings();
 
+    // Initialize pending state from saved settings only if not already set
+    if (this.pendingProvider === null) {
+      this.pendingProvider = settings.ocr.provider;
+    }
+    if (this.pendingApiKey === null) {
+      this.pendingApiKey = settings.ocr.googleVision.apiKey;
+    }
+    if (this.pendingLanguageHints === null) {
+      this.pendingLanguageHints = [...settings.ocr.googleVision.languageHints];
+    }
+    if (this.pendingConfidenceThreshold === null) {
+      this.pendingConfidenceThreshold = settings.ocr.confidenceThreshold;
+    }
+
+    let saveButton: HTMLButtonElement | null = null;
+
+    const updateSaveButton = () => {
+      if (!saveButton) return;
+      const isGoogleVision = this.pendingProvider === 'google-vision';
+      const hasApiKey = this.pendingApiKey!.trim().length > 0;
+      const canSave = !isGoogleVision || hasApiKey;
+      saveButton.disabled = !canSave;
+      saveButton.toggleClass('is-disabled', !canSave);
+    };
+
+    // 1. OCR Provider
+    new Setting(containerEl)
+      .setName('OCR Provider')
+      .setDesc('Engine for text recognition')
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption('tesseract', 'Tesseract (Local)')
+          .addOption('google-vision', 'Google Vision API')
+          .setValue(this.pendingProvider!)
+          .onChange((value) => {
+            this.pendingProvider = value as OcrProvider;
+            updateSaveButton();
+            this.display();
+          });
+      });
+
+    // 2. Google Vision API Key & Language Hints (Google Vision only)
+    if (this.pendingProvider === 'google-vision') {
+      new Setting(containerEl)
+        .setName('Google Vision API Key')
+        .setDesc('Google Cloud Vision API key')
+        .addText((text) => {
+          text.inputEl.type = 'password';
+          text
+            .setPlaceholder('Enter API key')
+            .setValue(this.pendingApiKey!)
+            .onChange((value) => {
+              this.pendingApiKey = value;
+              updateSaveButton();
+            });
+        });
+
+      const languageSetting = new Setting(containerEl)
+        .setName('Language Hints')
+        .setDesc('Preferred languages for recognition (multiple selection)');
+
+      for (const option of LANGUAGE_HINT_OPTIONS) {
+        languageSetting.addToggle((toggle) => {
+          toggle
+            .setValue(this.pendingLanguageHints!.includes(option.value))
+            .setTooltip(option.label)
+            .onChange((enabled) => {
+              if (enabled) {
+                if (!this.pendingLanguageHints!.includes(option.value)) {
+                  this.pendingLanguageHints!.push(option.value);
+                }
+              } else {
+                this.pendingLanguageHints = this.pendingLanguageHints!.filter((h) => h !== option.value);
+              }
+            });
+        });
+      }
+    }
+
+    // 3. Confidence Threshold
     new Setting(containerEl)
       .setName('Confidence Threshold')
       .setDesc('Minimum OCR confidence (0-100)')
@@ -141,14 +232,35 @@ export class PetrifySettingsTab extends PluginSettingTab {
         text.inputEl.step = '1';
         text
           .setPlaceholder(String(DEFAULT_SETTINGS.ocr.confidenceThreshold))
-          .setValue(String(settings.ocr.confidenceThreshold))
-          .onChange(async (value) => {
+          .setValue(String(this.pendingConfidenceThreshold))
+          .onChange((value) => {
             const num = Number(value);
             if (!Number.isNaN(num) && num >= 0 && num <= 100) {
-              settings.ocr.confidenceThreshold = num;
-              await this.callbacks.saveSettings(settings);
+              this.pendingConfidenceThreshold = num;
             }
           });
       });
+
+    // 4. Save Button
+    new Setting(containerEl).addButton((btn) => {
+      saveButton = btn.buttonEl;
+      btn
+        .setButtonText('Save OCR Settings')
+        .setCta()
+        .onClick(async () => {
+          settings.ocr.provider = this.pendingProvider!;
+          settings.ocr.googleVision.apiKey = this.pendingApiKey!;
+          settings.ocr.googleVision.languageHints = this.pendingLanguageHints!;
+          settings.ocr.confidenceThreshold = this.pendingConfidenceThreshold!;
+          await this.callbacks.saveSettings(settings);
+          // Reset pending state after successful save
+          this.pendingProvider = null;
+          this.pendingApiKey = null;
+          this.pendingLanguageHints = null;
+          this.pendingConfidenceThreshold = null;
+        });
+    });
+
+    updateSaveButton();
   }
 }

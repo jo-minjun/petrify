@@ -3,7 +3,8 @@ import * as path from 'path';
 import { Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
 import { ConversionPipeline } from '@petrify/core';
-import type { FileChangeEvent, ParserPort, WatcherPort } from '@petrify/core';
+import type { FileChangeEvent, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
+import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import { DropHandler } from './drop-handler.js';
@@ -23,7 +24,7 @@ export default class PetrifyPlugin extends Plugin {
   settings!: PetrifySettings;
   private watchers: WatcherPort[] = [];
   private pipeline!: ConversionPipeline;
-  private ocr: TesseractOcr | null = null;
+  private ocr: OcrPort | null = null;
   private parserMap!: Map<string, ParserPort>;
   private dropHandler!: DropHandler;
   private isSyncing = false;
@@ -72,10 +73,23 @@ export default class PetrifyPlugin extends Plugin {
 
   async onunload(): Promise<void> {
     await Promise.all(this.watchers.map((w) => w.stop()));
-    await this.ocr?.terminate();
+    if (this.ocr && 'terminate' in this.ocr) {
+      await (this.ocr as TesseractOcr).terminate();
+    }
   }
 
   private async initializeOcr(): Promise<void> {
+    const { provider, googleVision } = this.settings.ocr;
+
+    if (provider === 'google-vision') {
+      this.ocr = new GoogleVisionOcr({
+        apiKey: googleVision.apiKey,
+        languageHints: googleVision.languageHints,
+      });
+      return;
+    }
+
+    // Tesseract (default)
     const adapter = this.app.vault.adapter as FileSystemAdapter;
     const vaultPath = adapter.getBasePath();
     const pluginDir = path.join(vaultPath, '.obsidian', 'plugins', 'petrify');
@@ -83,8 +97,9 @@ export default class PetrifyPlugin extends Plugin {
     const workerPath = `file://${path.join(pluginDir, 'worker.min.js')}`;
     const corePath = 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0/';
 
-    this.ocr = new TesseractOcr({ lang: 'kor+eng', workerPath, corePath });
-    await this.ocr.initialize();
+    const tesseract = new TesseractOcr({ lang: 'kor+eng', workerPath, corePath });
+    await tesseract.initialize();
+    this.ocr = tesseract;
   }
 
   private initializePipeline(): void {
