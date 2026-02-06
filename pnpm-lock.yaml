@@ -50,6 +50,9 @@ importers:
       '@petrify/generator-markdown':
         specifier: workspace:*
         version: link:../generator/markdown
+      '@petrify/ocr-google-vision':
+        specifier: workspace:*
+        version: link:../ocr/google-vision
       '@petrify/ocr-tesseract':
         specifier: workspace:*
         version: link:../ocr/tesseract
