@@ -157,6 +157,56 @@ describe('PetrifyService', () => {
     });
   });
 
+  describe('getParsersForExtension', () => {
+    it('등록된 확장자에 대해 파서 반환', () => {
+      const mockParser = createMockParserPort();
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(
+        parsers,
+        createMockGeneratorPort(),
+        null,
+        createMockMetadataPort(),
+        createMockFileSystemPort(),
+        { confidenceThreshold: 50 },
+      );
+
+      const result = service.getParsersForExtension('.note');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(mockParser);
+    });
+
+    it('미등록 확장자에 대해 빈 배열 반환', () => {
+      const service = new PetrifyService(
+        new Map(),
+        createMockGeneratorPort(),
+        null,
+        createMockMetadataPort(),
+        createMockFileSystemPort(),
+        { confidenceThreshold: 50 },
+      );
+
+      const result = service.getParsersForExtension('.unknown');
+      expect(result).toHaveLength(0);
+    });
+
+    it('대소문자 무시하여 파서 반환', () => {
+      const mockParser = createMockParserPort();
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(
+        parsers,
+        createMockGeneratorPort(),
+        null,
+        createMockMetadataPort(),
+        createMockFileSystemPort(),
+        { confidenceThreshold: 50 },
+      );
+
+      const result = service.getParsersForExtension('.NOTE');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(mockParser);
+    });
+  });
+
   describe('변환 플로우', () => {
     function createTestPage(overrides?: Partial<Page>): Page {
       return {
@@ -389,6 +439,119 @@ describe('PetrifyService', () => {
       );
     });
 
+    it('다중 페이지 OCR — 페이지별 OCR 수행', async () => {
+      const page1 = createTestPage({ id: 'page-1', order: 0 });
+      const page2 = createTestPage({ id: 'page-2', order: 1, imageData: new Uint8Array([4, 5, 6]) });
+      const note = createTestNote({ pages: [page1, page2] });
+
+      const mockParser = createMockParserPort();
+      vi.mocked(mockParser.parse).mockResolvedValue(note);
+
+      const mockGenerator = createMockGeneratorPort();
+      vi.mocked(mockGenerator.generate).mockReturnValue({
+        content: 'test-content',
+        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
+        extension: '.excalidraw.md',
+      });
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
+      vi.mocked(mockMetadata.formatMetadata).mockReturnValue('');
+
+      const mockFileSystem = createMockFileSystemPort();
+
+      const mockOcr = createMockOcrPort();
+      vi.mocked(mockOcr.recognize)
+        .mockResolvedValueOnce({
+          text: 'page1-text',
+          confidence: 90,
+          regions: [{ text: 'page1-text', confidence: 90, x: 0, y: 0, width: 50, height: 20 }],
+        })
+        .mockResolvedValueOnce({
+          text: 'page2-text',
+          confidence: 85,
+          regions: [{ text: 'page2-text', confidence: 85, x: 0, y: 0, width: 50, height: 20 }],
+        });
+
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(
+        parsers,
+        mockGenerator,
+        mockOcr,
+        mockMetadata,
+        mockFileSystem,
+        { confidenceThreshold: 50 },
+      );
+
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        mtime: 2000,
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
+      };
+
+      await service.handleFileChange(event, 'output');
+
+      expect(mockOcr.recognize).toHaveBeenCalledTimes(2);
+      const generateCall = vi.mocked(mockGenerator.generate).mock.calls[0];
+      const ocrResults = generateCall[2];
+      expect(ocrResults).toHaveLength(2);
+      expect(ocrResults![0].texts).toContain('page1-text');
+      expect(ocrResults![1].texts).toContain('page2-text');
+    });
+
+    it('빈 imageData 페이지는 OCR 건너뜀', async () => {
+      const emptyPage = createTestPage({ id: 'empty-page', order: 0, imageData: new Uint8Array([]) });
+      const normalPage = createTestPage({ id: 'normal-page', order: 1 });
+      const note = createTestNote({ pages: [emptyPage, normalPage] });
+
+      const mockParser = createMockParserPort();
+      vi.mocked(mockParser.parse).mockResolvedValue(note);
+
+      const mockGenerator = createMockGeneratorPort();
+      vi.mocked(mockGenerator.generate).mockReturnValue({
+        content: 'test-content',
+        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
+        extension: '.excalidraw.md',
+      });
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
+      vi.mocked(mockMetadata.formatMetadata).mockReturnValue('');
+
+      const mockFileSystem = createMockFileSystemPort();
+
+      const mockOcr = createMockOcrPort();
+      vi.mocked(mockOcr.recognize).mockResolvedValue({
+        text: 'normal-text',
+        confidence: 90,
+        regions: [{ text: 'normal-text', confidence: 90, x: 0, y: 0, width: 50, height: 20 }],
+      });
+
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(
+        parsers,
+        mockGenerator,
+        mockOcr,
+        mockMetadata,
+        mockFileSystem,
+        { confidenceThreshold: 50 },
+      );
+
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        mtime: 2000,
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
+      };
+
+      await service.handleFileChange(event, 'output');
+
+      expect(mockOcr.recognize).toHaveBeenCalledTimes(1);
+    });
+
     it('convertDroppedFile 플로우', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
@@ -514,6 +677,89 @@ describe('PetrifyService', () => {
       await expect(service.handleFileChange(event, 'output')).rejects.toThrow(ConversionError);
       await expect(service.handleFileChange(event, 'output')).rejects.toMatchObject({
         phase: 'ocr',
+      });
+    });
+
+    it('generate 실패 시 ConversionError (phase=generate)', async () => {
+      const mockParser = createMockParserPort();
+      const note = createTestNote();
+      vi.mocked(mockParser.parse).mockResolvedValue(note);
+
+      const mockGenerator = createMockGeneratorPort();
+      vi.mocked(mockGenerator.generate).mockImplementation(() => {
+        throw new Error('generation failed');
+      });
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
+
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(
+        parsers,
+        mockGenerator,
+        null,
+        mockMetadata,
+        createMockFileSystemPort(),
+        { confidenceThreshold: 50 },
+      );
+
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        mtime: 2000,
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
+      };
+
+      await expect(service.handleFileChange(event, 'output')).rejects.toThrow(ConversionError);
+      await expect(service.handleFileChange(event, 'output')).rejects.toMatchObject({
+        phase: 'generate',
+      });
+    });
+
+    it('writeAsset 실패 시 ConversionError (phase=save)', async () => {
+      const mockParser = createMockParserPort();
+      const note = createTestNote();
+      vi.mocked(mockParser.parse).mockResolvedValue(note);
+
+      const assets = new Map<string, Uint8Array>([
+        ['img.png', new Uint8Array([1, 2, 3])],
+      ]);
+      const mockGenerator = createMockGeneratorPort();
+      vi.mocked(mockGenerator.generate).mockReturnValue({
+        content: 'test',
+        assets,
+        extension: '.excalidraw.md',
+      });
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
+      vi.mocked(mockMetadata.formatMetadata).mockReturnValue('');
+
+      const mockFileSystem = createMockFileSystemPort();
+      vi.mocked(mockFileSystem.writeAsset).mockRejectedValue(new Error('asset write failed'));
+
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(
+        parsers,
+        mockGenerator,
+        null,
+        mockMetadata,
+        mockFileSystem,
+        { confidenceThreshold: 50 },
+      );
+
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        mtime: 2000,
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
+      };
+
+      await expect(service.handleFileChange(event, 'output')).rejects.toThrow(ConversionError);
+      await expect(service.handleFileChange(event, 'output')).rejects.toMatchObject({
+        phase: 'save',
       });
     });
 
