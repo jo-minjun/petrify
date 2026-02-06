@@ -4,7 +4,7 @@ import type { ConversionPipeline, ParserPort } from '@petrify/core';
 import { createLogger } from './logger.js';
 import { ParserSelectModal } from './parser-select-modal.js';
 import { createFrontmatter } from './utils/frontmatter.js';
-import { saveToVault } from './utils/vault.js';
+import { saveGeneratorOutput } from './utils/save-output.js';
 
 const log = createLogger('Drop');
 
@@ -43,15 +43,17 @@ export class DropHandler {
         if (!parser) continue;
 
         const data = await file.arrayBuffer();
-        const result = await this.pipeline.convertDroppedFile(data, parser);
-        const frontmatter = createFrontmatter({ source: null, mtime: null, keep: true });
         const baseName = path.basename(file.name, ext);
-        const outputName = `${baseName}.excalidraw.md`;
-        const outputPath = dropFolder ? `${dropFolder}/${outputName}` : outputName;
+        const result = await this.pipeline.convertDroppedFile(data, parser, baseName);
+        const frontmatter = createFrontmatter({ source: null, mtime: null, keep: true });
 
-        await saveToVault(this.app, outputPath, frontmatter + result);
+        const outputPath = await saveGeneratorOutput(this.app, result, {
+          outputDir: dropFolder,
+          outputName: baseName,
+          frontmatter,
+        });
         converted++;
-        log.info(`Converted: ${file.name}`);
+        log.info(`Converted: ${file.name} -> ${outputPath}`);
       } catch (error) {
         failed++;
         log.error(`Conversion failed: ${file.name}`, error);

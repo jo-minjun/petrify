@@ -3,7 +3,9 @@ import * as path from 'path';
 import { Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
 import { ConversionPipeline } from '@petrify/core';
-import type { FileChangeEvent, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
+import type { FileChangeEvent, FileGeneratorPort, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
+import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
+import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
@@ -11,13 +13,23 @@ import { DropHandler } from './drop-handler.js';
 import { FrontmatterConversionState } from './frontmatter-conversion-state.js';
 import { createLogger } from './logger.js';
 import { createParserMap, ParserId } from './parser-registry.js';
-import { DEFAULT_SETTINGS, type PetrifySettings } from './settings.js';
+import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
 import { createFrontmatter, parseFrontmatter } from './utils/frontmatter.js';
-import { saveToVault } from './utils/vault.js';
+import { saveGeneratorOutput } from './utils/save-output.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
+}
+
+function createGenerator(format: OutputFormat): FileGeneratorPort {
+  switch (format) {
+    case 'markdown':
+      return new MarkdownFileGenerator();
+    case 'excalidraw':
+    default:
+      return new ExcalidrawFileGenerator();
+  }
 }
 
 export default class PetrifyPlugin extends Plugin {
@@ -25,6 +37,7 @@ export default class PetrifyPlugin extends Plugin {
   private watchers: WatcherPort[] = [];
   private pipeline!: ConversionPipeline;
   private ocr: OcrPort | null = null;
+  private generator!: FileGeneratorPort;
   private parserMap!: Map<string, ParserPort>;
   private dropHandler!: DropHandler;
   private isSyncing = false;
@@ -113,6 +126,7 @@ export default class PetrifyPlugin extends Plugin {
     });
 
     this.parserMap = createParserMap();
+    this.generator = createGenerator(this.settings.outputFormat);
 
     const extensionMap = new Map<string, ParserPort>();
     for (const [, parser] of this.parserMap) {
@@ -123,6 +137,7 @@ export default class PetrifyPlugin extends Plugin {
 
     this.pipeline = new ConversionPipeline(
       extensionMap,
+      this.generator,
       this.ocr,
       conversionState,
       { confidenceThreshold: this.settings.ocr.confidenceThreshold },
@@ -171,10 +186,15 @@ export default class PetrifyPlugin extends Plugin {
   private async processFile(event: FileChangeEvent, outputDir: string): Promise<boolean> {
     const result = await this.pipeline.handleFileChange(event);
     if (!result) return false;
+
     const frontmatter = createFrontmatter({ source: event.id, mtime: event.mtime });
-    const outputPath = this.getOutputPath(event.name, outputDir);
-    await saveToVault(this.app, outputPath, frontmatter + result);
-    this.convertLog.info(`Converted: ${event.name}`);
+    const baseName = event.name.replace(/\.[^/.]+$/, '');
+    const outputPath = await saveGeneratorOutput(this.app, result, {
+      outputDir,
+      outputName: baseName,
+      frontmatter,
+    });
+    this.convertLog.info(`Converted: ${event.name} -> ${outputPath}`);
     return true;
   }
 

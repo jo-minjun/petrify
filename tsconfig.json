@@ -20,6 +20,6 @@
       "@petrify/generator-markdown": ["packages/generator/markdown/src/index.ts"]
     }
   },
-  "include": ["packages/*/src"],
+  "include": ["packages/*/src", "packages/*/*/src"],
   "exclude": ["node_modules", "dist"]
 }
