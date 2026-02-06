@@ -81,13 +81,31 @@ describe('TesseractOcr', () => {
     expect(mockTerminate).toHaveBeenCalledOnce();
   });
 
-  it('기본 lang은 kor+eng', () => {
+  it('기본 lang kor+eng로 createWorker 호출', async () => {
+    const { createWorker } = await import('tesseract.js');
     const ocr = new TesseractOcr();
-    expect((ocr as any)['config'].lang).toBe('kor+eng');
+    const image = new ArrayBuffer(100);
+
+    await ocr.recognize(image);
+
+    expect(createWorker).toHaveBeenCalledWith(
+      'kor+eng',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('사용자 지정 lang 설정', () => {
+  it('사용자 지정 lang으로 createWorker 호출', async () => {
+    const { createWorker } = await import('tesseract.js');
     const ocr = new TesseractOcr({ lang: 'eng' });
-    expect((ocr as any)['config'].lang).toBe('eng');
+    const image = new ArrayBuffer(100);
+
+    await ocr.recognize(image);
+
+    expect(createWorker).toHaveBeenCalledWith(
+      'eng',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 });

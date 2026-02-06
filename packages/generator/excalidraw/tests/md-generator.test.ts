@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import LZString from 'lz-string';
 import { ExcalidrawMdGenerator } from '../src/md-generator.js';
 import type { ExcalidrawData, ExcalidrawElement, ExcalidrawFileEntry } from '../src/excalidraw-generator.js';
-import type { OcrTextResult } from '../src/md-generator.js';
+import type { OcrTextResult } from '@petrify/core';
 
 describe('ExcalidrawMdGenerator', () => {
   it('올바른 마크다운 구조 생성', () => {
@@ -96,60 +96,6 @@ describe('ExcalidrawMdGenerator', () => {
 });
 
 describe('OCR Text Section', () => {
-  it('OcrTextResult 타입이 정상 동작', () => {
-    const ocrResult: OcrTextResult = {
-      pageIndex: 0,
-      texts: ['테스트 텍스트'],
-    };
-    expect(ocrResult.pageIndex).toBe(0);
-    expect(ocrResult.texts).toEqual(['테스트 텍스트']);
-  });
-
-  it('OCR 결과가 없으면 빈 ## OCR Text 섹션 생성', () => {
-    const generator = new ExcalidrawMdGenerator();
-    const result = (generator as any).formatOcrSection(undefined);
-    expect(result).toBe('## OCR Text\n\n');
-  });
-
-  it('OCR 결과가 빈 배열이면 빈 ## OCR Text 섹션 생성', () => {
-    const generator = new ExcalidrawMdGenerator();
-    const result = (generator as any).formatOcrSection([]);
-    expect(result).toBe('## OCR Text\n\n');
-  });
-
-  it('단일 페이지 OCR 결과 포맷팅', () => {
-    const generator = new ExcalidrawMdGenerator();
-    const ocrResults: OcrTextResult[] = [
-      { pageIndex: 0, texts: ['첫 번째 텍스트', '두 번째 텍스트'] }
-    ];
-    const result = (generator as any).formatOcrSection(ocrResults);
-    expect(result).toBe(
-      '## OCR Text\n' +
-      '<!-- Page 1 -->\n' +
-      '첫 번째 텍스트\n' +
-      '두 번째 텍스트\n' +
-      '\n'
-    );
-  });
-
-  it('여러 페이지 OCR 결과 포맷팅', () => {
-    const generator = new ExcalidrawMdGenerator();
-    const ocrResults: OcrTextResult[] = [
-      { pageIndex: 0, texts: ['페이지1 텍스트'] },
-      { pageIndex: 1, texts: ['페이지2 텍스트A', '페이지2 텍스트B'] }
-    ];
-    const result = (generator as any).formatOcrSection(ocrResults);
-    expect(result).toBe(
-      '## OCR Text\n' +
-      '<!-- Page 1 -->\n' +
-      '페이지1 텍스트\n' +
-      '<!-- Page 2 -->\n' +
-      '페이지2 텍스트A\n' +
-      '페이지2 텍스트B\n' +
-      '\n'
-    );
-  });
-
   it('generate()에 OCR 결과 전달하면 ## OCR Text 섹션 포함', () => {
     const generator = new ExcalidrawMdGenerator();
     const data: ExcalidrawData = {
@@ -189,5 +135,67 @@ describe('OCR Text Section', () => {
 
     expect(md).toContain('## OCR Text');
     expect(md).not.toContain('<!-- Page');
+  });
+
+  it('generate()에 빈 OCR 배열이면 빈 ## OCR Text 섹션', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const data: ExcalidrawData = {
+      type: 'excalidraw',
+      version: 2,
+      source: 'test',
+      elements: [],
+      appState: {},
+      files: {},
+    };
+
+    const md = generator.generate(data, undefined, []);
+
+    expect(md).toContain('## OCR Text');
+    expect(md).not.toContain('<!-- Page');
+  });
+
+  it('단일 페이지 OCR 결과가 generate() 출력에 포함', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const data: ExcalidrawData = {
+      type: 'excalidraw',
+      version: 2,
+      source: 'test',
+      elements: [],
+      appState: {},
+      files: {},
+    };
+    const ocrResults: OcrTextResult[] = [
+      { pageIndex: 0, texts: ['첫 번째 텍스트', '두 번째 텍스트'] }
+    ];
+
+    const md = generator.generate(data, undefined, ocrResults);
+
+    expect(md).toContain('<!-- Page 1 -->');
+    expect(md).toContain('첫 번째 텍스트');
+    expect(md).toContain('두 번째 텍스트');
+  });
+
+  it('여러 페이지 OCR 결과가 generate() 출력에 포함', () => {
+    const generator = new ExcalidrawMdGenerator();
+    const data: ExcalidrawData = {
+      type: 'excalidraw',
+      version: 2,
+      source: 'test',
+      elements: [],
+      appState: {},
+      files: {},
+    };
+    const ocrResults: OcrTextResult[] = [
+      { pageIndex: 0, texts: ['페이지1 텍스트'] },
+      { pageIndex: 1, texts: ['페이지2 텍스트A', '페이지2 텍스트B'] }
+    ];
+
+    const md = generator.generate(data, undefined, ocrResults);
+
+    expect(md).toContain('<!-- Page 1 -->');
+    expect(md).toContain('페이지1 텍스트');
+    expect(md).toContain('<!-- Page 2 -->');
+    expect(md).toContain('페이지2 텍스트A');
+    expect(md).toContain('페이지2 텍스트B');
   });
 });
