@@ -10,6 +10,10 @@ export type { ParserPort } from './ports/parser.js';
 export type { OcrPort, OcrResult, OcrRegion, OcrOptions } from './ports/ocr.js';
 export type { WatcherPort, FileChangeEvent, FileDeleteEvent } from './ports/watcher.js';
 export type { ConversionStatePort } from './ports/conversion-state.js';
+export type {
+  FileGeneratorPort,
+  GeneratorOutput,
+} from './ports/file-generator.js';
 
 export {
   InvalidFileFormatError,
