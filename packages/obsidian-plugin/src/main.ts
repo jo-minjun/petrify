@@ -18,7 +18,6 @@ import { GoogleDriveAuth, GoogleDriveWatcher } from '@petrify/watcher-google-dri
 import type { DataAdapter } from 'obsidian';
 import { Notice, Plugin, setIcon, TFile } from 'obsidian';
 import { saveConversionResult as saveResult } from './conversion-saver.js';
-import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
@@ -30,6 +29,7 @@ import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './set
 import { PetrifySettingsTab } from './settings-tab.js';
 import type { ReadDirEntry, SyncFileSystem, VaultOperations } from './sync-orchestrator.js';
 import { SyncOrchestrator } from './sync-orchestrator.js';
+import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;

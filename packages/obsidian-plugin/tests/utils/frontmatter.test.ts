@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createFrontmatter, parseFrontmatter, updateKeepInContent } from '../../src/utils/frontmatter.js';
+import {
+  createFrontmatter,
+  parseFrontmatter,
+  updateKeepInContent,
+} from '../../src/utils/frontmatter.js';
 
 describe('frontmatter', () => {
   describe('createFrontmatter', () => {
