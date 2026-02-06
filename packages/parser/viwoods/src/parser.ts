@@ -1,7 +1,7 @@
-import JSZip from 'jszip';
-import { InvalidFileFormatError, ParseError } from './exceptions.js';
 import type { Note, Page } from '@petrify/core';
 import { DEFAULT_PAGE_HEIGHT, DEFAULT_PAGE_WIDTH } from '@petrify/core';
+import JSZip from 'jszip';
+import { InvalidFileFormatError, ParseError } from './exceptions.js';
 
 interface NoteFileInfo {
   fileName?: string;
@@ -54,7 +54,7 @@ export class NoteParser {
 
   private async parsePageList(zip: JSZip): Promise<PageListEntry[]> {
     const pageListFile = Object.keys(zip.files).find((name) =>
-      name.endsWith('_PageListFileInfo.json')
+      name.endsWith('_PageListFileInfo.json'),
     );
     if (!pageListFile) {
       throw new ParseError('PageListFileInfo.json not found');

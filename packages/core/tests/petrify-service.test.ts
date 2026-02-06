@@ -1,14 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
-import { PetrifyService } from '../src/petrify-service.js';
-import type { ParserPort } from '../src/ports/parser.js';
-import type { FileGeneratorPort } from '../src/ports/file-generator.js';
-import type { ConversionMetadataPort } from '../src/ports/conversion-metadata.js';
-import type { FileSystemPort } from '../src/ports/file-system.js';
-import type { FileChangeEvent } from '../src/ports/watcher.js';
-import type { OcrPort } from '../src/ports/ocr.js';
+import { describe, expect, it, vi } from 'vitest';
+import { ConversionError, OcrRecognitionError, ParseError } from '../src/exceptions.js';
 import type { Note, Page } from '../src/models/index.js';
-import type { GeneratorOutput } from '../src/ports/file-generator.js';
-import { ConversionError, ParseError, OcrRecognitionError } from '../src/exceptions.js';
+import { PetrifyService } from '../src/petrify-service.js';
+import type { ConversionMetadataPort } from '../src/ports/conversion-metadata.js';
+import type { FileGeneratorPort, GeneratorOutput } from '../src/ports/file-generator.js';
+import type { FileSystemPort } from '../src/ports/file-system.js';
+import type { OcrPort } from '../src/ports/ocr.js';
+import type { ParserPort } from '../src/ports/parser.js';
+import type { FileChangeEvent } from '../src/ports/watcher.js';
 
 function mockGeneratorOutput(overrides?: Partial<GeneratorOutput>): GeneratorOutput {
   return {
@@ -338,8 +337,8 @@ describe('PetrifyService', () => {
       const generateCall = vi.mocked(mockGenerator.generate).mock.calls[0];
       const ocrResults = generateCall[2];
       expect(ocrResults).toBeDefined();
-      expect(ocrResults!.length).toBeGreaterThan(0);
-      expect(ocrResults![0].texts).toContain('hello');
+      expect(ocrResults?.length).toBeGreaterThan(0);
+      expect(ocrResults?.[0].texts).toContain('hello');
     });
 
     it('OCR confidence 필터링', async () => {
@@ -390,9 +389,9 @@ describe('PetrifyService', () => {
       const generateCall = vi.mocked(mockGenerator.generate).mock.calls[0];
       const ocrResults = generateCall[2];
       expect(ocrResults).toBeDefined();
-      expect(ocrResults!.length).toBe(1);
-      expect(ocrResults![0].texts).toContain('high');
-      expect(ocrResults![0].texts).not.toContain('low');
+      expect(ocrResults?.length).toBe(1);
+      expect(ocrResults?.[0].texts).toContain('high');
+      expect(ocrResults?.[0].texts).not.toContain('low');
     });
 
     it('에셋 포함 변환', async () => {
@@ -400,9 +399,7 @@ describe('PetrifyService', () => {
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
-      const assets = new Map<string, Uint8Array>([
-        ['img.png', new Uint8Array([1, 2, 3])],
-      ]);
+      const assets = new Map<string, Uint8Array>([['img.png', new Uint8Array([1, 2, 3])]]);
       const mockGenerator = createMockGeneratorPort();
       vi.mocked(mockGenerator.generate).mockReturnValue({
         content: 'test',
@@ -445,7 +442,11 @@ describe('PetrifyService', () => {
 
     it('다중 페이지 OCR — 페이지별 OCR 수행', async () => {
       const page1 = createTestPage({ id: 'page-1', order: 0 });
-      const page2 = createTestPage({ id: 'page-2', order: 1, imageData: new Uint8Array([4, 5, 6]) });
+      const page2 = createTestPage({
+        id: 'page-2',
+        order: 1,
+        imageData: new Uint8Array([4, 5, 6]),
+      });
       const note = createTestNote({ pages: [page1, page2] });
 
       const mockParser = createMockParserPort();
@@ -499,12 +500,16 @@ describe('PetrifyService', () => {
       const generateCall = vi.mocked(mockGenerator.generate).mock.calls[0];
       const ocrResults = generateCall[2];
       expect(ocrResults).toHaveLength(2);
-      expect(ocrResults![0].texts).toContain('page1-text');
-      expect(ocrResults![1].texts).toContain('page2-text');
+      expect(ocrResults?.[0].texts).toContain('page1-text');
+      expect(ocrResults?.[1].texts).toContain('page2-text');
     });
 
     it('빈 imageData 페이지는 OCR 건너뜀', async () => {
-      const emptyPage = createTestPage({ id: 'empty-page', order: 0, imageData: new Uint8Array([]) });
+      const emptyPage = createTestPage({
+        id: 'empty-page',
+        order: 0,
+        imageData: new Uint8Array([]),
+      });
       const normalPage = createTestPage({ id: 'normal-page', order: 1 });
       const note = createTestNote({ pages: [emptyPage, normalPage] });
 
@@ -646,9 +651,7 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockOcr: OcrPort = {
-        recognize: vi.fn<OcrPort['recognize']>().mockRejectedValue(
-          new OcrRecognitionError('test'),
-        ),
+        recognize: vi.fn<OcrPort['recognize']>().mockRejectedValue(new OcrRecognitionError('test')),
       };
 
       const mockMetadata = createMockMetadataPort();
@@ -720,9 +723,7 @@ describe('PetrifyService', () => {
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
-      const assets = new Map<string, Uint8Array>([
-        ['img.png', new Uint8Array([1, 2, 3])],
-      ]);
+      const assets = new Map<string, Uint8Array>([['img.png', new Uint8Array([1, 2, 3])]]);
       const mockGenerator = createMockGeneratorPort();
       vi.mocked(mockGenerator.generate).mockReturnValue({
         content: 'test',

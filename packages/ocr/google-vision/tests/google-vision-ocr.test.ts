@@ -1,56 +1,81 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GoogleVisionOcr } from '../src/google-vision-ocr.js';
 import type { OcrPort } from '@petrify/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GoogleVisionOcr } from '../src/google-vision-ocr.js';
 
 const MOCK_VISION_RESPONSE = {
-  responses: [{
-    fullTextAnnotation: {
-      text: '안녕하세요\n테스트입니다\n',
-      pages: [{
-        confidence: 0.95,
-        blocks: [
+  responses: [
+    {
+      fullTextAnnotation: {
+        text: '안녕하세요\n테스트입니다\n',
+        pages: [
           {
-            confidence: 0.97,
-            boundingBox: {
-              vertices: [
-                { x: 10, y: 20 },
-                { x: 200, y: 20 },
-                { x: 200, y: 60 },
-                { x: 10, y: 60 },
-              ],
-            },
-            paragraphs: [{
-              words: [
-                { symbols: [{ text: '안' }, { text: '녕' }, { text: '하' }, { text: '세' }, { text: '요' }] },
-              ],
-            }],
-          },
-          {
-            confidence: 0.93,
-            boundingBox: {
-              vertices: [
-                { x: 10, y: 80 },
-                { x: 300, y: 80 },
-                { x: 300, y: 120 },
-                { x: 10, y: 120 },
-              ],
-            },
-            paragraphs: [{
-              words: [
-                { symbols: [{ text: '테' }, { text: '스' }, { text: '트' }, { text: '입' }, { text: '니' }, { text: '다' }] },
-              ],
-            }],
+            confidence: 0.95,
+            blocks: [
+              {
+                confidence: 0.97,
+                boundingBox: {
+                  vertices: [
+                    { x: 10, y: 20 },
+                    { x: 200, y: 20 },
+                    { x: 200, y: 60 },
+                    { x: 10, y: 60 },
+                  ],
+                },
+                paragraphs: [
+                  {
+                    words: [
+                      {
+                        symbols: [
+                          { text: '안' },
+                          { text: '녕' },
+                          { text: '하' },
+                          { text: '세' },
+                          { text: '요' },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                confidence: 0.93,
+                boundingBox: {
+                  vertices: [
+                    { x: 10, y: 80 },
+                    { x: 300, y: 80 },
+                    { x: 300, y: 120 },
+                    { x: 10, y: 120 },
+                  ],
+                },
+                paragraphs: [
+                  {
+                    words: [
+                      {
+                        symbols: [
+                          { text: '테' },
+                          { text: '스' },
+                          { text: '트' },
+                          { text: '입' },
+                          { text: '니' },
+                          { text: '다' },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
           },
         ],
-      }],
+      },
     },
-  }],
+  ],
 };
 
 function mockFetchSuccess(body: unknown) {
-  return vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify(body), { status: 200 })
-  );
+  return vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
 }
 
 describe('GoogleVisionOcr', () => {
@@ -106,7 +131,7 @@ describe('GoogleVisionOcr', () => {
 
     expect(spy).toHaveBeenCalledWith(
       'https://vision.googleapis.com/v1/images:annotate?key=my-api-key',
-      expect.objectContaining({ method: 'POST' })
+      expect.objectContaining({ method: 'POST' }),
     );
   });
 
@@ -116,7 +141,7 @@ describe('GoogleVisionOcr', () => {
 
     await ocr.recognize(new ArrayBuffer(100));
 
-    const body = JSON.parse(spy.mock.calls[0][1]!.body as string);
+    const body = JSON.parse(spy.mock.calls[0][1]?.body as string);
     expect(body.requests[0].imageContext).toEqual({ languageHints: ['ko', 'en'] });
   });
 
@@ -126,7 +151,7 @@ describe('GoogleVisionOcr', () => {
 
     await ocr.recognize(new ArrayBuffer(100), { language: 'ja' });
 
-    const body = JSON.parse(spy.mock.calls[0][1]!.body as string);
+    const body = JSON.parse(spy.mock.calls[0][1]?.body as string);
     expect(body.requests[0].imageContext).toEqual({ languageHints: ['ja'] });
   });
 
@@ -136,7 +161,7 @@ describe('GoogleVisionOcr', () => {
 
     await ocr.recognize(new ArrayBuffer(100));
 
-    const body = JSON.parse(spy.mock.calls[0][1]!.body as string);
+    const body = JSON.parse(spy.mock.calls[0][1]?.body as string);
     expect(body.requests[0].imageContext).toBeUndefined();
   });
 
@@ -164,31 +189,28 @@ describe('GoogleVisionOcr', () => {
   });
 
   it('API 인증 실패(403) → OcrInitializationError', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('Forbidden', { status: 403 })
-    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('Forbidden', { status: 403 }));
     const ocr = new GoogleVisionOcr({ apiKey: 'invalid-key' });
 
-    await expect(ocr.recognize(new ArrayBuffer(100)))
-      .rejects.toThrow('Vision API 인증 실패 (403)');
+    await expect(ocr.recognize(new ArrayBuffer(100))).rejects.toThrow('Vision API 인증 실패 (403)');
   });
 
   it('API 에러 응답(500) → OcrRecognitionError', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('Internal Server Error', { status: 500 })
+      new Response('Internal Server Error', { status: 500 }),
     );
     const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
 
-    await expect(ocr.recognize(new ArrayBuffer(100)))
-      .rejects.toThrow('Vision API 에러 (500)');
+    await expect(ocr.recognize(new ArrayBuffer(100))).rejects.toThrow('Vision API 에러 (500)');
   });
 
   it('네트워크 실패 → OcrRecognitionError', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
     const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
 
-    await expect(ocr.recognize(new ArrayBuffer(100)))
-      .rejects.toThrow('Vision API 요청 실패: Network error');
+    await expect(ocr.recognize(new ArrayBuffer(100))).rejects.toThrow(
+      'Vision API 요청 실패: Network error',
+    );
   });
 
   it('응답 body에 error 필드 → OcrRecognitionError', async () => {
@@ -197,7 +219,6 @@ describe('GoogleVisionOcr', () => {
     });
     const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
 
-    await expect(ocr.recognize(new ArrayBuffer(100)))
-      .rejects.toThrow('Vision API 에러: Bad image');
+    await expect(ocr.recognize(new ArrayBuffer(100))).rejects.toThrow('Vision API 에러: Bad image');
   });
 });

@@ -6,7 +6,5 @@ export enum ParserId {
 }
 
 export function createParserMap(): Map<string, ParserPort> {
-  return new Map<string, ParserPort>([
-    [ParserId.Viwoods, new ViwoodsParser()],
-  ]);
+  return new Map<string, ParserPort>([[ParserId.Viwoods, new ViwoodsParser()]]);
 }

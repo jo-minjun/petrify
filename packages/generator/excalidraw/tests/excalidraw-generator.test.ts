@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { ExcalidrawGenerator } from '../src/excalidraw-generator.js';
+import { describe, expect, it } from 'vitest';
 import type { ExcalidrawFileEntry } from '../src/excalidraw-generator.js';
-import { createPage, createNote } from './helpers.js';
+import { ExcalidrawGenerator } from '../src/excalidraw-generator.js';
+import { createNote, createPage } from './helpers.js';
 
 describe('ExcalidrawGenerator', () => {
   describe('generate', () => {
@@ -107,25 +107,22 @@ describe('ExcalidrawGenerator', () => {
       const generator = new ExcalidrawGenerator();
       const doc = generator.generate(note);
 
-      const fileEntry = doc.files['p1'] as ExcalidrawFileEntry;
+      const fileEntry = doc.files.p1 as ExcalidrawFileEntry;
       const base64Part = fileEntry.dataURL.replace('data:image/png;base64,', '');
-      const decoded = Uint8Array.from(atob(base64Part), c => c.charCodeAt(0));
+      const decoded = Uint8Array.from(atob(base64Part), (c) => c.charCodeAt(0));
 
       expect(decoded).toEqual(imageData);
     });
 
     it('다중 페이지 시 files에 모든 페이지 엔트리 생성', () => {
-      const pages = [
-        createPage({ id: 'p0', order: 0 }),
-        createPage({ id: 'p1', order: 1 }),
-      ];
+      const pages = [createPage({ id: 'p0', order: 0 }), createPage({ id: 'p1', order: 1 })];
       const note = createNote(pages);
       const generator = new ExcalidrawGenerator();
       const doc = generator.generate(note);
 
       expect(Object.keys(doc.files)).toHaveLength(2);
-      expect(doc.files['p0']).toBeDefined();
-      expect(doc.files['p1']).toBeDefined();
+      expect(doc.files.p0).toBeDefined();
+      expect(doc.files.p1).toBeDefined();
     });
 
     it('element의 fileId와 files 객체의 키가 일치', () => {

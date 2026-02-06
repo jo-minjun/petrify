@@ -11,5 +11,5 @@ export class ViwoodsParser implements ParserPort {
   }
 }
 
-export { NoteParser } from './parser.js';
 export { InvalidFileFormatError, ParseError } from './exceptions.js';
+export { NoteParser } from './parser.js';

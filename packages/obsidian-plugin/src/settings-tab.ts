@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { type App, type Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { ParserId } from './parser-registry.js';
 import {
   DEFAULT_SETTINGS,
@@ -54,7 +54,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .onChange(async (value) => {
             settings.outputFormat = value as OutputFormat;
             await this.callbacks.saveDataOnly(settings);
-          })
+          }),
       );
   }
 
@@ -73,7 +73,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           toggle.setValue(mapping.enabled).onChange(async (value) => {
             settings.watchMappings[index].enabled = value;
             await this.callbacks.saveSettings(settings);
-          })
+          }),
         )
         .addText((text) =>
           text
@@ -82,7 +82,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
             .onChange(async (value) => {
               settings.watchMappings[index].watchDir = value;
               await this.callbacks.saveDataOnly(settings);
-            })
+            }),
         );
 
       new Setting(mappingContainer)
@@ -95,7 +95,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
             .onChange(async (value) => {
               settings.watchMappings[index].outputDir = value;
               await this.callbacks.saveDataOnly(settings);
-            })
+            }),
         );
 
       new Setting(mappingContainer)
@@ -120,7 +120,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
             settings.watchMappings.splice(index, 1);
             await this.callbacks.saveSettings(settings);
             this.display();
-          })
+          }),
       );
     });
 
@@ -134,7 +134,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         });
         await this.callbacks.saveSettings(settings);
         this.display();
-      })
+      }),
     );
   }
 
@@ -146,16 +146,14 @@ export class PetrifySettingsTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Delete converted files on source delete')
       .setDesc(
-        'When a source file is deleted, move the converted .excalidraw.md file to trash. '
-        + 'Add "keep: true" to a file\'s petrify frontmatter to protect it.'
+        'When a source file is deleted, move the converted .excalidraw.md file to trash. ' +
+          'Add "keep: true" to a file\'s petrify frontmatter to protect it.',
       )
       .addToggle((toggle) =>
-        toggle
-          .setValue(settings.deleteConvertedOnSourceDelete)
-          .onChange(async (value) => {
-            settings.deleteConvertedOnSourceDelete = value;
-            await this.callbacks.saveSettings(settings);
-          }),
+        toggle.setValue(settings.deleteConvertedOnSourceDelete).onChange(async (value) => {
+          settings.deleteConvertedOnSourceDelete = value;
+          await this.callbacks.saveSettings(settings);
+        }),
       );
   }
 
@@ -183,7 +181,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
     const updateSaveButton = () => {
       if (!saveButton) return;
       const isGoogleVision = this.pendingProvider === 'google-vision';
-      const hasApiKey = this.pendingApiKey!.trim().length > 0;
+      const hasApiKey = this.pendingApiKey?.trim().length > 0;
       const canSave = !isGoogleVision || hasApiKey;
       saveButton.disabled = !canSave;
       saveButton.toggleClass('is-disabled', !canSave);
@@ -228,15 +226,17 @@ export class PetrifySettingsTab extends PluginSettingTab {
       for (const option of LANGUAGE_HINT_OPTIONS) {
         languageSetting.addToggle((toggle) => {
           toggle
-            .setValue(this.pendingLanguageHints!.includes(option.value))
+            .setValue(this.pendingLanguageHints?.includes(option.value))
             .setTooltip(option.label)
             .onChange((enabled) => {
               if (enabled) {
-                if (!this.pendingLanguageHints!.includes(option.value)) {
-                  this.pendingLanguageHints!.push(option.value);
+                if (!this.pendingLanguageHints?.includes(option.value)) {
+                  this.pendingLanguageHints?.push(option.value);
                 }
               } else {
-                this.pendingLanguageHints = this.pendingLanguageHints!.filter((h) => h !== option.value);
+                this.pendingLanguageHints = this.pendingLanguageHints?.filter(
+                  (h) => h !== option.value,
+                );
               }
             });
         });

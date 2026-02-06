@@ -1,10 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type {
+  ConversionMetadataPort,
+  FileGeneratorPort,
+  ParserPort,
+  PetrifyService,
+} from '@petrify/core';
 import { ConversionError } from '@petrify/core';
-import type { PetrifyService, ParserPort, FileGeneratorPort, ConversionMetadataPort } from '@petrify/core';
-import { SyncOrchestrator } from '../src/sync-orchestrator.js';
-import type { SyncFileSystem, VaultOperations } from '../src/sync-orchestrator.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Logger } from '../src/logger.js';
 import type { WatchMapping } from '../src/settings.js';
+import type { SyncFileSystem, VaultOperations } from '../src/sync-orchestrator.js';
+import { SyncOrchestrator } from '../src/sync-orchestrator.js';
 
 vi.mock('obsidian', () => ({
   Notice: vi.fn(),
@@ -135,9 +140,7 @@ describe('SyncOrchestrator', () => {
 
     expect(result).toEqual({ synced: 1, failed: 0, deleted: 0 });
     expect(mockService.handleFileChange).toHaveBeenCalledOnce();
-    expect(convertLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('Converted: file.note'),
-    );
+    expect(convertLog.info).toHaveBeenCalledWith(expect.stringContaining('Converted: file.note'));
   });
 
   it('디렉토리 읽기 실패 시 failed 증가', async () => {
@@ -188,9 +191,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: 원본 없는 변환 파일 삭제', async () => {
-    mockFs.readdir
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',
@@ -204,16 +205,11 @@ describe('SyncOrchestrator', () => {
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 1 });
     expect(mockVault.trash).toHaveBeenCalledWith('output/file.excalidraw.md');
-    expect(mockFs.rm).toHaveBeenCalledWith(
-      '/vault/output/assets/file',
-      { recursive: true },
-    );
+    expect(mockFs.rm).toHaveBeenCalledWith('/vault/output/assets/file', { recursive: true });
   });
 
   it('orphan 정리: keep=true 파일은 삭제하지 않음', async () => {
-    mockFs.readdir
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
     mockService.handleFileDelete.mockResolvedValue(false);
 
     const result = await orchestrator.syncAll([createDefaultMapping()], true);
@@ -273,9 +269,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan assets 삭제 실패 시에도 deleted 카운트 유지', async () => {
-    mockFs.readdir
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',
@@ -291,9 +285,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: 출력 디렉토리 읽기 실패 시 continue', async () => {
-    mockFs.readdir
-      .mockResolvedValueOnce([])
-      .mockRejectedValueOnce(new Error('ENOENT'));
+    mockFs.readdir.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('ENOENT'));
 
     const result = await orchestrator.syncAll([createDefaultMapping()], true);
 
@@ -302,9 +294,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: metadata에 source가 없으면 건너뜀', async () => {
-    mockFs.readdir
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: null,
@@ -318,9 +308,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: 원본이 존재하면 삭제하지 않음', async () => {
-    mockFs.readdir
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',

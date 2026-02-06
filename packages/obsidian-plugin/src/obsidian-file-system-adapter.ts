@@ -1,7 +1,7 @@
-import * as path from 'path';
-import type { App } from 'obsidian';
-import { FileSystemError } from '@petrify/core';
+import * as path from 'node:path';
 import type { FileSystemPort } from '@petrify/core';
+import { FileSystemError } from '@petrify/core';
+import type { App } from 'obsidian';
 
 export class ObsidianFileSystemAdapter implements FileSystemPort {
   constructor(private readonly app: App) {}
