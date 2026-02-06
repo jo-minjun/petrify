@@ -70,96 +70,119 @@ export class SyncOrchestrator {
         failed++;
         continue;
       }
-      const supportedExts = parserForMapping.extensions.map((e) => e.toLowerCase());
 
-      let entries: ReadDirEntry[];
-      try {
-        entries = await mappingFs.readdir(mapping.watchDir);
-      } catch {
-        this.syncLog.error(`Directory unreadable: ${mapping.watchDir}`);
-        failed++;
-        continue;
-      }
-
-      for (const entry of entries) {
-        const ext = path.extname(entry.name).toLowerCase();
-        if (!supportedExts.includes(ext)) continue;
-
-        const fileRef = entry.fileRef ?? path.join(mapping.watchDir, entry.name);
-        let stat: { mtimeMs: number };
-        try {
-          stat = await mappingFs.stat(fileRef);
-        } catch {
-          this.syncLog.error(`File stat failed: ${entry.name}`);
-          failed++;
-          continue;
-        }
-
-        const event: FileChangeEvent = {
-          id: fileRef,
-          name: entry.name,
-          extension: ext,
-          mtime: stat.mtimeMs,
-          readData: () => mappingFs.readFile(fileRef),
-        };
-
-        try {
-          const result = await this.petrifyService.handleFileChange(event);
-          if (result) {
-            const baseName = entry.name.replace(/\.[^/.]+$/, '');
-            const outputPath = await this.saveResult(result, mapping.outputDir, baseName);
-            this.convertLog.info(`Converted: ${entry.name} -> ${outputPath}`);
-            synced++;
-          }
-        } catch (error) {
-          const message = formatConversionError(entry.name, error);
-          this.convertLog.error(message, error);
-          failed++;
-        }
-      }
+      const fileResult = await this.syncFiles(mapping, mappingFs, parserForMapping);
+      synced += fileResult.synced;
+      failed += fileResult.failed;
 
       if (deleteOnSourceDelete) {
-        const vaultPath = this.vault.getBasePath();
-
-        let outputEntries: ReadDirEntry[];
-        try {
-          outputEntries = await this.fs.readdir(path.join(vaultPath, mapping.outputDir));
-        } catch {
-          continue;
-        }
-
-        for (const outputEntry of outputEntries) {
-          if (!outputEntry.name.endsWith(this.generator.extension)) continue;
-
-          const safeName = path.basename(outputEntry.name);
-          const outputPath = path.join(mapping.outputDir, safeName);
-          const canDelete = await this.petrifyService.handleFileDelete(outputPath);
-          if (!canDelete) continue;
-
-          const metadata = await this.metadataAdapter.getMetadata(outputPath);
-          if (!metadata?.source) continue;
-
-          try {
-            await mappingFs.access(metadata.source);
-          } catch {
-            await this.vault.trash(outputPath);
-            this.convertLog.info(`Cleaned orphan: ${outputPath}`);
-            deleted++;
-
-            const baseName = safeName.replace(this.generator.extension, '');
-            const assetsDir = path.join(mapping.outputDir, 'assets', baseName);
-            const assetsFullPath = path.join(vaultPath, assetsDir);
-            try {
-              await this.fs.rm(assetsFullPath, { recursive: true });
-              this.convertLog.info(`Cleaned orphan assets: ${assetsDir}`);
-            } catch {
-              // assets 폴더가 없는 경우 무시
-            }
-          }
-        }
+        deleted += await this.cleanOrphans(mapping, mappingFs);
       }
     }
 
     return { synced, failed, deleted };
+  }
+
+  private async syncFiles(
+    mapping: WatchMapping,
+    mappingFs: SyncFileSystem,
+    parser: ParserPort,
+  ): Promise<{ synced: number; failed: number }> {
+    let synced = 0;
+    let failed = 0;
+
+    const supportedExts = parser.extensions.map((e) => e.toLowerCase());
+
+    let entries: ReadDirEntry[];
+    try {
+      entries = await mappingFs.readdir(mapping.watchDir);
+    } catch (error) {
+      this.syncLog.error(`Directory unreadable: ${mapping.watchDir}`, error);
+      return { synced, failed: 1 };
+    }
+
+    for (const entry of entries) {
+      const ext = path.extname(entry.name).toLowerCase();
+      if (!supportedExts.includes(ext)) continue;
+
+      const fileRef = entry.fileRef ?? path.join(mapping.watchDir, entry.name);
+      let stat: { mtimeMs: number };
+      try {
+        stat = await mappingFs.stat(fileRef);
+      } catch (error) {
+        this.syncLog.error(`File stat failed: ${entry.name}`, error);
+        failed++;
+        continue;
+      }
+
+      const event: FileChangeEvent = {
+        id: fileRef,
+        name: entry.name,
+        extension: ext,
+        mtime: stat.mtimeMs,
+        readData: () => mappingFs.readFile(fileRef),
+      };
+
+      try {
+        const result = await this.petrifyService.handleFileChange(event);
+        if (result) {
+          const baseName = entry.name.replace(/\.[^/.]+$/, '');
+          const outputPath = await this.saveResult(result, mapping.outputDir, baseName);
+          this.convertLog.info(`Converted: ${entry.name} -> ${outputPath}`);
+          synced++;
+        }
+      } catch (error) {
+        const message = formatConversionError(entry.name, error);
+        this.convertLog.error(message, error);
+        failed++;
+      }
+    }
+
+    return { synced, failed };
+  }
+
+  private async cleanOrphans(mapping: WatchMapping, mappingFs: SyncFileSystem): Promise<number> {
+    const vaultPath = this.vault.getBasePath();
+    let deleted = 0;
+
+    let outputEntries: ReadDirEntry[];
+    try {
+      outputEntries = await this.fs.readdir(path.join(vaultPath, mapping.outputDir));
+    } catch (error) {
+      this.syncLog.error(`Failed to read output directory: ${mapping.outputDir}`, error);
+      return 0;
+    }
+
+    for (const outputEntry of outputEntries) {
+      if (!outputEntry.name.endsWith(this.generator.extension)) continue;
+
+      const safeName = path.basename(outputEntry.name);
+      const outputPath = path.join(mapping.outputDir, safeName);
+      const canDelete = await this.petrifyService.handleFileDelete(outputPath);
+      if (!canDelete) continue;
+
+      const metadata = await this.metadataAdapter.getMetadata(outputPath);
+      if (!metadata?.source) continue;
+
+      try {
+        await mappingFs.access(metadata.source);
+      } catch {
+        await this.vault.trash(outputPath);
+        this.convertLog.info(`Cleaned orphan: ${outputPath}`);
+        deleted++;
+
+        const baseName = safeName.replace(this.generator.extension, '');
+        const assetsDir = path.join(mapping.outputDir, 'assets', baseName);
+        const assetsFullPath = path.join(vaultPath, assetsDir);
+        try {
+          await this.fs.rm(assetsFullPath, { recursive: true });
+          this.convertLog.info(`Cleaned orphan assets: ${assetsDir}`);
+        } catch {
+          // assets 폴더가 없는 경우 무시
+        }
+      }
+    }
+
+    return deleted;
   }
 }

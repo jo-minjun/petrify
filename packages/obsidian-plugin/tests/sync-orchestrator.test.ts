@@ -163,7 +163,7 @@ describe('SyncOrchestrator', () => {
     const result = await orchestrator.syncAll([createDefaultMapping()], false);
 
     expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
-    expect(syncLog.error).toHaveBeenCalledWith('Directory unreadable: /watch');
+    expect(syncLog.error).toHaveBeenCalledWith('Directory unreadable: /watch', expect.any(Error));
   });
 
   it('파일 stat 실패 시 failed 증가', async () => {
@@ -173,7 +173,7 @@ describe('SyncOrchestrator', () => {
     const result = await orchestrator.syncAll([createDefaultMapping()], false);
 
     expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
-    expect(syncLog.error).toHaveBeenCalledWith('File stat failed: file.note');
+    expect(syncLog.error).toHaveBeenCalledWith('File stat failed: file.note', expect.any(Error));
   });
 
   it('변환 실패 시 ConversionError 메시지로 failed 증가', async () => {
