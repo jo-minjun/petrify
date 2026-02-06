@@ -28,6 +28,19 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
 
+  packages/generator/excalidraw:
+    dependencies:
+      '@petrify/core':
+        specifier: workspace:*
+        version: link:../../core
+      lz-string:
+        specifier: ^1.5.0
+        version: 1.5.0
+    devDependencies:
+      '@types/lz-string':
+        specifier: ^1.5.0
+        version: 1.5.0
+
   packages/obsidian-plugin:
     dependencies:
       '@petrify/core':
