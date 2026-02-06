@@ -10,7 +10,7 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 - Parser: viwoods (.note)
 - OCR: Tesseract.js, Google Cloud Vision
 - Generator: Excalidraw, Markdown
-- Watcher: chokidar (로컬 파일시스템)
+- Watcher: chokidar (로컬 파일시스템), Google Drive API (원격 변경 감지)
 - Obsidian 플러그인 (외부 폴더 감시 → 자동 변환)
 
 **계획 중:**
@@ -53,6 +53,7 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 | FileGeneratorPort | Excalidraw (.excalidraw.md) | @petrify/generator-excalidraw |
 | FileGeneratorPort | Markdown (.md) | @petrify/generator-markdown |
 | WatcherPort | chokidar (로컬 FS) | @petrify/watcher-chokidar |
+| WatcherPort | Google Drive API | @petrify/watcher-google-drive |
 | ConversionMetadataPort | Frontmatter 기반 | @petrify/obsidian-plugin |
 | FileSystemPort | Obsidian FileSystem | @petrify/obsidian-plugin |
 
@@ -86,7 +87,7 @@ pnpm add @petrify/watcher-chokidar
 
 ### 기능
 
-- **파일 감시**: WatcherPort 기반 실시간 파일 변경 감지 (현재 chokidar 어댑터)
+- **파일 감시**: WatcherPort 기반 실시간 파일 변경 감지 (chokidar / Google Drive API 어댑터)
 - **다중 폴더 매핑**: 여러 외부 폴더를 각각 다른 vault 폴더로 매핑
 - **자동 변환**: PetrifyService가 확장자 필터링 → mtime 스킵 → 변환 자동 처리
 - **드래그 & 드롭**: 파일 탐색기에 필기 파일을 드롭하면 해당 위치에 즉시 변환
@@ -117,6 +118,10 @@ pnpm add @petrify/watcher-chokidar
 
 ### Google Drive 연동
 
+두 가지 방식으로 Google Drive 필기 노트를 연동할 수 있습니다.
+
+#### 방법 1: Google Drive for Desktop (로컬 동기화)
+
 Google Drive for Desktop으로 로컬 동기화된 폴더를 Watch Directory로 지정하면 자동 변환이 동작합니다.
 
 1. [Google Drive for Desktop](https://www.google.com/drive/download/) 설치
@@ -124,6 +129,21 @@ Google Drive for Desktop으로 로컬 동기화된 폴더를 Watch Directory로 
 3. Petrify 설정의 Watch Directory에 동기화된 로컬 경로를 지정
    - macOS: `~/Library/CloudStorage/GoogleDrive-<계정>/My Drive/<폴더>`
    - Windows: `G:\My Drive\<폴더>` (드라이브 문자는 설정에 따라 다름)
+
+#### 방법 2: Google Drive API (가상 드라이브 마운트 불가 환경)
+
+회사 정책 등으로 가상 드라이브 마운트가 불가능한 경우, Google Drive API를 통해 직접 변경 감지 및 파일 다운로드를 수행합니다.
+
+1. [Google Cloud Console](https://console.cloud.google.com/)에서 OAuth 2.0 클라이언트 ID 생성 (데스크톱 앱 유형)
+2. Petrify 설정 > Google Drive Settings에 Client ID / Client Secret 입력
+3. Watch Mapping 추가 시 Source Type을 "Google Drive"로 선택
+4. Watch Directory에 Google Drive 폴더 ID 입력 (URL의 `folders/` 뒤 문자열)
+5. "Authenticate" 버튼으로 OAuth 인증 완료
+
+**특징:**
+- Google Drive Changes API 기반 폴링 (30초/60초/120초 간격 설정 가능)
+- 로컬 파일 동기화 없이 API로 직접 바이너리 다운로드
+- OAuth refresh token으로 세션 자동 복원
 
 ### 요구사항
 
@@ -144,7 +164,8 @@ packages/
 │   ├── excalidraw/       # @petrify/generator-excalidraw (FileGeneratorPort 구현)
 │   └── markdown/         # @petrify/generator-markdown (FileGeneratorPort 구현)
 ├── watcher/
-│   └── chokidar/         # @petrify/watcher-chokidar (WatcherPort 구현)
+│   ├── chokidar/         # @petrify/watcher-chokidar (WatcherPort 구현)
+│   └── google-drive/     # @petrify/watcher-google-drive (WatcherPort 구현)
 └── obsidian-plugin/      # Obsidian 플러그인 (조립 + UI)
 ```
 

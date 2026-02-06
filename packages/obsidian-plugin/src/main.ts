@@ -10,7 +10,7 @@ import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import { GoogleDriveWatcher, GoogleDriveAuth } from '@petrify/watcher-google-drive';
-import type { TokenStore, PageTokenStore } from '@petrify/watcher-google-drive';
+import type { TokenStore, PageTokenStore, OAuth2Client } from '@petrify/watcher-google-drive';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
@@ -324,7 +324,7 @@ export default class PetrifyPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
-  private async getGoogleDriveAuthClient(): Promise<import('google-auth-library').OAuth2Client | null> {
+  private async getGoogleDriveAuthClient(): Promise<OAuth2Client | null> {
     const { clientId, clientSecret } = this.settings.googleDrive;
     if (!clientId || !clientSecret) return null;
 

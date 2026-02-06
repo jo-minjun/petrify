@@ -34,7 +34,8 @@ packages/
 │   ├── excalidraw/       # @petrify/generator-excalidraw
 │   └── markdown/         # @petrify/generator-markdown
 ├── watcher/
-│   └── chokidar/         # @petrify/watcher-chokidar
+│   ├── chokidar/         # @petrify/watcher-chokidar
+│   └── google-drive/     # @petrify/watcher-google-drive
 └── obsidian-plugin/      # @petrify/obsidian-plugin
 ```
 
@@ -47,6 +48,7 @@ packages/
 | `@petrify/generator-excalidraw` | Excalidraw 파일 생성 (FileGeneratorPort 구현) |
 | `@petrify/generator-markdown` | Markdown 파일 생성 (FileGeneratorPort 구현) |
 | `@petrify/watcher-chokidar` | chokidar 래핑 파일 감시 (WatcherPort 구현) |
+| `@petrify/watcher-google-drive` | Google Drive API 변경 감지 (WatcherPort 구현) |
 | `@petrify/obsidian-plugin` | Composition Root: Obsidian 플러그인, 어댑터 조립 |
 
 ## DO
@@ -77,7 +79,8 @@ packages/
       "@petrify/ocr-google-vision": ["packages/ocr/google-vision/src/index.ts"],
       "@petrify/generator-excalidraw": ["packages/generator/excalidraw/src/index.ts"],
       "@petrify/generator-markdown": ["packages/generator/markdown/src/index.ts"],
-      "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"]
+      "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"],
+      "@petrify/watcher-google-drive": ["packages/watcher/google-drive/src/index.ts"]
     }
   }
   ```

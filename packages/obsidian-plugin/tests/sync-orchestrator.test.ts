@@ -86,6 +86,7 @@ function createDefaultMapping(overrides?: Partial<WatchMapping>): WatchMapping {
     outputDir: 'output',
     enabled: true,
     parserId: 'viwoods',
+    sourceType: 'local',
     ...overrides,
   };
 }
