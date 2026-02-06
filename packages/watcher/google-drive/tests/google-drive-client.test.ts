@@ -11,9 +11,9 @@ const mockChanges = {
   getStartPageToken: vi.fn(),
 };
 
-vi.mock('googleapis', () => ({
-  google: {
-    drive: vi.fn(() => ({
+vi.mock('@googleapis/drive', () => ({
+  drive_v3: {
+    Drive: vi.fn(() => ({
       files: mockFiles,
       changes: mockChanges,
     })),
