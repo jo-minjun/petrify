@@ -7,7 +7,17 @@ import type { FileSystemPort } from '../src/ports/file-system.js';
 import type { FileChangeEvent } from '../src/ports/watcher.js';
 import type { OcrPort } from '../src/ports/ocr.js';
 import type { Note, Page } from '../src/models/index.js';
+import type { GeneratorOutput } from '../src/ports/file-generator.js';
 import { ConversionError, ParseError, OcrRecognitionError } from '../src/exceptions.js';
+
+function mockGeneratorOutput(overrides?: Partial<GeneratorOutput>): GeneratorOutput {
+  return {
+    content: '',
+    assets: new Map(),
+    extension: '.excalidraw.md',
+    ...overrides,
+  };
+}
 
 function createMockParserPort(): ParserPort {
   return {
@@ -241,11 +251,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
-      vi.mocked(mockGenerator.generate).mockReturnValue({
-        content: 'test-content',
-        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
-        extension: '.excalidraw.md',
-      });
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'test-content' }),
+      );
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
@@ -290,11 +298,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
-      vi.mocked(mockGenerator.generate).mockReturnValue({
-        content: 'test-content',
-        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
-        extension: '.excalidraw.md',
-      });
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'test-content' }),
+      );
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
@@ -342,11 +348,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
-      vi.mocked(mockGenerator.generate).mockReturnValue({
-        content: 'test-content',
-        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
-        extension: '.excalidraw.md',
-      });
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'test-content' }),
+      );
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
@@ -448,11 +452,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
-      vi.mocked(mockGenerator.generate).mockReturnValue({
-        content: 'test-content',
-        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
-        extension: '.excalidraw.md',
-      });
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'test-content' }),
+      );
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
@@ -510,11 +512,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
-      vi.mocked(mockGenerator.generate).mockReturnValue({
-        content: 'test-content',
-        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
-        extension: '.excalidraw.md',
-      });
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'test-content' }),
+      );
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
@@ -558,11 +558,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
-      vi.mocked(mockGenerator.generate).mockReturnValue({
-        content: 'dropped-content',
-        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
-        extension: '.excalidraw.md',
-      });
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'dropped-content' }),
+      );
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.formatMetadata).mockReturnValue('---\ndropped\n---\n');
@@ -769,11 +767,9 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
-      vi.mocked(mockGenerator.generate).mockReturnValue({
-        content: 'test-content',
-        assets: undefined as unknown as ReadonlyMap<string, Uint8Array>,
-        extension: '.excalidraw.md',
-      });
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'test-content' }),
+      );
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);

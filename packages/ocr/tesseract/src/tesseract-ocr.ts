@@ -1,6 +1,8 @@
 import Tesseract, { createWorker, type Worker } from 'tesseract.js';
 import type { OcrPort, OcrResult, OcrRegion, OcrOptions } from '@petrify/core';
 
+const DEFAULT_CORE_PATH = 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0/';
+
 export interface TesseractOcrConfig {
   lang: string;
   workerPath?: string;
@@ -16,7 +18,7 @@ export class TesseractOcr implements OcrPort {
     this.config = {
       lang: config.lang ?? 'kor+eng',
       workerPath: config.workerPath,
-      corePath: config.corePath,
+      corePath: config.corePath ?? DEFAULT_CORE_PATH,
       langPath: config.langPath,
     };
   }
@@ -34,21 +36,17 @@ export class TesseractOcr implements OcrPort {
       await this.initialize();
     }
 
-    const result = await this.worker!.recognize(new Uint8Array(image) as any);
+    const result = await this.worker!.recognize(new Blob([image]));
     const threshold = options?.confidenceThreshold ?? 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = result.data as any;
+    const { text: rawText, confidence } = result.data;
 
-    // Tesseract.js v7: data.lines 없음, data.text로 직접 추출
-    const textLines = (data.text as string ?? '')
+    const textLines = (rawText ?? '')
       .split('\n')
-      .map((line: string) => line.trim())
-      .filter((line: string) => line.length > 0);
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
 
-    const confidence = typeof data.confidence === 'number' ? data.confidence : undefined;
-
-    const regions: OcrRegion[] = textLines.map((line: string) => ({
+    const regions: OcrRegion[] = textLines.map((line) => ({
       text: line,
       confidence: confidence ?? 0,
       x: 0,

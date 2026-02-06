@@ -38,28 +38,6 @@ ${compressed}
     return '\n' + lines.join('\n') + '\n';
   }
 
-  /**
-   * OCR 결과를 ## OCR Text 섹션으로 포맷팅
-   *
-   * 현재 구현: back-of-note 영역에 텍스트만 추가 (캔버스에 안 보임, Obsidian 검색 가능)
-   *
-   * TODO: 향후 옵션으로 text 요소를 elements에 추가하는 방식 지원 고려
-   * - elements 배열에 type: 'text' 요소 추가
-   * - opacity: 0 또는 캔버스 밖 좌표로 숨김 처리
-   * - ## Text Elements 섹션에도 표시되어 Excalidraw 내부 검색 가능
-   *
-   * @example
-   * // elements에 추가하는 방식 (미구현)
-   * const textElement = {
-   *   type: 'text',
-   *   id: nanoid(),
-   *   text: ocrText,
-   *   x: -99999,  // 캔버스 밖
-   *   y: -99999,
-   *   opacity: 0,
-   *   // ... 기타 필수 속성
-   * };
-   */
   private formatOcrSection(ocrResults?: OcrTextResult[]): string {
     let section = '## OCR Text\n';
     if (!ocrResults || ocrResults.length === 0) {

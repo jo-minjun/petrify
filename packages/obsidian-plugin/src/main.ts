@@ -123,9 +123,8 @@ export default class PetrifyPlugin extends Plugin {
     const pluginDir = path.join(vaultPath, '.obsidian', 'plugins', 'petrify');
 
     const workerPath = `file://${path.join(pluginDir, 'worker.min.js')}`;
-    const corePath = 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0/';
 
-    const tesseract = new TesseractOcr({ lang: 'kor+eng', workerPath, corePath });
+    const tesseract = new TesseractOcr({ lang: 'kor+eng', workerPath });
     await tesseract.initialize();
     this.ocr = tesseract;
   }
