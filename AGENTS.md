@@ -137,6 +137,27 @@ packages/
   import { describe, it, expect } from 'vitest';
   ```
 
+- 행동(behavior)을 테스트하라, 구조(structure)를 테스트하지 마라
+  ```typescript
+  // DO: public 메서드의 출력 검증
+  const result = generator.generate(note, 'test');
+  expect(result.content).toContain('expected-text');
+
+  // DON'T: 객체 구조나 타입 확인
+  const note: Note = { title: 'Test', pages: [] };
+  expect(note.title).toBe('Test');  // TypeScript가 이미 보장
+  ```
+
+- public API를 통해 테스트하라, private 멤버에 접근하지 마라
+  ```typescript
+  // DO: public generate() 호출 후 결과 검증
+  const md = generator.generate(data, undefined, ocrResults);
+  expect(md).toContain('## OCR Text');
+
+  // DON'T: private 메서드 직접 호출
+  const result = (generator as any).formatOcrSection(ocrResults);
+  ```
+
 - 공통 타입/인터페이스는 @petrify/core에서만 정의하고, 어댑터 패키지에서는 import하여 사용
 
 - README.md와 AGENTS.md 동기화: 패키지 추가/제거, 클래스 이름 변경 시 README.md와 AGENTS.md도 함께 업데이트
@@ -166,4 +187,8 @@ packages/
 - pnpm 사용 시 package-lock.json 남겨두지 않기
 - core 패키지에서 어댑터 의존성 추가하지 않기 (devDependencies 포함)
 - 테스트에서 `as any`로 private 멤버 접근하지 않기
+- 데이터 모델(interface) 생성 테스트 금지 — TypeScript 타입 시스템이 보장
+- 설정 기본값(default constant) 테스트 금지
+- 인터페이스 계약(shape) 테스트 금지 — TypeScript 컴파일러가 보장
+- `expect(true).toBe(true)` 같은 무의미한 assertion 금지
 - 어댑터 패키지에서 core에 이미 정의된 타입을 재정의하지 않기
