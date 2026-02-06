@@ -234,9 +234,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
                   this.pendingLanguageHints?.push(option.value);
                 }
               } else {
-                this.pendingLanguageHints = this.pendingLanguageHints?.filter(
-                  (h) => h !== option.value,
-                ) ?? null;
+                this.pendingLanguageHints =
+                  this.pendingLanguageHints?.filter((h) => h !== option.value) ?? null;
               }
             });
         });
