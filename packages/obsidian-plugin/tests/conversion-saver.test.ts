@@ -15,7 +15,9 @@ function createMockFileWriter(): { [K in keyof FileWriter]: ReturnType<typeof vi
   };
 }
 
-function createMockMetadataFormatter(): { [K in keyof MetadataFormatter]: ReturnType<typeof vi.fn> } {
+function createMockMetadataFormatter(): {
+  [K in keyof MetadataFormatter]: ReturnType<typeof vi.fn>;
+} {
   return {
     formatMetadata: vi.fn().mockReturnValue('---\nsource: test\n---\n'),
   };
@@ -43,7 +45,12 @@ describe('saveConversionResult', () => {
     const result = createResult();
 
     const outputPath = await saveConversionResult(
-      result, 'output', 'file', '.excalidraw.md', writer, formatter,
+      result,
+      'output',
+      'file',
+      '.excalidraw.md',
+      writer,
+      formatter,
     );
 
     expect(outputPath).toBe('output/file.excalidraw.md');
@@ -61,9 +68,7 @@ describe('saveConversionResult', () => {
 
     await saveConversionResult(result, 'output', 'file', '.excalidraw.md', writer, formatter);
 
-    expect(writer.writeAsset).toHaveBeenCalledWith(
-      'output/assets/file', 'image.png', assetData,
-    );
+    expect(writer.writeAsset).toHaveBeenCalledWith('output/assets/file', 'image.png', assetData);
   });
 
   it('여러 assets를 모두 저장', async () => {
@@ -116,9 +121,7 @@ describe('saveConversionResult', () => {
   it('markdown 확장자로도 올바른 경로 생성', async () => {
     const result = createResult();
 
-    const outputPath = await saveConversionResult(
-      result, 'notes', 'doc', '.md', writer, formatter,
-    );
+    const outputPath = await saveConversionResult(result, 'notes', 'doc', '.md', writer, formatter);
 
     expect(outputPath).toBe('notes/doc.md');
   });

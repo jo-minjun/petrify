@@ -55,10 +55,7 @@ function createMockFileList(files: File[]): FileList {
   return list;
 }
 
-function createDragEvent(options: {
-  target: Partial<HTMLElement>;
-  files?: FileList;
-}): DragEvent {
+function createDragEvent(options: { target: Partial<HTMLElement>; files?: FileList }): DragEvent {
   return {
     target: options.target,
     dataTransfer: options.files ? { files: options.files } : null,
@@ -169,7 +166,9 @@ describe('DropHandler', () => {
     expect(evt.preventDefault).toHaveBeenCalled();
     expect(evt.stopPropagation).toHaveBeenCalled();
     expect(mockService.convertDroppedFile).toHaveBeenCalledWith(
-      expect.any(ArrayBuffer), mockParser, 'test',
+      expect.any(ArrayBuffer),
+      mockParser,
+      'test',
     );
     expect(saveResult).toHaveBeenCalledWith(mockResult, 'notes', 'test');
   });
@@ -179,10 +178,7 @@ describe('DropHandler', () => {
       .mockRejectedValueOnce(new Error('parse failed'))
       .mockResolvedValueOnce(createMockConversionResult());
 
-    const files = createMockFileList([
-      createMockFile('bad.note'),
-      createMockFile('good.note'),
-    ]);
+    const files = createMockFileList([createMockFile('bad.note'), createMockFile('good.note')]);
     const evt = createDragEvent({
       target: createFileExplorerTarget('notes'),
       files,
@@ -204,9 +200,7 @@ describe('DropHandler', () => {
 
     await handler.handleDrop(evt);
 
-    expect(saveResult).toHaveBeenCalledWith(
-      expect.anything(), 'deep/nested/folder', 'test',
-    );
+    expect(saveResult).toHaveBeenCalledWith(expect.anything(), 'deep/nested/folder', 'test');
   });
 
   it('data-path 없으면 루트 폴더("")로 저장', async () => {

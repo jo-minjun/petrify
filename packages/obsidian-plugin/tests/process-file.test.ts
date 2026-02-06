@@ -66,14 +66,14 @@ describe('processFile', () => {
 
     expect(result).toBe(true);
     expect(save).toHaveBeenCalledWith(conversionResult, 'output', 'file');
-    expect(log.info).toHaveBeenCalledWith(
-      'Converted: file.note -> output/file.excalidraw.md',
-    );
+    expect(log.info).toHaveBeenCalledWith('Converted: file.note -> output/file.excalidraw.md');
   });
 
   it('파일명에서 확장자를 제거한 baseName으로 save 호출', async () => {
     mockService.handleFileChange.mockResolvedValue({
-      content: '', assets: new Map(), metadata: { source: '', mtime: 0 },
+      content: '',
+      assets: new Map(),
+      metadata: { source: '', mtime: 0 },
     });
 
     await processFile(
