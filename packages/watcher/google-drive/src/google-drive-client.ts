@@ -1,6 +1,6 @@
-import { google } from 'googleapis';
 import type { OAuth2Client } from 'google-auth-library';
-import type { DriveFile, ChangesResult } from './types.js';
+import { google } from 'googleapis';
+import type { ChangesResult, DriveFile } from './types.js';
 
 const FIELDS_FILE = 'id, name, mimeType, modifiedTime, md5Checksum, size, parents';
 const FIELDS_CHANGES = `nextPageToken, newStartPageToken, changes(fileId, removed, file(${FIELDS_FILE}))`;
@@ -36,11 +36,10 @@ export class GoogleDriveClient {
 
   async getStartPageToken(): Promise<string> {
     const res = await this.drive.changes.getStartPageToken({});
-    return res.data.startPageToken!;
+    return res.data.startPageToken ?? '';
   }
 
   async getChanges(pageToken: string): Promise<ChangesResult> {
-    const allChanges: DriveFile[] = [];
     let currentToken = pageToken;
     let newStartPageToken: string | undefined;
 
@@ -68,7 +67,7 @@ export class GoogleDriveClient {
         break;
       }
 
-      currentToken = res.data.nextPageToken!;
+      currentToken = res.data.nextPageToken ?? '';
     } while (currentToken);
 
     return {
@@ -78,10 +77,7 @@ export class GoogleDriveClient {
   }
 
   async downloadFile(fileId: string): Promise<ArrayBuffer> {
-    const res = await this.drive.files.get(
-      { fileId, alt: 'media' },
-      { responseType: 'stream' },
-    );
+    const res = await this.drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
 
     const chunks: Buffer[] = [];
     for await (const chunk of res.data as AsyncIterable<Buffer>) {

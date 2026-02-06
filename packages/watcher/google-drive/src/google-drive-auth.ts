@@ -53,9 +53,9 @@ export class GoogleDriveAuth {
     const { tokens } = await client.getToken(code);
 
     await this.tokenStore.saveTokens({
-      access_token: tokens.access_token!,
-      refresh_token: tokens.refresh_token!,
-      expiry_date: tokens.expiry_date!,
+      access_token: tokens.access_token ?? '',
+      refresh_token: tokens.refresh_token ?? '',
+      expiry_date: tokens.expiry_date ?? 0,
     });
 
     client.setCredentials(tokens);

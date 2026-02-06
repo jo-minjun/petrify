@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { FileChangeEvent, FileDeleteEvent } from '@petrify/core';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GoogleDriveWatcher } from '../src/google-drive-watcher.js';
 import type { PageTokenStore } from '../src/types.js';
 
@@ -18,8 +18,12 @@ vi.mock('../src/google-drive-client.js', () => ({
 function createInMemoryPageTokenStore(): PageTokenStore {
   let token: string | null = null;
   return {
-    async loadPageToken() { return token; },
-    async savePageToken(t) { token = t; },
+    async loadPageToken() {
+      return token;
+    },
+    async savePageToken(t) {
+      token = t;
+    },
   };
 }
 
@@ -40,7 +44,7 @@ describe('GoogleDriveWatcher', () => {
     watcher = new GoogleDriveWatcher({
       folderId: 'test-folder-id',
       pollIntervalMs: 30000,
-      auth: {} as any,
+      auth: {} as unknown as import('google-auth-library').OAuth2Client,
       pageTokenStore,
     });
   });
@@ -60,11 +64,19 @@ describe('GoogleDriveWatcher', () => {
 
   it('start 시 초기 스캔으로 FileChangeEvent를 발행한다', async () => {
     mockClient.listFiles.mockResolvedValue([
-      { id: 'f1', name: 'test.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00.000Z', parents: ['test-folder-id'] },
+      {
+        id: 'f1',
+        name: 'test.note',
+        mimeType: 'application/octet-stream',
+        modifiedTime: '2026-01-01T00:00:00.000Z',
+        parents: ['test-folder-id'],
+      },
     ]);
 
     const events: FileChangeEvent[] = [];
-    watcher.onFileChange(async (event) => { events.push(event); });
+    watcher.onFileChange(async (event) => {
+      events.push(event);
+    });
 
     await watcher.start();
 
@@ -76,12 +88,20 @@ describe('GoogleDriveWatcher', () => {
 
   it('초기 스캔에서 readData는 파일 다운로드를 수행한다', async () => {
     mockClient.listFiles.mockResolvedValue([
-      { id: 'f1', name: 'test.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00.000Z', parents: ['test-folder-id'] },
+      {
+        id: 'f1',
+        name: 'test.note',
+        mimeType: 'application/octet-stream',
+        modifiedTime: '2026-01-01T00:00:00.000Z',
+        parents: ['test-folder-id'],
+      },
     ]);
     mockClient.downloadFile.mockResolvedValue(new ArrayBuffer(16));
 
     const events: FileChangeEvent[] = [];
-    watcher.onFileChange(async (event) => { events.push(event); });
+    watcher.onFileChange(async (event) => {
+      events.push(event);
+    });
 
     await watcher.start();
 
@@ -96,12 +116,14 @@ describe('GoogleDriveWatcher', () => {
     watcher = new GoogleDriveWatcher({
       folderId: 'test-folder-id',
       pollIntervalMs: 30000,
-      auth: {} as any,
+      auth: {} as unknown as import('google-auth-library').OAuth2Client,
       pageTokenStore,
     });
 
     const events: FileChangeEvent[] = [];
-    watcher.onFileChange(async (event) => { events.push(event); });
+    watcher.onFileChange(async (event) => {
+      events.push(event);
+    });
 
     await watcher.start();
 
@@ -112,17 +134,27 @@ describe('GoogleDriveWatcher', () => {
 
   it('폴링으로 파일 추가를 감지하면 FileChangeEvent를 발행한다', async () => {
     mockClient.getChanges.mockResolvedValue({
-      changes: [{
-        fileId: 'f1',
-        removed: false,
-        file: { id: 'f1', name: 'new.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00.000Z', parents: ['test-folder-id'] },
-        time: '2026-01-01T00:00:00.000Z',
-      }],
+      changes: [
+        {
+          fileId: 'f1',
+          removed: false,
+          file: {
+            id: 'f1',
+            name: 'new.note',
+            mimeType: 'application/octet-stream',
+            modifiedTime: '2026-01-01T00:00:00.000Z',
+            parents: ['test-folder-id'],
+          },
+          time: '2026-01-01T00:00:00.000Z',
+        },
+      ],
       newStartPageToken: 'token-3',
     });
 
     const events: FileChangeEvent[] = [];
-    watcher.onFileChange(async (event) => { events.push(event); });
+    watcher.onFileChange(async (event) => {
+      events.push(event);
+    });
 
     await watcher.start();
     await vi.advanceTimersByTimeAsync(30000);
@@ -132,7 +164,13 @@ describe('GoogleDriveWatcher', () => {
 
   it('폴링으로 파일 삭제를 감지하면 FileDeleteEvent를 발행한다', async () => {
     mockClient.listFiles.mockResolvedValue([
-      { id: 'f1', name: 'deleted.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00.000Z', parents: ['test-folder-id'] },
+      {
+        id: 'f1',
+        name: 'deleted.note',
+        mimeType: 'application/octet-stream',
+        modifiedTime: '2026-01-01T00:00:00.000Z',
+        parents: ['test-folder-id'],
+      },
     ]);
 
     mockClient.getChanges.mockResolvedValue({
@@ -142,7 +180,9 @@ describe('GoogleDriveWatcher', () => {
 
     const deleteEvents: FileDeleteEvent[] = [];
     watcher.onFileChange(async () => {});
-    watcher.onFileDelete(async (event) => { deleteEvents.push(event); });
+    watcher.onFileDelete(async (event) => {
+      deleteEvents.push(event);
+    });
 
     await watcher.start();
     await vi.advanceTimersByTimeAsync(30000);
@@ -154,17 +194,27 @@ describe('GoogleDriveWatcher', () => {
 
   it('대상 폴더 외 변경은 무시한다', async () => {
     mockClient.getChanges.mockResolvedValue({
-      changes: [{
-        fileId: 'f-other',
-        removed: false,
-        file: { id: 'f-other', name: 'other.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00.000Z', parents: ['other-folder-id'] },
-        time: '2026-01-01T00:00:00.000Z',
-      }],
+      changes: [
+        {
+          fileId: 'f-other',
+          removed: false,
+          file: {
+            id: 'f-other',
+            name: 'other.note',
+            mimeType: 'application/octet-stream',
+            modifiedTime: '2026-01-01T00:00:00.000Z',
+            parents: ['other-folder-id'],
+          },
+          time: '2026-01-01T00:00:00.000Z',
+        },
+      ],
       newStartPageToken: 'token-3',
     });
 
     const events: FileChangeEvent[] = [];
-    watcher.onFileChange(async (event) => { events.push(event); });
+    watcher.onFileChange(async (event) => {
+      events.push(event);
+    });
 
     await watcher.start();
     await vi.advanceTimersByTimeAsync(30000);
@@ -179,7 +229,9 @@ describe('GoogleDriveWatcher', () => {
 
     const errors: Error[] = [];
     watcher.onFileChange(async () => {});
-    watcher.onError((error) => { errors.push(error); });
+    watcher.onError((error) => {
+      errors.push(error);
+    });
 
     await watcher.start();
 
@@ -209,7 +261,9 @@ describe('GoogleDriveWatcher', () => {
 
     const deleteEvents: FileDeleteEvent[] = [];
     watcher.onFileChange(async () => {});
-    watcher.onFileDelete(async (event) => { deleteEvents.push(event); });
+    watcher.onFileDelete(async (event) => {
+      deleteEvents.push(event);
+    });
 
     await watcher.start();
     await vi.advanceTimersByTimeAsync(30000);

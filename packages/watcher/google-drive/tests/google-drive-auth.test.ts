@@ -1,13 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { GoogleDriveAuth } from '../src/google-drive-auth.js';
-import type { TokenStore, OAuthTokens } from '../src/types.js';
+import type { OAuthTokens, TokenStore } from '../src/types.js';
 
 function createInMemoryTokenStore(): TokenStore & { tokens: OAuthTokens | null } {
   return {
     tokens: null,
-    async loadTokens() { return this.tokens; },
-    async saveTokens(t) { this.tokens = t; },
-    async clearTokens() { this.tokens = null; },
+    async loadTokens() {
+      return this.tokens;
+    },
+    async saveTokens(t) {
+      this.tokens = t;
+    },
+    async clearTokens() {
+      this.tokens = null;
+    },
   };
 }
 

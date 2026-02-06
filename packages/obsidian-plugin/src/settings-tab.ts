@@ -80,14 +80,18 @@ export class PetrifySettingsTab extends PluginSettingTab {
               settings.watchMappings[index].sourceType = value as WatchSourceType;
               await this.callbacks.saveSettings(settings);
               this.display();
-            })
+            }),
         );
 
       const isGoogleDrive = mapping.sourceType === 'google-drive';
 
       new Setting(mappingContainer)
         .setName(`${isGoogleDrive ? 'Google Drive Folder ID' : 'Watch Directory'} ${index + 1}`)
-        .setDesc(isGoogleDrive ? 'Google Drive folder ID to watch' : 'External folder to watch for handwriting files')
+        .setDesc(
+          isGoogleDrive
+            ? 'Google Drive folder ID to watch'
+            : 'External folder to watch for handwriting files',
+        )
         .addToggle((toggle) =>
           toggle.setValue(mapping.enabled).onChange(async (value) => {
             settings.watchMappings[index].enabled = value;
@@ -173,7 +177,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .onChange(async (value) => {
             settings.googleDrive.clientId = value;
             await this.callbacks.saveDataOnly(settings);
-          })
+          }),
       );
 
     new Setting(containerEl)
@@ -202,7 +206,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .onChange(async (value) => {
             settings.googleDrive.pollIntervalMs = Number(value);
             await this.callbacks.saveDataOnly(settings);
-          })
+          }),
       );
   }
 

@@ -1,7 +1,7 @@
-import * as path from 'path';
-import type { WatcherPort, FileChangeEvent, FileDeleteEvent } from '@petrify/core';
+import * as path from 'node:path';
+import type { FileChangeEvent, FileDeleteEvent, WatcherPort } from '@petrify/core';
 import { GoogleDriveClient } from './google-drive-client.js';
-import type { GoogleDriveWatcherOptions, DriveFile } from './types.js';
+import type { DriveFile, GoogleDriveWatcherOptions } from './types.js';
 
 export class GoogleDriveWatcher implements WatcherPort {
   private readonly client: GoogleDriveClient;

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GoogleDriveClient } from '../src/google-drive-client.js';
 
 const mockFiles = {
@@ -25,14 +25,19 @@ describe('GoogleDriveClient', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    client = new GoogleDriveClient({} as any);
+    client = new GoogleDriveClient({} as unknown as import('google-auth-library').OAuth2Client);
   });
 
   it('listFiles는 지정 폴더의 파일 목록을 반환한다', async () => {
     mockFiles.list.mockResolvedValue({
       data: {
         files: [
-          { id: 'f1', name: 'test.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00Z' },
+          {
+            id: 'f1',
+            name: 'test.note',
+            mimeType: 'application/octet-stream',
+            modifiedTime: '2026-01-01T00:00:00Z',
+          },
         ],
         nextPageToken: null,
       },
@@ -48,13 +53,27 @@ describe('GoogleDriveClient', () => {
     mockFiles.list
       .mockResolvedValueOnce({
         data: {
-          files: [{ id: 'f1', name: 'a.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00Z' }],
+          files: [
+            {
+              id: 'f1',
+              name: 'a.note',
+              mimeType: 'application/octet-stream',
+              modifiedTime: '2026-01-01T00:00:00Z',
+            },
+          ],
           nextPageToken: 'page2',
         },
       })
       .mockResolvedValueOnce({
         data: {
-          files: [{ id: 'f2', name: 'b.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00Z' }],
+          files: [
+            {
+              id: 'f2',
+              name: 'b.note',
+              mimeType: 'application/octet-stream',
+              modifiedTime: '2026-01-01T00:00:00Z',
+            },
+          ],
           nextPageToken: null,
         },
       });
@@ -79,7 +98,17 @@ describe('GoogleDriveClient', () => {
     mockChanges.list.mockResolvedValue({
       data: {
         changes: [
-          { fileId: 'f1', removed: false, file: { id: 'f1', name: 'test.note', modifiedTime: '2026-01-01T00:00:00Z', parents: ['folder-id'] }, time: '2026-01-01T00:00:00Z' },
+          {
+            fileId: 'f1',
+            removed: false,
+            file: {
+              id: 'f1',
+              name: 'test.note',
+              modifiedTime: '2026-01-01T00:00:00Z',
+              parents: ['folder-id'],
+            },
+            time: '2026-01-01T00:00:00Z',
+          },
         ],
         newStartPageToken: '12346',
       },
@@ -105,7 +134,12 @@ describe('GoogleDriveClient', () => {
 
   it('getFile은 단일 파일 메타데이터를 반환한다', async () => {
     mockFiles.get.mockResolvedValue({
-      data: { id: 'f1', name: 'test.note', mimeType: 'application/octet-stream', modifiedTime: '2026-01-01T00:00:00Z' },
+      data: {
+        id: 'f1',
+        name: 'test.note',
+        mimeType: 'application/octet-stream',
+        modifiedTime: '2026-01-01T00:00:00Z',
+      },
     });
 
     const file = await client.getFile('f1');
