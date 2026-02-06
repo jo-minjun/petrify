@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
-import { PetrifyService } from '@petrify/core';
+import { PetrifyService, ConversionError } from '@petrify/core';
 import type { FileChangeEvent, FileGeneratorPort, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
 import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
 import { MarkdownFileGenerator } from '@petrify/generator-markdown';
@@ -16,9 +16,23 @@ import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
 import { createParserMap, ParserId } from './parser-registry.js';
 import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
+import { SyncOrchestrator } from './sync-orchestrator.js';
+import type { SyncFileSystem, VaultOperations } from './sync-orchestrator.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
+}
+
+function formatConversionError(fileName: string, error: unknown): string {
+  if (error instanceof ConversionError) {
+    switch (error.phase) {
+      case 'parse': return `Parse failed: ${fileName}`;
+      case 'ocr': return `OCR failed: ${fileName}`;
+      case 'generate': return `Generate failed: ${fileName}`;
+      case 'save': return `Save failed: ${fileName}`;
+    }
+  }
+  return `Conversion failed: ${fileName}`;
 }
 
 function createGenerator(format: OutputFormat): FileGeneratorPort {
@@ -40,6 +54,7 @@ export default class PetrifyPlugin extends Plugin {
   private generator!: FileGeneratorPort;
   private parserMap!: Map<string, ParserPort>;
   private dropHandler!: DropHandler;
+  private syncOrchestrator!: SyncOrchestrator;
   private isSyncing = false;
   private ribbonIconEl: HTMLElement | null = null;
   private readonly watcherLog = createLogger('Watcher');
@@ -145,6 +160,35 @@ export default class PetrifyPlugin extends Plugin {
       fileSystemAdapter,
       { confidenceThreshold: this.settings.ocr.confidenceThreshold },
     );
+
+    const syncFs: SyncFileSystem = {
+      readdir: (dirPath) => fs.readdir(dirPath),
+      stat: (filePath) => fs.stat(filePath),
+      readFile: (filePath) => fs.readFile(filePath).then((buf) => buf.buffer as ArrayBuffer),
+      access: (filePath) => fs.access(filePath),
+      rm: (filePath, options) => fs.rm(filePath, options),
+    };
+
+    const vaultOps: VaultOperations = {
+      getBasePath: () => (this.app.vault.adapter as FileSystemAdapter).getBasePath(),
+      trash: async (outputPath) => {
+        const file = this.app.vault.getAbstractFileByPath(outputPath);
+        if (file) {
+          await this.app.vault.trash(file, true);
+        }
+      },
+    };
+
+    this.syncOrchestrator = new SyncOrchestrator(
+      this.petrifyService,
+      this.metadataAdapter,
+      this.parserMap,
+      this.generator,
+      syncFs,
+      vaultOps,
+      this.syncLog,
+      this.convertLog,
+    );
   }
 
   private async startWatchers(): Promise<void> {
@@ -164,8 +208,9 @@ export default class PetrifyPlugin extends Plugin {
             this.convertLog.notify(`Converted: ${event.name}`);
           }
         } catch (error) {
-          this.convertLog.error(`Conversion failed: ${event.name}`, error);
-          this.convertLog.notify(`Conversion failed: ${event.name}`);
+          const message = formatConversionError(event.name, error);
+          this.convertLog.error(message, error);
+          this.convertLog.notify(message);
         }
       });
 
@@ -242,119 +287,21 @@ export default class PetrifyPlugin extends Plugin {
       setIcon(this.ribbonIconEl, 'loader');
     }
 
-    let synced = 0;
-    let failed = 0;
-    let deleted = 0;
-
     try {
-      for (const mapping of this.settings.watchMappings) {
-        if (!mapping.enabled) continue;
-        if (!mapping.watchDir || !mapping.outputDir) continue;
+      const result = await this.syncOrchestrator.syncAll(
+        this.settings.watchMappings,
+        this.settings.deleteConvertedOnSourceDelete,
+      );
 
-        const parserForMapping = this.parserMap.get(mapping.parserId);
-        if (!parserForMapping) {
-          this.syncLog.error(`Unknown parser: ${mapping.parserId}`);
-          failed++;
-          continue;
-        }
-        const supportedExts = parserForMapping.extensions.map(e => e.toLowerCase());
-
-        let entries: string[];
-        try {
-          entries = await fs.readdir(mapping.watchDir);
-        } catch {
-          this.syncLog.error(`Directory unreadable: ${mapping.watchDir}`);
-          failed++;
-          continue;
-        }
-
-        for (const entry of entries) {
-          const ext = path.extname(entry).toLowerCase();
-          if (!supportedExts.includes(ext)) continue;
-
-          const filePath = path.join(mapping.watchDir, entry);
-          let stat: { mtimeMs: number };
-          try {
-            stat = await fs.stat(filePath);
-          } catch {
-            this.syncLog.error(`File stat failed: ${entry}`);
-            failed++;
-            continue;
-          }
-
-          const event: FileChangeEvent = {
-            id: filePath,
-            name: entry,
-            extension: ext,
-            mtime: stat.mtimeMs,
-            readData: () => fs.readFile(filePath).then((buf) => buf.buffer as ArrayBuffer),
-          };
-
-          try {
-            const converted = await this.processFile(event, mapping.outputDir);
-            if (converted) {
-              synced++;
-            }
-          } catch (error) {
-            this.convertLog.error(`Conversion failed: ${entry}`, error);
-            failed++;
-          }
-        }
-
-        if (this.settings.deleteConvertedOnSourceDelete) {
-          const adapter = this.app.vault.adapter as FileSystemAdapter;
-          const vaultPath = adapter.getBasePath();
-
-          let outputFiles: string[];
-          try {
-            outputFiles = await fs.readdir(path.join(vaultPath, mapping.outputDir));
-          } catch {
-            continue;
-          }
-
-          for (const outputFile of outputFiles) {
-            if (!outputFile.endsWith(this.generator.extension)) continue;
-
-            const outputPath = path.join(mapping.outputDir, outputFile);
-            const canDelete = await this.petrifyService.handleFileDelete(outputPath);
-            if (!canDelete) continue;
-
-            const metadata = await this.metadataAdapter.getMetadata(outputPath);
-            if (!metadata?.source) continue;
-
-            try {
-              await fs.access(metadata.source);
-            } catch {
-              const file = this.app.vault.getAbstractFileByPath(outputPath);
-              if (file) {
-                await this.app.vault.trash(file, true);
-                this.convertLog.info(`Cleaned orphan: ${outputPath}`);
-                deleted++;
-
-                const baseName = outputFile.replace(this.generator.extension, '');
-                const assetsDir = path.join(mapping.outputDir, 'assets', baseName);
-                const assetsFullPath = path.join(vaultPath, assetsDir);
-                try {
-                  await fs.rm(assetsFullPath, { recursive: true });
-                  this.convertLog.info(`Cleaned orphan assets: ${assetsDir}`);
-                } catch {
-                  // ignore if assets folder doesn't exist
-                }
-              }
-            }
-          }
-        }
-      }
+      const summary = `Sync complete: ${result.synced} converted, ${result.deleted} deleted, ${result.failed} failed`;
+      this.syncLog.info(summary);
+      this.syncLog.notify(summary);
     } finally {
       this.isSyncing = false;
       if (this.ribbonIconEl) {
         setIcon(this.ribbonIconEl, 'refresh-cw');
       }
     }
-
-    const summary = `Sync complete: ${synced} converted, ${deleted} deleted, ${failed} failed`;
-    this.syncLog.info(summary);
-    this.syncLog.notify(summary);
   }
 
   private async loadSettings(): Promise<void> {

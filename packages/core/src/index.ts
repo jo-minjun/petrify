@@ -16,7 +16,10 @@ export {
   ParseError,
   OcrInitializationError,
   OcrRecognitionError,
+  ConversionError,
+  FileSystemError,
 } from './exceptions.js';
+export type { ConversionPhase, FileSystemOperation } from './exceptions.js';
 
 export { DEFAULT_CONFIDENCE_THRESHOLD } from './api.js';
 

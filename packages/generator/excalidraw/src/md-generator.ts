@@ -1,10 +1,6 @@
 import LZString from 'lz-string';
+import type { OcrTextResult } from '@petrify/core';
 import type { ExcalidrawData } from './excalidraw-generator.js';
-
-export interface OcrTextResult {
-  pageIndex: number;
-  texts: string[];
-}
 
 export class ExcalidrawMdGenerator {
   generate(

@@ -62,21 +62,7 @@ export class ExcalidrawGenerator {
   static readonly PAGE_GAP = 100;
 
   generate(note: Note): ExcalidrawData {
-    const now = Date.now();
-    const elements: ExcalidrawElement[] = [];
-    const files: Record<string, ExcalidrawFileEntry> = {};
-
-    const sortedPages = [...note.pages].sort((a, b) => a.order - b.order);
-
-    for (let i = 0; i < sortedPages.length; i++) {
-      const page = sortedPages[i];
-      const fileId = page.id;
-      const elementId = `element-${page.id}`;
-
-      elements.push(this.createImageElement(page, elementId, fileId, i, now));
-      files[fileId] = this.createFileEntry(page, fileId, now);
-    }
-
+    const { elements, files } = this.buildElementsAndFiles(note, true);
     return {
       type: 'excalidraw',
       version: 2,
@@ -86,24 +72,12 @@ export class ExcalidrawGenerator {
         gridSize: null,
         viewBackgroundColor: '#ffffff',
       },
-      files,
+      files: files!,
     };
   }
 
   generateWithoutFiles(note: Note): ExcalidrawDataWithoutFiles {
-    const now = Date.now();
-    const elements: ExcalidrawElement[] = [];
-
-    const sortedPages = [...note.pages].sort((a, b) => a.order - b.order);
-
-    for (let i = 0; i < sortedPages.length; i++) {
-      const page = sortedPages[i];
-      const fileId = page.id;
-      const elementId = `element-${page.id}`;
-
-      elements.push(this.createImageElement(page, elementId, fileId, i, now));
-    }
-
+    const { elements } = this.buildElementsAndFiles(note, false);
     return {
       type: 'excalidraw',
       version: 2,
@@ -115,6 +89,30 @@ export class ExcalidrawGenerator {
       },
       files: {},
     };
+  }
+
+  private buildElementsAndFiles(
+    note: Note,
+    includeFiles: boolean,
+  ): { elements: ExcalidrawElement[]; files?: Record<string, ExcalidrawFileEntry> } {
+    const now = Date.now();
+    const elements: ExcalidrawElement[] = [];
+    const files: Record<string, ExcalidrawFileEntry> | undefined = includeFiles ? {} : undefined;
+
+    const sortedPages = [...note.pages].sort((a, b) => a.order - b.order);
+
+    for (let i = 0; i < sortedPages.length; i++) {
+      const page = sortedPages[i];
+      const fileId = page.id;
+      const elementId = `element-${page.id}`;
+
+      elements.push(this.createImageElement(page, elementId, fileId, i, now));
+      if (files) {
+        files[fileId] = this.createFileEntry(page, fileId, now);
+      }
+    }
+
+    return { elements, files };
   }
 
   private createImageElement(

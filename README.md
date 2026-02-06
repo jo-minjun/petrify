@@ -26,12 +26,12 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 │                                                                          │
 │  ┌──────────┐ ┌─────────┐ ┌───────────┐ ┌─────────────┐ ┌─────────────┐  │
 │  │ParserPort│ │ OcrPort │ │WatcherPort│ │FileGenerator│ │Conversion   │  │
-│  │          │ │         │ │           │ │    Port     │ │  StatePort  │  │
+│  │          │ │         │ │           │ │    Port     │ │MetadataPort │  │
 │  └────┬─────┘ └────┬────┘ └─────┬─────┘ └──────┬──────┘ └──────┬──────┘  │
 │       │            │            │              │               │         │
 │       ▼            ▼            ▼              ▼               ▼         │
 │  ┌────────────────────────────────────────────────────────────────────┐  │
-│  │                       ConversionPipeline                           │  │
+│  │                        PetrifyService                              │  │
 │  │        filter ext -> check mtime -> parse -> ocr -> generate       │  │
 │  └──────────────────────────────┬─────────────────────────────────────┘  │
 └─────────────────────────────────┼────────────────────────────────────────┘
@@ -53,7 +53,7 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 | FileGeneratorPort | Excalidraw (.excalidraw.md) | @petrify/generator-excalidraw |
 | FileGeneratorPort | Markdown (.md) | @petrify/generator-markdown |
 | WatcherPort | chokidar (로컬 FS) | @petrify/watcher-chokidar |
-| ConversionStatePort | Frontmatter 기반 | @petrify/obsidian-plugin |
+| ConversionMetadataPort | Frontmatter 기반 | @petrify/obsidian-plugin |
 
 ## 설치
 
@@ -87,10 +87,10 @@ pnpm add @petrify/watcher-chokidar
 
 - **파일 감시**: WatcherPort 기반 실시간 파일 변경 감지 (현재 chokidar 어댑터)
 - **다중 폴더 매핑**: 여러 외부 폴더를 각각 다른 vault 폴더로 매핑
-- **자동 변환**: ConversionPipeline이 확장자 필터링 → mtime 스킵 → 변환 자동 처리
+- **자동 변환**: PetrifyService가 확장자 필터링 → mtime 스킵 → 변환 자동 처리
 - **드래그 & 드롭**: 파일 탐색기에 필기 파일을 드롭하면 해당 위치에 즉시 변환
 - **OCR 지원**: 손글씨 텍스트 추출 (Tesseract.js / Google Cloud Vision)
-- **중복 방지**: ConversionStatePort 기반 mtime 비교로 이미 변환된 파일 재처리 안함
+- **중복 방지**: ConversionMetadataPort 기반 mtime 비교로 이미 변환된 파일 재처리 안함
 - **원본 삭제 연동**: 원본 파일 삭제 시 변환 파일도 함께 정리 (설정에서 활성화)
 
 ### 설정
@@ -133,7 +133,7 @@ Google Drive for Desktop으로 로컬 동기화된 폴더를 Watch Directory로 
 
 ```
 packages/
-├── core/                 # @petrify/core (포트 인터페이스 + ConversionPipeline)
+├── core/                 # @petrify/core (포트 인터페이스 + PetrifyService)
 ├── parser/
 │   └── viwoods/          # @petrify/parser-viwoods (ParserPort 구현)
 ├── ocr/

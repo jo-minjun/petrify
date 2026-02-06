@@ -6,6 +6,8 @@ import type { FileChangeEvent } from './ports/watcher.js';
 import type { FileGeneratorPort, GeneratorOutput, OcrTextResult } from './ports/file-generator.js';
 import { filterOcrByConfidence } from './ocr/filter.js';
 import { DEFAULT_CONFIDENCE_THRESHOLD } from './api.js';
+import { ConversionError } from './exceptions.js';
+import { InvalidFileFormatError, ParseError, OcrInitializationError, OcrRecognitionError } from './exceptions.js';
 
 export interface PetrifyServiceOptions {
   readonly confidenceThreshold: number;
@@ -80,7 +82,16 @@ export class PetrifyService {
     parser: ParserPort,
     outputName: string,
   ): Promise<GeneratorOutput> {
-    const note = await parser.parse(data);
+    let note;
+    try {
+      note = await parser.parse(data);
+    } catch (error) {
+      if (error instanceof InvalidFileFormatError || error instanceof ParseError) {
+        throw new ConversionError('parse', error);
+      }
+      throw new ConversionError('parse', error);
+    }
+
     const threshold = this.options.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
 
     let ocrResults: OcrTextResult[] | undefined;
@@ -90,17 +101,28 @@ export class PetrifyService {
       for (const page of note.pages) {
         if (page.imageData.length === 0) continue;
 
-        const imageBuffer = new Uint8Array(page.imageData).buffer;
-        const ocrResult = await this.ocr.recognize(imageBuffer);
-        const filteredTexts = filterOcrByConfidence(ocrResult.regions, threshold);
+        try {
+          const imageBuffer = new Uint8Array(page.imageData).buffer;
+          const ocrResult = await this.ocr.recognize(imageBuffer);
+          const filteredTexts = filterOcrByConfidence(ocrResult.regions, threshold);
 
-        if (filteredTexts.length > 0) {
-          ocrResults.push({ pageIndex: page.order, texts: filteredTexts });
+          if (filteredTexts.length > 0) {
+            ocrResults.push({ pageIndex: page.order, texts: filteredTexts });
+          }
+        } catch (error) {
+          if (error instanceof OcrInitializationError || error instanceof OcrRecognitionError) {
+            throw new ConversionError('ocr', error);
+          }
+          throw new ConversionError('ocr', error);
         }
       }
     }
 
-    return this.generator.generate(note, outputName, ocrResults);
+    try {
+      return this.generator.generate(note, outputName, ocrResults);
+    } catch (error) {
+      throw new ConversionError('generate', error);
+    }
   }
 
   private async saveOutput(
@@ -109,19 +131,24 @@ export class PetrifyService {
     outputName: string,
     metadata: ConversionMetadata,
   ): Promise<string> {
-    const frontmatter = this.metadataPort.formatMetadata(metadata);
-    const outputPath = `${outputDir}/${outputName}${this.generator.extension}`;
+    try {
+      const frontmatter = this.metadataPort.formatMetadata(metadata);
+      const outputPath = `${outputDir}/${outputName}${this.generator.extension}`;
 
-    const content = frontmatter + result.content;
-    await this.fileSystem.writeFile(outputPath, content);
+      const content = frontmatter + result.content;
+      await this.fileSystem.writeFile(outputPath, content);
 
-    if (result.assets && result.assets.size > 0) {
-      const assetsDir = `${outputDir}/assets/${outputName}`;
-      for (const [name, data] of result.assets) {
-        await this.fileSystem.writeAsset(assetsDir, name, data);
+      if (result.assets && result.assets.size > 0) {
+        const assetsDir = `${outputDir}/assets/${outputName}`;
+        for (const [name, data] of result.assets) {
+          await this.fileSystem.writeAsset(assetsDir, name, data);
+        }
       }
-    }
 
-    return outputPath;
+      return outputPath;
+    } catch (error) {
+      if (error instanceof ConversionError) throw error;
+      throw new ConversionError('save', error);
+    }
   }
 }

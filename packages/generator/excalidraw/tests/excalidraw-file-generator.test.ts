@@ -1,26 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ExcalidrawFileGenerator } from '../src/excalidraw-file-generator.js';
-import type { Note, Page } from '@petrify/core';
-
-function createPage(overrides: Partial<Page> = {}): Page {
-  return {
-    id: 'page-1',
-    imageData: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
-    order: 0,
-    width: 1440,
-    height: 1920,
-    ...overrides,
-  };
-}
-
-function createNote(pages: Page[]): Note {
-  return {
-    title: 'Test',
-    pages,
-    createdAt: new Date(),
-    modifiedAt: new Date(),
-  };
-}
+import { createPage, createNote } from './helpers.js';
 
 describe('ExcalidrawFileGenerator', () => {
   it('id와 displayName이 정의됨', () => {

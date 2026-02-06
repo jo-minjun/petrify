@@ -28,7 +28,11 @@ packages/
 ├── parser/
 │   └── viwoods/          # @petrify/parser-viwoods
 ├── ocr/
-│   └── tesseract/        # @petrify/ocr-tesseract
+│   ├── tesseract/        # @petrify/ocr-tesseract
+│   └── google-vision/    # @petrify/ocr-google-vision
+├── generator/
+│   ├── excalidraw/       # @petrify/generator-excalidraw
+│   └── markdown/         # @petrify/generator-markdown
 ├── watcher/
 │   └── chokidar/         # @petrify/watcher-chokidar
 └── obsidian-plugin/      # @petrify/obsidian-plugin
@@ -36,9 +40,12 @@ packages/
 
 | 패키지 | 역할 |
 |--------|------|
-| `@petrify/core` | 중간 표현 모델, Excalidraw 변환, 포트 인터페이스 |
+| `@petrify/core` | 중간 표현 모델, PetrifyService, 포트 인터페이스 |
 | `@petrify/parser-viwoods` | viwoods .note 파일 파서 (ParserPort 구현) |
 | `@petrify/ocr-tesseract` | Tesseract.js 래핑 OCR (OcrPort 구현) |
+| `@petrify/ocr-google-vision` | Google Cloud Vision OCR (OcrPort 구현) |
+| `@petrify/generator-excalidraw` | Excalidraw 파일 생성 (FileGeneratorPort 구현) |
+| `@petrify/generator-markdown` | Markdown 파일 생성 (FileGeneratorPort 구현) |
 | `@petrify/watcher-chokidar` | chokidar 래핑 파일 감시 (WatcherPort 구현) |
 
 ## DO
@@ -66,6 +73,9 @@ packages/
       "@petrify/core": ["packages/core/src/index.ts"],
       "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
       "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
+      "@petrify/ocr-google-vision": ["packages/ocr/google-vision/src/index.ts"],
+      "@petrify/generator-excalidraw": ["packages/generator/excalidraw/src/index.ts"],
+      "@petrify/generator-markdown": ["packages/generator/markdown/src/index.ts"],
       "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"]
     }
   }
@@ -127,6 +137,20 @@ packages/
   import { describe, it, expect } from 'vitest';
   ```
 
+- 공통 타입/인터페이스는 @petrify/core에서만 정의하고, 어댑터 패키지에서는 import하여 사용
+
+- README.md와 AGENTS.md 동기화: 패키지 추가/제거, 클래스 이름 변경 시 README.md와 AGENTS.md도 함께 업데이트
+
+- 새 어댑터 패키지 추가 시 체크리스트:
+  1. 포트 인터페이스 구현
+  2. index.ts에서 public API export
+  3. pnpm-workspace.yaml 패턴 확인
+  4. 루트 tsconfig.json paths 추가
+  5. 루트 vitest.config.ts alias 추가
+  6. 루트 AGENTS.md 패키지 구조/테이블 업데이트
+
+- obsidian-plugin은 유일한 Composition Root. 새 어댑터 등록은 이 패키지에서만 수행
+
 ## DON'T
 
 - core에서 특정 어댑터 직접 import하지 않기 (의존성 역전 위반)
@@ -141,3 +165,5 @@ packages/
 - 개별 패키지에 vitest.config.ts 불필요하게 생성하지 않기 (루트 설정으로 충분한 경우)
 - pnpm 사용 시 package-lock.json 남겨두지 않기
 - core 패키지에서 어댑터 의존성 추가하지 않기 (devDependencies 포함)
+- 테스트에서 `as any`로 private 멤버 접근하지 않기
+- 어댑터 패키지에서 core에 이미 정의된 타입을 재정의하지 않기

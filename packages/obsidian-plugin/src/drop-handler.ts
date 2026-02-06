@@ -1,5 +1,6 @@
 import * as path from 'path';
 import type { App } from 'obsidian';
+import { ConversionError } from '@petrify/core';
 import type { PetrifyService, ParserPort } from '@petrify/core';
 import { createLogger } from './logger.js';
 import { ParserSelectModal } from './parser-select-modal.js';
@@ -48,7 +49,11 @@ export class DropHandler {
         log.info(`Converted: ${file.name} -> ${outputPath}`);
       } catch (error) {
         failed++;
-        log.error(`Conversion failed: ${file.name}`, error);
+        if (error instanceof ConversionError) {
+          log.error(`${error.phase} failed: ${file.name}`, error);
+        } else {
+          log.error(`Conversion failed: ${file.name}`, error);
+        }
       }
     }
 
