@@ -1,5 +1,5 @@
+import { drive_v3 } from '@googleapis/drive';
 import type { OAuth2Client } from 'google-auth-library';
-import { google } from 'googleapis';
 import type { ChangesResult, DriveFile } from './types.js';
 
 const FIELDS_FILE = 'id, name, mimeType, modifiedTime, md5Checksum, size, parents';
@@ -32,7 +32,7 @@ export class GoogleDriveClient {
   private readonly drive;
 
   constructor(auth: OAuth2Client) {
-    this.drive = google.drive({ version: 'v3', auth });
+    this.drive = new drive_v3.Drive({ auth });
   }
 
   async listFiles(folderId: string): Promise<DriveFile[]> {
