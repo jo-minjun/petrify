@@ -3,4 +3,5 @@ packages:
   - 'packages/parser/*'
   - 'packages/ocr/*'
   - 'packages/watcher/*'
+  - 'packages/generator/*'
   - 'packages/obsidian-plugin'

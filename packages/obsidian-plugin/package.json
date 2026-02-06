@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@petrify/core": "workspace:*",
+    "@petrify/generator-excalidraw": "workspace:*",
+    "@petrify/generator-markdown": "workspace:*",
     "@petrify/parser-viwoods": "workspace:*",
     "@petrify/watcher-chokidar": "workspace:*",
     "@petrify/ocr-tesseract": "workspace:*",

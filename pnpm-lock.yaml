@@ -18,8 +18,13 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@25.2.0)
 
-  packages/core:
+  packages/core: {}
+
+  packages/generator/excalidraw:
     dependencies:
+      '@petrify/core':
+        specifier: workspace:*
+        version: link:../../core
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0
@@ -28,11 +33,26 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
 
+  packages/generator/markdown:
+    dependencies:
+      '@petrify/core':
+        specifier: workspace:*
+        version: link:../../core
+
   packages/obsidian-plugin:
     dependencies:
       '@petrify/core':
         specifier: workspace:*
         version: link:../core
+      '@petrify/generator-excalidraw':
+        specifier: workspace:*
+        version: link:../generator/excalidraw
+      '@petrify/generator-markdown':
+        specifier: workspace:*
+        version: link:../generator/markdown
+      '@petrify/ocr-google-vision':
+        specifier: workspace:*
+        version: link:../ocr/google-vision
       '@petrify/ocr-tesseract':
         specifier: workspace:*
         version: link:../ocr/tesseract

@@ -4,6 +4,7 @@ import type { ParserPort } from '../src/ports/parser.js';
 import type { OcrPort, OcrResult } from '../src/ports/ocr.js';
 import type { ConversionStatePort } from '../src/ports/conversion-state.js';
 import type { FileChangeEvent } from '../src/ports/watcher.js';
+import type { FileGeneratorPort, GeneratorOutput } from '../src/ports/file-generator.js';
 import type { Note } from '../src/models/index.js';
 
 const mockNote: Note = {
@@ -19,10 +20,25 @@ const mockNote: Note = {
   }],
 };
 
+const mockOutput: GeneratorOutput = {
+  content: '# Excalidraw Data\ntest content',
+  assets: new Map([['page-1.png', new Uint8Array([0x89, 0x50, 0x4e, 0x47])]]),
+  extension: '.excalidraw.md',
+};
+
 function createMockParser(): ParserPort {
   return {
     extensions: ['.note'],
     parse: vi.fn().mockResolvedValue(mockNote),
+  };
+}
+
+function createMockGenerator(): FileGeneratorPort {
+  return {
+    id: 'test-generator',
+    displayName: 'Test Generator',
+    extension: '.excalidraw.md',
+    generate: vi.fn().mockReturnValue(mockOutput),
   };
 }
 
@@ -48,12 +64,14 @@ function createEvent(overrides?: Partial<FileChangeEvent>): FileChangeEvent {
 
 describe('ConversionPipeline', () => {
   let parser: ParserPort;
+  let generator: FileGeneratorPort;
   let ocr: OcrPort;
   let conversionState: ConversionStatePort;
 
   beforeEach(() => {
     vi.clearAllMocks();
     parser = createMockParser();
+    generator = createMockGenerator();
     ocr = createMockOcr();
     conversionState = {
       getLastConvertedMtime: vi.fn().mockResolvedValue(undefined),
@@ -62,20 +80,20 @@ describe('ConversionPipeline', () => {
 
   it('지원하는 확장자의 파일을 변환한다', async () => {
     const pipeline = new ConversionPipeline(
-      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), generator, ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent();
 
     const result = await pipeline.handleFileChange(event);
 
     expect(result).not.toBeNull();
-    expect(result).toContain('# Excalidraw Data');
+    expect(result?.content).toContain('# Excalidraw Data');
     expect(event.readData).toHaveBeenCalled();
   });
 
   it('지원하지 않는 확장자면 null을 반환한다', async () => {
     const pipeline = new ConversionPipeline(
-      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), generator, ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ extension: '.txt', name: 'file.txt' });
 
@@ -90,7 +108,7 @@ describe('ConversionPipeline', () => {
       getLastConvertedMtime: vi.fn().mockResolvedValue(1700000000000),
     };
     const pipeline = new ConversionPipeline(
-      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), generator, ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ mtime: 1700000000000 });
 
@@ -105,7 +123,7 @@ describe('ConversionPipeline', () => {
       getLastConvertedMtime: vi.fn().mockResolvedValue(1699999999999),
     };
     const pipeline = new ConversionPipeline(
-      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), generator, ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ mtime: 1700000000000 });
 
@@ -118,7 +136,7 @@ describe('ConversionPipeline', () => {
   it('지원하지 않는 확장자면 스킵 로그를 출력한다', async () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const pipeline = new ConversionPipeline(
-      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), generator, ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ extension: '.txt', name: 'file.txt' });
 
@@ -134,7 +152,7 @@ describe('ConversionPipeline', () => {
       getLastConvertedMtime: vi.fn().mockResolvedValue(1700000000000),
     };
     const pipeline = new ConversionPipeline(
-      new Map([['.note', parser]]), ocr, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), generator, ocr, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent({ mtime: 1700000000000 });
 
@@ -146,21 +164,66 @@ describe('ConversionPipeline', () => {
 
   it('OCR 없이 동작한다', async () => {
     const pipeline = new ConversionPipeline(
-      new Map([['.note', parser]]), null, conversionState, { confidenceThreshold: 50 }
+      new Map([['.note', parser]]), generator, null, conversionState, { confidenceThreshold: 50 }
     );
     const event = createEvent();
 
     const result = await pipeline.handleFileChange(event);
 
     expect(result).not.toBeNull();
-    expect(result).toContain('# Excalidraw Data');
+    expect(result?.content).toContain('# Excalidraw Data');
+  });
+
+  it('generator에 outputName을 전달한다', async () => {
+    const pipeline = new ConversionPipeline(
+      new Map([['.note', parser]]), generator, ocr, conversionState, { confidenceThreshold: 50 }
+    );
+    const event = createEvent({ name: 'my-note.note' });
+
+    await pipeline.handleFileChange(event);
+
+    expect(generator.generate).toHaveBeenCalledWith(
+      mockNote,
+      'my-note',
+      expect.any(Array)
+    );
+  });
+
+  it('OCR 결과를 generator에 전달한다', async () => {
+    const pipeline = new ConversionPipeline(
+      new Map([['.note', parser]]), generator, ocr, conversionState, { confidenceThreshold: 50 }
+    );
+    const event = createEvent();
+
+    await pipeline.handleFileChange(event);
+
+    expect(generator.generate).toHaveBeenCalledWith(
+      mockNote,
+      'file',
+      [{ pageIndex: 0, texts: ['테스트'] }]
+    );
+  });
+
+  it('OCR 없으면 ocrResults를 undefined로 전달한다', async () => {
+    const pipeline = new ConversionPipeline(
+      new Map([['.note', parser]]), generator, null, conversionState, { confidenceThreshold: 50 }
+    );
+    const event = createEvent();
+
+    await pipeline.handleFileChange(event);
+
+    expect(generator.generate).toHaveBeenCalledWith(
+      mockNote,
+      'file',
+      undefined
+    );
   });
 
   describe('getParsersForExtension', () => {
     it('등록된 확장자의 파서를 반환한다', () => {
       const pipeline = new ConversionPipeline(
         new Map([['.note', parser]]),
-        ocr, conversionState, { confidenceThreshold: 50 }
+        generator, ocr, conversionState, { confidenceThreshold: 50 }
       );
 
       const result = pipeline.getParsersForExtension('.note');
@@ -170,7 +233,7 @@ describe('ConversionPipeline', () => {
     it('등록되지 않은 확장자는 빈 배열을 반환한다', () => {
       const pipeline = new ConversionPipeline(
         new Map([['.note', parser]]),
-        ocr, conversionState, { confidenceThreshold: 50 }
+        generator, ocr, conversionState, { confidenceThreshold: 50 }
       );
 
       const result = pipeline.getParsersForExtension('.txt');
@@ -180,7 +243,7 @@ describe('ConversionPipeline', () => {
     it('대소문자를 무시하고 조회한다', () => {
       const pipeline = new ConversionPipeline(
         new Map([['.note', parser]]),
-        ocr, conversionState, { confidenceThreshold: 50 }
+        generator, ocr, conversionState, { confidenceThreshold: 50 }
       );
 
       const result = pipeline.getParsersForExtension('.NOTE');
@@ -189,44 +252,52 @@ describe('ConversionPipeline', () => {
   });
 
   describe('convertDroppedFile', () => {
-    it('지정된 파서로 변환하여 마크다운을 반환한다', async () => {
+    it('지정된 파서로 변환하여 GeneratorOutput을 반환한다', async () => {
       const pipeline = new ConversionPipeline(
         new Map([['.note', parser]]),
-        ocr, conversionState, { confidenceThreshold: 50 }
+        generator, ocr, conversionState, { confidenceThreshold: 50 }
       );
 
       const result = await pipeline.convertDroppedFile(
-        new ArrayBuffer(0), parser
+        new ArrayBuffer(0), parser, 'dropped-file'
       );
 
-      expect(result).toContain('# Excalidraw Data');
+      expect(result.content).toContain('# Excalidraw Data');
+      expect(result.extension).toBe('.excalidraw.md');
     });
 
-    it('OCR이 있으면 OCR 결과를 포함한다', async () => {
+    it('OCR이 있으면 OCR 결과를 generator에 전달한다', async () => {
       const pipeline = new ConversionPipeline(
         new Map([['.note', parser]]),
-        ocr, conversionState, { confidenceThreshold: 50 }
+        generator, ocr, conversionState, { confidenceThreshold: 50 }
       );
 
-      const result = await pipeline.convertDroppedFile(
-        new ArrayBuffer(0), parser
+      await pipeline.convertDroppedFile(
+        new ArrayBuffer(0), parser, 'my-file'
       );
 
-      expect(result).toContain('테스트');
+      expect(generator.generate).toHaveBeenCalledWith(
+        mockNote,
+        'my-file',
+        [{ pageIndex: 0, texts: ['테스트'] }]
+      );
     });
 
     it('OCR이 없으면 OCR 없이 변환한다', async () => {
       const pipeline = new ConversionPipeline(
         new Map([['.note', parser]]),
-        null, conversionState, { confidenceThreshold: 50 }
+        generator, null, conversionState, { confidenceThreshold: 50 }
       );
 
-      const result = await pipeline.convertDroppedFile(
-        new ArrayBuffer(0), parser
+      await pipeline.convertDroppedFile(
+        new ArrayBuffer(0), parser, 'my-file'
       );
 
-      expect(result).toContain('# Excalidraw Data');
-      expect(result).not.toContain('테스트');
+      expect(generator.generate).toHaveBeenCalledWith(
+        mockNote,
+        'my-file',
+        undefined
+      );
     });
   });
 });

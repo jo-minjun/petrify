@@ -1,5 +1,4 @@
-import type { Note } from '../models/index.js';
-import type { Page } from '../models/page.js';
+import type { Note, Page } from '@petrify/core';
 import { uint8ArrayToBase64 } from './base64.js';
 
 export interface ExcalidrawElement {
@@ -49,6 +48,15 @@ export interface ExcalidrawData {
   readonly files: Readonly<Record<string, ExcalidrawFileEntry>>;
 }
 
+export interface ExcalidrawDataWithoutFiles {
+  readonly type: 'excalidraw';
+  readonly version: number;
+  readonly source: string;
+  readonly elements: readonly ExcalidrawElement[];
+  readonly appState: Readonly<Record<string, unknown>>;
+  readonly files: Readonly<Record<string, never>>;
+}
+
 export class ExcalidrawGenerator {
   /** 페이지 간 세로 간격 (px) */
   static readonly PAGE_GAP = 100;
@@ -79,6 +87,33 @@ export class ExcalidrawGenerator {
         viewBackgroundColor: '#ffffff',
       },
       files,
+    };
+  }
+
+  generateWithoutFiles(note: Note): ExcalidrawDataWithoutFiles {
+    const now = Date.now();
+    const elements: ExcalidrawElement[] = [];
+
+    const sortedPages = [...note.pages].sort((a, b) => a.order - b.order);
+
+    for (let i = 0; i < sortedPages.length; i++) {
+      const page = sortedPages[i];
+      const fileId = page.id;
+      const elementId = `element-${page.id}`;
+
+      elements.push(this.createImageElement(page, elementId, fileId, i, now));
+    }
+
+    return {
+      type: 'excalidraw',
+      version: 2,
+      source: 'petrify-converter',
+      elements,
+      appState: {
+        gridSize: null,
+        viewBackgroundColor: '#ffffff',
+      },
+      files: {},
     };
   }
 

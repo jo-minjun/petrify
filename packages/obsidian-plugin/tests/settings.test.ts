@@ -13,6 +13,10 @@ describe('PetrifySettings', () => {
   it('DEFAULT_SETTINGS는 deleteConvertedOnSourceDelete가 false이다', () => {
     expect(DEFAULT_SETTINGS.deleteConvertedOnSourceDelete).toBe(false);
   });
+
+  it('기본 outputFormat은 excalidraw', () => {
+    expect(DEFAULT_SETTINGS.outputFormat).toBe('excalidraw');
+  });
 });
 
 describe('OcrProvider', () => {

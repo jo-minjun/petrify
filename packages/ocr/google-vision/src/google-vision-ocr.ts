@@ -1,5 +1,13 @@
 import type { OcrPort, OcrResult, OcrRegion, OcrOptions } from '@petrify/core';
-import { OcrInitializationError, OcrRecognitionError, uint8ArrayToBase64 } from '@petrify/core';
+import { OcrInitializationError, OcrRecognitionError } from '@petrify/core';
+
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
 
 export interface GoogleVisionOcrConfig {
   readonly apiKey: string;

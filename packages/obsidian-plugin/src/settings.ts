@@ -12,6 +12,8 @@ export const LANGUAGE_HINT_OPTIONS: { value: LanguageHint; label: string }[] = [
   { value: 'zh-TW', label: '繁體中文' },
 ];
 
+export type OutputFormat = 'excalidraw' | 'markdown';
+
 export interface WatchMapping {
   watchDir: string;
   outputDir: string;
@@ -32,6 +34,7 @@ export interface PetrifySettings {
   watchMappings: WatchMapping[];
   ocr: OcrSettings;
   deleteConvertedOnSourceDelete: boolean;
+  outputFormat: OutputFormat;
 }
 
 export const DEFAULT_SETTINGS: PetrifySettings = {
@@ -45,4 +48,5 @@ export const DEFAULT_SETTINGS: PetrifySettings = {
     },
   },
   deleteConvertedOnSourceDelete: false,
+  outputFormat: 'excalidraw',
 };

@@ -15,9 +15,11 @@
       "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
       "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
       "@petrify/ocr-google-vision": ["packages/ocr/google-vision/src/index.ts"],
-      "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"]
+      "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"],
+      "@petrify/generator-excalidraw": ["packages/generator/excalidraw/src/index.ts"],
+      "@petrify/generator-markdown": ["packages/generator/markdown/src/index.ts"]
     }
   },
-  "include": ["packages/*/src"],
+  "include": ["packages/*/src", "packages/*/*/src"],
   "exclude": ["node_modules", "dist"]
 }
