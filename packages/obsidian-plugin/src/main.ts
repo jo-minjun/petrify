@@ -9,6 +9,8 @@ import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
+import { GoogleDriveWatcher, GoogleDriveAuth } from '@petrify/watcher-google-drive';
+import type { TokenStore, PageTokenStore } from '@petrify/watcher-google-drive';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
@@ -46,6 +48,7 @@ export default class PetrifyPlugin extends Plugin {
   private syncOrchestrator!: SyncOrchestrator;
   private isSyncing = false;
   private ribbonIconEl: HTMLElement | null = null;
+  private googleDriveAuth: GoogleDriveAuth | null = null;
   private readonly watcherLog = createLogger('Watcher');
   private readonly convertLog = createLogger('Convert');
   private readonly syncLog = createLogger('Sync');
@@ -182,7 +185,24 @@ export default class PetrifyPlugin extends Plugin {
       if (!mapping.enabled) continue;
       if (!mapping.watchDir || !mapping.outputDir) continue;
 
-      const watcher = new ChokidarWatcher(mapping.watchDir);
+      let watcher: WatcherPort;
+
+      if (mapping.sourceType === 'google-drive') {
+        const authClient = await this.getGoogleDriveAuthClient();
+        if (!authClient) {
+          this.watcherLog.error('Google Drive auth not configured or failed');
+          continue;
+        }
+
+        watcher = new GoogleDriveWatcher({
+          folderId: mapping.watchDir,
+          pollIntervalMs: this.settings.googleDrive.pollIntervalMs,
+          auth: authClient,
+          pageTokenStore: this.createPageTokenStore(mapping.watchDir),
+        });
+      } else {
+        watcher = new ChokidarWatcher(mapping.watchDir);
+      }
 
       watcher.onFileChange(async (event) => {
         this.watcherLog.info(`File detected: ${event.name}`);
@@ -296,10 +316,60 @@ export default class PetrifyPlugin extends Plugin {
       ...m,
       enabled: m.enabled ?? true,
       parserId: m.parserId ?? ParserId.Viwoods,
+      sourceType: m.sourceType ?? 'local',
     }));
   }
 
   private async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+  }
+
+  private async getGoogleDriveAuthClient(): Promise<import('google-auth-library').OAuth2Client | null> {
+    const { clientId, clientSecret } = this.settings.googleDrive;
+    if (!clientId || !clientSecret) return null;
+
+    if (!this.googleDriveAuth) {
+      this.googleDriveAuth = new GoogleDriveAuth({
+        clientId,
+        clientSecret,
+        tokenStore: this.createTokenStore(),
+      });
+    }
+
+    return this.googleDriveAuth.restoreSession();
+  }
+
+  private createTokenStore(): TokenStore {
+    return {
+      loadTokens: async () => {
+        const data = await this.loadData();
+        return data?.googleDriveTokens ?? null;
+      },
+      saveTokens: async (tokens) => {
+        const data = (await this.loadData()) ?? {};
+        data.googleDriveTokens = tokens;
+        await this.saveData(data);
+      },
+      clearTokens: async () => {
+        const data = (await this.loadData()) ?? {};
+        delete data.googleDriveTokens;
+        await this.saveData(data);
+      },
+    };
+  }
+
+  private createPageTokenStore(folderId: string): PageTokenStore {
+    const key = `pageToken_${folderId}`;
+    return {
+      loadPageToken: async () => {
+        const data = await this.loadData();
+        return data?.[key] ?? null;
+      },
+      savePageToken: async (token) => {
+        const data = (await this.loadData()) ?? {};
+        data[key] = token;
+        await this.saveData(data);
+      },
+    };
   }
 }

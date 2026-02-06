@@ -7,6 +7,7 @@ import {
   type OcrProvider,
   type OutputFormat,
   type PetrifySettings,
+  type WatchSourceType,
 } from './settings.js';
 
 export interface SettingsTabCallbacks {
@@ -34,6 +35,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     this.displayGeneralSettings(containerEl);
     this.displayWatchMappings(containerEl);
+    this.displayGoogleDriveSettings(containerEl);
     this.displayOcrSettings(containerEl);
     this.displayDeleteSettings(containerEl);
   }
@@ -67,8 +69,25 @@ export class PetrifySettingsTab extends PluginSettingTab {
       const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
 
       new Setting(mappingContainer)
-        .setName(`Watch Directory ${index + 1}`)
-        .setDesc('External folder to watch for handwriting files')
+        .setName('Source Type')
+        .setDesc('Watch a local directory or a Google Drive folder')
+        .addDropdown((dropdown) =>
+          dropdown
+            .addOption('local', 'Local Directory')
+            .addOption('google-drive', 'Google Drive Folder')
+            .setValue(mapping.sourceType ?? 'local')
+            .onChange(async (value) => {
+              settings.watchMappings[index].sourceType = value as WatchSourceType;
+              await this.callbacks.saveSettings(settings);
+              this.display();
+            })
+        );
+
+      const isGoogleDrive = mapping.sourceType === 'google-drive';
+
+      new Setting(mappingContainer)
+        .setName(`${isGoogleDrive ? 'Google Drive Folder ID' : 'Watch Directory'} ${index + 1}`)
+        .setDesc(isGoogleDrive ? 'Google Drive folder ID to watch' : 'External folder to watch for handwriting files')
         .addToggle((toggle) =>
           toggle.setValue(mapping.enabled).onChange(async (value) => {
             settings.watchMappings[index].enabled = value;
@@ -77,7 +96,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         )
         .addText((text) =>
           text
-            .setPlaceholder('/path/to/watch')
+            .setPlaceholder(isGoogleDrive ? 'Google Drive Folder ID' : '/path/to/watch')
             .setValue(mapping.watchDir)
             .onChange(async (value) => {
               settings.watchMappings[index].watchDir = value;
@@ -131,11 +150,60 @@ export class PetrifySettingsTab extends PluginSettingTab {
           outputDir: '',
           enabled: false,
           parserId: ParserId.Viwoods,
+          sourceType: 'local',
         });
         await this.callbacks.saveSettings(settings);
         this.display();
       })
     );
+  }
+
+  private displayGoogleDriveSettings(containerEl: HTMLElement): void {
+    containerEl.createEl('h2', { text: 'Google Drive Settings' });
+
+    const settings = this.callbacks.getSettings();
+
+    new Setting(containerEl)
+      .setName('Client ID')
+      .setDesc('OAuth2 Client ID from Google Cloud Console')
+      .addText((text) =>
+        text
+          .setPlaceholder('Enter Client ID')
+          .setValue(settings.googleDrive.clientId)
+          .onChange(async (value) => {
+            settings.googleDrive.clientId = value;
+            await this.callbacks.saveDataOnly(settings);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Client Secret')
+      .setDesc('OAuth2 Client Secret from Google Cloud Console')
+      .addText((text) => {
+        text.inputEl.type = 'password';
+        text
+          .setPlaceholder('Enter Client Secret')
+          .setValue(settings.googleDrive.clientSecret)
+          .onChange(async (value) => {
+            settings.googleDrive.clientSecret = value;
+            await this.callbacks.saveDataOnly(settings);
+          });
+      });
+
+    new Setting(containerEl)
+      .setName('Poll Interval')
+      .setDesc('How often to check for changes (in seconds)')
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption('30000', '30 seconds')
+          .addOption('60000', '1 minute')
+          .addOption('120000', '2 minutes')
+          .setValue(String(settings.googleDrive.pollIntervalMs))
+          .onChange(async (value) => {
+            settings.googleDrive.pollIntervalMs = Number(value);
+            await this.callbacks.saveDataOnly(settings);
+          })
+      );
   }
 
   private displayDeleteSettings(containerEl: HTMLElement): void {

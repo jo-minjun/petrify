@@ -15,6 +15,7 @@
     "@petrify/generator-markdown": "workspace:*",
     "@petrify/parser-viwoods": "workspace:*",
     "@petrify/watcher-chokidar": "workspace:*",
+    "@petrify/watcher-google-drive": "workspace:*",
     "@petrify/ocr-tesseract": "workspace:*",
     "@petrify/ocr-google-vision": "workspace:*"
   },

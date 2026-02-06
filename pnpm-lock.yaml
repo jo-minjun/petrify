@@ -62,6 +62,9 @@ importers:
       '@petrify/watcher-chokidar':
         specifier: workspace:*
         version: link:../watcher/chokidar
+      '@petrify/watcher-google-drive':
+        specifier: workspace:*
+        version: link:../watcher/google-drive
     devDependencies:
       '@types/node':
         specifier: ^20.0.0

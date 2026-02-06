@@ -44,6 +44,7 @@ export class SyncOrchestrator {
   async syncAll(
     watchMappings: WatchMapping[],
     deleteOnSourceDelete: boolean,
+    syncFsForMapping?: (mapping: WatchMapping) => SyncFileSystem | null,
   ): Promise<SyncResult> {
     let synced = 0;
     let failed = 0;
@@ -52,6 +53,9 @@ export class SyncOrchestrator {
     for (const mapping of watchMappings) {
       if (!mapping.enabled) continue;
       if (!mapping.watchDir || !mapping.outputDir) continue;
+
+      const mappingFs = syncFsForMapping?.(mapping) ?? this.fs;
+      const isGoogleDrive = mapping.sourceType === 'google-drive';
 
       const parserForMapping = this.parserMap.get(mapping.parserId);
       if (!parserForMapping) {
@@ -63,7 +67,7 @@ export class SyncOrchestrator {
 
       let entries: string[];
       try {
-        entries = await this.fs.readdir(mapping.watchDir);
+        entries = await mappingFs.readdir(mapping.watchDir);
       } catch {
         this.syncLog.error(`Directory unreadable: ${mapping.watchDir}`);
         failed++;
@@ -74,22 +78,24 @@ export class SyncOrchestrator {
         const ext = path.extname(entry).toLowerCase();
         if (!supportedExts.includes(ext)) continue;
 
-        const filePath = path.join(mapping.watchDir, entry);
+        const filePath = isGoogleDrive ? entry : path.join(mapping.watchDir, entry);
         let stat: { mtimeMs: number };
         try {
-          stat = await this.fs.stat(filePath);
+          stat = await mappingFs.stat(filePath);
         } catch {
           this.syncLog.error(`File stat failed: ${entry}`);
           failed++;
           continue;
         }
 
+        const fileId = isGoogleDrive ? `gdrive://${filePath}` : filePath;
+
         const event: FileChangeEvent = {
-          id: filePath,
+          id: fileId,
           name: entry,
           extension: ext,
           mtime: stat.mtimeMs,
-          readData: () => this.fs.readFile(filePath),
+          readData: () => mappingFs.readFile(filePath),
         };
 
         try {
@@ -126,7 +132,7 @@ export class SyncOrchestrator {
           if (!metadata?.source) continue;
 
           try {
-            await this.fs.access(metadata.source);
+            await mappingFs.access(metadata.source);
           } catch {
             await this.vault.trash(outputPath);
             this.convertLog.info(`Cleaned orphan: ${outputPath}`);
