@@ -54,6 +54,7 @@ Petrify는 여러 필기 노트 앱의 파일을 Obsidian에서 하나의 포맷
 | FileGeneratorPort | Markdown (.md) | @petrify/generator-markdown |
 | WatcherPort | chokidar (로컬 FS) | @petrify/watcher-chokidar |
 | ConversionMetadataPort | Frontmatter 기반 | @petrify/obsidian-plugin |
+| FileSystemPort | Obsidian FileSystem | @petrify/obsidian-plugin |
 
 ## 설치
 
