@@ -45,9 +45,9 @@ export class ViwoodsParser implements ParserPort {
 
 - core의 공통 예외 클래스 사용
   ```typescript
-  import { InvalidNoteFileError, ParseError } from '@petrify/core';
+  import { InvalidFileFormatError, ParseError } from '@petrify/core';
 
-  throw new InvalidNoteFileError('Invalid file format');
+  throw new InvalidFileFormatError('Invalid file format');
   ```
 
 ## DON'T

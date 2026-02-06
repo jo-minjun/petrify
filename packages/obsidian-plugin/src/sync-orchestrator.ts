@@ -1,5 +1,4 @@
 import * as path from 'path';
-import { ConversionError } from '@petrify/core';
 import type {
   PetrifyService,
   ParserPort,
@@ -7,6 +6,7 @@ import type {
   ConversionMetadataPort,
   FileChangeEvent,
 } from '@petrify/core';
+import { formatConversionError } from './format-conversion-error.js';
 import type { Logger } from './logger.js';
 import type { WatchMapping } from './settings.js';
 
@@ -27,18 +27,6 @@ export interface SyncResult {
   synced: number;
   failed: number;
   deleted: number;
-}
-
-function formatConversionError(fileName: string, error: unknown): string {
-  if (error instanceof ConversionError) {
-    switch (error.phase) {
-      case 'parse': return `Parse failed: ${fileName}`;
-      case 'ocr': return `OCR failed: ${fileName}`;
-      case 'generate': return `Generate failed: ${fileName}`;
-      case 'save': return `Save failed: ${fileName}`;
-    }
-  }
-  return `Conversion failed: ${fileName}`;
 }
 
 export class SyncOrchestrator {

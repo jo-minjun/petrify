@@ -7,7 +7,6 @@ import type { FileGeneratorPort, GeneratorOutput, OcrTextResult } from './ports/
 import { filterOcrByConfidence } from './ocr/filter.js';
 import { DEFAULT_CONFIDENCE_THRESHOLD } from './api.js';
 import { ConversionError } from './exceptions.js';
-import { InvalidFileFormatError, ParseError, OcrInitializationError, OcrRecognitionError } from './exceptions.js';
 
 export interface PetrifyServiceOptions {
   readonly confidenceThreshold: number;
@@ -86,9 +85,6 @@ export class PetrifyService {
     try {
       note = await parser.parse(data);
     } catch (error) {
-      if (error instanceof InvalidFileFormatError || error instanceof ParseError) {
-        throw new ConversionError('parse', error);
-      }
       throw new ConversionError('parse', error);
     }
 
@@ -97,24 +93,19 @@ export class PetrifyService {
     let ocrResults: OcrTextResult[] | undefined;
 
     if (this.ocr) {
-      ocrResults = [];
-      for (const page of note.pages) {
-        if (page.imageData.length === 0) continue;
-
-        try {
-          const imageBuffer = new Uint8Array(page.imageData).buffer;
-          const ocrResult = await this.ocr.recognize(imageBuffer);
-          const filteredTexts = filterOcrByConfidence(ocrResult.regions, threshold);
-
-          if (filteredTexts.length > 0) {
-            ocrResults.push({ pageIndex: page.order, texts: filteredTexts });
-          }
-        } catch (error) {
-          if (error instanceof OcrInitializationError || error instanceof OcrRecognitionError) {
-            throw new ConversionError('ocr', error);
-          }
-          throw new ConversionError('ocr', error);
-        }
+      const ocrPages = note.pages.filter(page => page.imageData.length > 0);
+      try {
+        const results = await Promise.all(
+          ocrPages.map(async (page) => {
+            const imageBuffer = new Uint8Array(page.imageData).buffer;
+            const ocrResult = await this.ocr!.recognize(imageBuffer);
+            const filteredTexts = filterOcrByConfidence(ocrResult.regions, threshold);
+            return { pageIndex: page.order, texts: filteredTexts };
+          })
+        );
+        ocrResults = results.filter(r => r.texts.length > 0);
+      } catch (error) {
+        throw new ConversionError('ocr', error);
       }
     }
 

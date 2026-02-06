@@ -25,4 +25,6 @@ export interface OcrOptions {
 export interface OcrPort {
   /** 이미지에서 텍스트 추출 */
   recognize(image: ArrayBuffer, options?: OcrOptions): Promise<OcrResult>;
+  /** OCR 엔진 종료 (리소스 정리) */
+  terminate?(): Promise<void>;
 }

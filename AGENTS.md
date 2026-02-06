@@ -6,8 +6,8 @@
 
 이 프로젝트는 헥사고날 아키텍처를 따른다.
 
-- **Core**: 핵심 도메인 모델(Note, Page, Stroke)과 변환 로직(ExcalidrawGenerator)
-- **Ports**: 외부 의존성을 위한 인터페이스 정의(ParserPort, OcrPort)
+- **Core**: 핵심 도메인 모델(Note, Page)과 PetrifyService, 포트 인터페이스
+- **Ports**: 외부 의존성을 위한 인터페이스 정의(ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort, FileSystemPort, WatcherPort)
 - **Adapters**: 포트 인터페이스의 구체적 구현(ViwoodsParser 등)
 
 ### 의존성 방향
@@ -47,6 +47,7 @@ packages/
 | `@petrify/generator-excalidraw` | Excalidraw 파일 생성 (FileGeneratorPort 구현) |
 | `@petrify/generator-markdown` | Markdown 파일 생성 (FileGeneratorPort 구현) |
 | `@petrify/watcher-chokidar` | chokidar 래핑 파일 감시 (WatcherPort 구현) |
+| `@petrify/obsidian-plugin` | Composition Root: Obsidian 플러그인, 어댑터 조립 |
 
 ## DO
 
@@ -85,13 +86,13 @@ packages/
 
 - 에러는 명시적 예외 클래스로 처리하기
   ```typescript
-  throw new InvalidNoteFileError('Invalid file format');
+  throw new InvalidFileFormatError('Invalid file format');
   throw new ParseError('Failed to parse stroke data');
   ```
 
 - public API는 index.ts에서 명시적으로 export하기
   ```typescript
-  export { ExcalidrawGenerator } from './excalidraw/generator.js';
+  export { PetrifyService } from './petrify-service.js';
   export type { ParserPort } from './ports/parser.js';
   ```
 

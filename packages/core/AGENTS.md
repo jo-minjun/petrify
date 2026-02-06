@@ -27,7 +27,7 @@
 
 - 어댑터가 사용할 공통 예외 클래스 정의
   ```typescript
-  export class InvalidNoteFileError extends Error { }
+  export class InvalidFileFormatError extends Error { }
   export class ParseError extends Error { }
   ```
 

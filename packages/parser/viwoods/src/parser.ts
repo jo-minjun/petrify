@@ -43,7 +43,9 @@ export class NoteParser {
     if (!infoFile) return {};
 
     try {
-      const content = await zip.file(infoFile)!.async('string');
+      const file = zip.file(infoFile);
+      if (!file) throw new ParseError(`File not found in archive: ${infoFile}`);
+      const content = await file.async('string');
       return JSON.parse(content) as NoteFileInfo;
     } catch (e) {
       throw new ParseError(`Failed to parse NoteFileInfo: ${e}`);
@@ -59,7 +61,9 @@ export class NoteParser {
     }
 
     try {
-      const content = await zip.file(pageListFile)!.async('string');
+      const file = zip.file(pageListFile);
+      if (!file) throw new ParseError(`File not found in archive: ${pageListFile}`);
+      const content = await file.async('string');
       const entries = JSON.parse(content) as PageListEntry[];
       return entries.sort((a, b) => a.order - b.order);
     } catch (e) {
@@ -95,7 +99,7 @@ export class NoteParser {
   }
 
   private timestampToDate(timestamp: number): Date {
-    if (timestamp === 0) return new Date();
+    if (timestamp === 0) return new Date(0);
     return new Date(timestamp);
   }
 }

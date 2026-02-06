@@ -1,25 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "declaration": true,
-    "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "@petrify/core": ["packages/core/src/index.ts"],
-      "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
-      "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
-      "@petrify/ocr-google-vision": ["packages/ocr/google-vision/src/index.ts"],
-      "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"],
-      "@petrify/generator-excalidraw": ["packages/generator/excalidraw/src/index.ts"],
-      "@petrify/generator-markdown": ["packages/generator/markdown/src/index.ts"]
-    }
-  },
+  "extends": "./tsconfig.base.json",
   "include": ["packages/*/src", "packages/*/*/src"],
   "exclude": ["node_modules", "dist"]
 }

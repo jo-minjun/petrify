@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
-import { PetrifyService, ConversionError } from '@petrify/core';
+import { PetrifyService } from '@petrify/core';
 import type { FileChangeEvent, FileGeneratorPort, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
 import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
 import { MarkdownFileGenerator } from '@petrify/generator-markdown';
@@ -10,6 +10,7 @@ import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import { DropHandler } from './drop-handler.js';
+import { formatConversionError } from './format-conversion-error.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
 import { createLogger } from './logger.js';
 import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
@@ -21,18 +22,6 @@ import type { SyncFileSystem, VaultOperations } from './sync-orchestrator.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
-}
-
-function formatConversionError(fileName: string, error: unknown): string {
-  if (error instanceof ConversionError) {
-    switch (error.phase) {
-      case 'parse': return `Parse failed: ${fileName}`;
-      case 'ocr': return `OCR failed: ${fileName}`;
-      case 'generate': return `Generate failed: ${fileName}`;
-      case 'save': return `Save failed: ${fileName}`;
-    }
-  }
-  return `Conversion failed: ${fileName}`;
 }
 
 function createGenerator(format: OutputFormat): FileGeneratorPort {
@@ -101,9 +90,7 @@ export default class PetrifyPlugin extends Plugin {
 
   async onunload(): Promise<void> {
     await Promise.all(this.watchers.map((w) => w.stop()));
-    if (this.ocr && 'terminate' in this.ocr) {
-      await (this.ocr as TesseractOcr).terminate();
-    }
+    await this.ocr?.terminate?.();
   }
 
   private async initializeOcr(): Promise<void> {
