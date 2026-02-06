@@ -3,32 +3,12 @@ import { PetrifyService } from '../src/petrify-service.js';
 import type { ParserPort } from '../src/ports/parser.js';
 import type { FileGeneratorPort, GeneratorOutput, OcrTextResult } from '../src/ports/file-generator.js';
 import type { ConversionMetadataPort, ConversionMetadata } from '../src/ports/conversion-metadata.js';
-import type { FileSystemPort } from '../src/ports/file-system.js';
 import type { OcrPort, OcrResult } from '../src/ports/ocr.js';
 import type { FileChangeEvent } from '../src/ports/watcher.js';
 import type { Note, Page } from '../src/models/index.js';
 import { ConversionError, ParseError } from '../src/exceptions.js';
 
 // --- Lightweight Fake 구현 ---
-
-class FakeFileSystem implements FileSystemPort {
-  readonly files = new Map<string, string>();
-  readonly assets = new Map<string, Uint8Array>();
-
-  async writeFile(path: string, content: string): Promise<void> {
-    this.files.set(path, content);
-  }
-
-  async writeAsset(dir: string, name: string, data: Uint8Array): Promise<string> {
-    const path = `${dir}/${name}`;
-    this.assets.set(path, data);
-    return path;
-  }
-
-  async exists(path: string): Promise<boolean> {
-    return this.files.has(path);
-  }
-}
 
 class FakeMetadata implements ConversionMetadataPort {
   readonly store = new Map<string, ConversionMetadata>();
@@ -141,30 +121,26 @@ function createFileChangeEvent(overrides?: Partial<FileChangeEvent>): FileChange
 // --- 테스트 ---
 
 describe('PetrifyService 통합 테스트', () => {
-  it('전체 파이프라인: parse → OCR → generate → save', async () => {
+  it('전체 파이프라인: parse → OCR → generate', async () => {
     const note = createNote({ title: 'My Note' });
     const fakeParser = new FakeParser(note);
     const fakeOcr = new FakeOcr();
     const fakeGenerator = new FakeGenerator();
     const fakeMetadata = new FakeMetadata();
-    const fakeFs = new FakeFileSystem();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
     const service = new PetrifyService(
-      parsers, fakeGenerator, fakeOcr, fakeMetadata, fakeFs,
+      parsers, fakeGenerator, fakeOcr, fakeMetadata,
       { confidenceThreshold: 50 },
     );
 
     const event = createFileChangeEvent();
-    const result = await service.handleFileChange(event, 'output');
+    const result = await service.handleFileChange(event);
 
-    expect(result).toBe('output/file.fake.md');
-
-    const savedContent = fakeFs.files.get('output/file.fake.md');
-    expect(savedContent).toBeDefined();
-    expect(savedContent).toContain('My Note');
-    expect(savedContent).toContain('default-ocr-text');
-    expect(savedContent).toContain('Pages: 1');
+    expect(result).not.toBeNull();
+    expect(result!.content).toContain('My Note');
+    expect(result!.content).toContain('default-ocr-text');
+    expect(result!.content).toContain('Pages: 1');
   });
 
   it('OCR confidence 필터링이 최종 출력에 반영', async () => {
@@ -185,20 +161,19 @@ describe('PetrifyService 통합 테스트', () => {
 
     const fakeGenerator = new FakeGenerator();
     const fakeMetadata = new FakeMetadata();
-    const fakeFs = new FakeFileSystem();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
     const service = new PetrifyService(
-      parsers, fakeGenerator, fakeOcr, fakeMetadata, fakeFs,
+      parsers, fakeGenerator, fakeOcr, fakeMetadata,
       { confidenceThreshold: 50 },
     );
 
     const event = createFileChangeEvent();
-    await service.handleFileChange(event, 'output');
+    const result = await service.handleFileChange(event);
 
-    const savedContent = fakeFs.files.get('output/file.fake.md')!;
-    expect(savedContent).toContain('high');
-    expect(savedContent).not.toContain('low');
+    expect(result).not.toBeNull();
+    expect(result!.content).toContain('high');
+    expect(result!.content).not.toContain('low');
   });
 
   it('메타데이터 라운드트립: mtime 변경 없으면 스킵', async () => {
@@ -206,22 +181,21 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeParser = new FakeParser(note);
     const fakeGenerator = new FakeGenerator();
     const fakeMetadata = new FakeMetadata();
-    const fakeFs = new FakeFileSystem();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
     const service = new PetrifyService(
-      parsers, fakeGenerator, null, fakeMetadata, fakeFs,
+      parsers, fakeGenerator, null, fakeMetadata,
       { confidenceThreshold: 50 },
     );
 
     const event = createFileChangeEvent({ mtime: 1000 });
 
-    const firstResult = await service.handleFileChange(event, 'output');
-    expect(firstResult).toBe('output/file.fake.md');
+    const firstResult = await service.handleFileChange(event);
+    expect(firstResult).not.toBeNull();
 
     fakeMetadata.store.set('/path/to/file.note', { source: '/path/to/file.note', mtime: 1000 });
 
-    const secondResult = await service.handleFileChange(event, 'output');
+    const secondResult = await service.handleFileChange(event);
     expect(secondResult).toBeNull();
   });
 
@@ -231,19 +205,19 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeParser = new FakeParser(note);
     const fakeGenerator = new FakeGenerator();
     const fakeMetadata = new FakeMetadata();
-    const fakeFs = new FakeFileSystem();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
     const service = new PetrifyService(
-      parsers, fakeGenerator, null, fakeMetadata, fakeFs,
+      parsers, fakeGenerator, null, fakeMetadata,
       { confidenceThreshold: 50 },
     );
 
     const event = createFileChangeEvent();
-    await service.handleFileChange(event, 'output');
+    const result = await service.handleFileChange(event);
 
-    expect(fakeFs.assets.has('output/assets/file/page-abc.png')).toBe(true);
-    expect(fakeFs.assets.get('output/assets/file/page-abc.png')).toEqual(page.imageData);
+    expect(result).not.toBeNull();
+    expect(result!.assets.has('page-abc.png')).toBe(true);
+    expect(result!.assets.get('page-abc.png')).toEqual(page.imageData);
   });
 
   it('convertDroppedFile: metadata에 keep=true', async () => {
@@ -251,21 +225,18 @@ describe('PetrifyService 통합 테스트', () => {
     const fakeParser = new FakeParser(note);
     const fakeGenerator = new FakeGenerator();
     const fakeMetadata = new FakeMetadata();
-    const fakeFs = new FakeFileSystem();
 
     const service = new PetrifyService(
-      new Map(), fakeGenerator, null, fakeMetadata, fakeFs,
+      new Map(), fakeGenerator, null, fakeMetadata,
       { confidenceThreshold: 50 },
     );
 
     const data = new ArrayBuffer(8);
-    const result = await service.convertDroppedFile(data, fakeParser, 'output', 'dropped');
+    const result = await service.convertDroppedFile(data, fakeParser, 'dropped');
 
-    expect(result).toBe('output/dropped.fake.md');
-    expect(fakeFs.files.has('output/dropped.fake.md')).toBe(true);
-
-    const savedContent = fakeFs.files.get('output/dropped.fake.md')!;
-    expect(savedContent).toContain('source: null');
+    expect(result.content).toContain('Test Note');
+    expect(result.metadata.keep).toBe(true);
+    expect(result.metadata.source).toBeNull();
   });
 
   it('handleFileDelete: 메타데이터 있으면 삭제 허용', async () => {
@@ -275,9 +246,8 @@ describe('PetrifyService 통합 테스트', () => {
       mtime: 1000,
     });
 
-    const fakeFs = new FakeFileSystem();
     const service = new PetrifyService(
-      new Map(), new FakeGenerator(), null, fakeMetadata, fakeFs,
+      new Map(), new FakeGenerator(), null, fakeMetadata,
       { confidenceThreshold: 50 },
     );
 
@@ -292,18 +262,17 @@ describe('PetrifyService 통합 테스트', () => {
 
     const fakeGenerator = new FakeGenerator();
     const fakeMetadata = new FakeMetadata();
-    const fakeFs = new FakeFileSystem();
 
     const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
     const service = new PetrifyService(
-      parsers, fakeGenerator, null, fakeMetadata, fakeFs,
+      parsers, fakeGenerator, null, fakeMetadata,
       { confidenceThreshold: 50 },
     );
 
     const event = createFileChangeEvent();
 
-    await expect(service.handleFileChange(event, 'output')).rejects.toThrow(ConversionError);
-    await expect(service.handleFileChange(event, 'output')).rejects.toMatchObject({
+    await expect(service.handleFileChange(event)).rejects.toThrow(ConversionError);
+    await expect(service.handleFileChange(event)).rejects.toMatchObject({
       phase: 'parse',
     });
   });

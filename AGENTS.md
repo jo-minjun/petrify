@@ -7,7 +7,7 @@
 이 프로젝트는 헥사고날 아키텍처를 따른다.
 
 - **Core**: 핵심 도메인 모델(Note, Page)과 PetrifyService, 포트 인터페이스
-- **Ports**: 외부 의존성을 위한 인터페이스 정의(ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort, FileSystemPort, WatcherPort)
+- **Ports**: 외부 의존성을 위한 인터페이스 정의(ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort, WatcherPort)
 - **Adapters**: 포트 인터페이스의 구체적 구현(ViwoodsParser 등)
 
 ### 의존성 방향

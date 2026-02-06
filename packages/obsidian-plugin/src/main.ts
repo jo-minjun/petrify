@@ -2,8 +2,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Plugin, setIcon } from 'obsidian';
 import type { DataAdapter } from 'obsidian';
-import { PetrifyService } from '@petrify/core';
-import type { FileChangeEvent, FileGeneratorPort, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
+import { PetrifyService, ConversionError } from '@petrify/core';
+import type { ConversionResult, FileChangeEvent, FileGeneratorPort, OcrPort, ParserPort, WatcherPort } from '@petrify/core';
 import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
 import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
@@ -39,6 +39,7 @@ export default class PetrifyPlugin extends Plugin {
   private watchers: WatcherPort[] = [];
   private petrifyService!: PetrifyService;
   private metadataAdapter!: FrontmatterMetadataAdapter;
+  private fsAdapter!: ObsidianFileSystemAdapter;
   private ocr: OcrPort | null = null;
   private generator!: FileGeneratorPort;
   private parserMap!: Map<string, ParserPort>;
@@ -82,7 +83,12 @@ export default class PetrifyPlugin extends Plugin {
       })
     );
 
-    this.dropHandler = new DropHandler(this.app, this.petrifyService, this.parserMap);
+    this.dropHandler = new DropHandler(
+      this.app,
+      this.petrifyService,
+      this.parserMap,
+      (result, outputDir, baseName) => this.saveConversionResult(result, outputDir, baseName),
+    );
     this.registerDomEvent(document, 'drop', this.dropHandler.handleDrop);
 
     await this.startWatchers();
@@ -126,7 +132,7 @@ export default class PetrifyPlugin extends Plugin {
       return fs.readFile(fullPath, 'utf-8');
     });
 
-    const fileSystemAdapter = new ObsidianFileSystemAdapter(this.app);
+    this.fsAdapter = new ObsidianFileSystemAdapter(this.app);
 
     this.parserMap = createParserMap();
     this.generator = createGenerator(this.settings.outputFormat);
@@ -143,7 +149,6 @@ export default class PetrifyPlugin extends Plugin {
       this.generator,
       this.ocr,
       this.metadataAdapter,
-      fileSystemAdapter,
       { confidenceThreshold: this.settings.ocr.confidenceThreshold },
     );
 
@@ -172,6 +177,7 @@ export default class PetrifyPlugin extends Plugin {
       this.generator,
       syncFs,
       vaultOps,
+      (result, outputDir, baseName) => this.saveConversionResult(result, outputDir, baseName),
       this.syncLog,
       this.convertLog,
     );
@@ -218,11 +224,38 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async processFile(event: FileChangeEvent, outputDir: string): Promise<boolean> {
-    const outputPath = await this.petrifyService.handleFileChange(event, outputDir);
-    if (!outputPath) return false;
+    const result = await this.petrifyService.handleFileChange(event);
+    if (!result) return false;
 
+    const baseName = event.name.replace(/\.[^/.]+$/, '');
+    const outputPath = await this.saveConversionResult(result, outputDir, baseName);
     this.convertLog.info(`Converted: ${event.name} -> ${outputPath}`);
     return true;
+  }
+
+  private async saveConversionResult(
+    result: ConversionResult,
+    outputDir: string,
+    baseName: string,
+  ): Promise<string> {
+    try {
+      const outputPath = `${outputDir}/${baseName}${this.generator.extension}`;
+      const frontmatter = this.metadataAdapter.formatMetadata(result.metadata);
+
+      await this.fsAdapter.writeFile(outputPath, frontmatter + result.content);
+
+      if (result.assets.size > 0) {
+        const assetsDir = `${outputDir}/assets/${baseName}`;
+        for (const [name, data] of result.assets) {
+          await this.fsAdapter.writeAsset(assetsDir, name, data);
+        }
+      }
+
+      return outputPath;
+    } catch (error) {
+      if (error instanceof ConversionError) throw error;
+      throw new ConversionError('save', error);
+    }
   }
 
   private async handleDeletedSource(outputPath: string): Promise<void> {

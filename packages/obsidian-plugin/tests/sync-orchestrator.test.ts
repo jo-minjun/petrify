@@ -3,6 +3,7 @@ import { ConversionError } from '@petrify/core';
 import type { PetrifyService, ParserPort, FileGeneratorPort, ConversionMetadataPort } from '@petrify/core';
 import { SyncOrchestrator } from '../src/sync-orchestrator.js';
 import type { SyncFileSystem, VaultOperations } from '../src/sync-orchestrator.js';
+import type { SaveConversionFn } from '../src/drop-handler.js';
 import type { Logger } from '../src/logger.js';
 import type { WatchMapping } from '../src/settings.js';
 
@@ -97,6 +98,7 @@ describe('SyncOrchestrator', () => {
   let mockFs: ReturnType<typeof createMockFs>;
   let mockVault: ReturnType<typeof createMockVault>;
   let mockGenerator: ReturnType<typeof createMockGenerator>;
+  let saveResult: ReturnType<typeof vi.fn>;
   let syncLog: Logger;
   let convertLog: Logger;
   let parserMap: Map<string, ParserPort>;
@@ -107,6 +109,7 @@ describe('SyncOrchestrator', () => {
     mockFs = createMockFs();
     mockVault = createMockVault();
     mockGenerator = createMockGenerator();
+    saveResult = vi.fn().mockResolvedValue('output/file.excalidraw.md');
     syncLog = createMockLogger();
     convertLog = createMockLogger();
 
@@ -120,6 +123,7 @@ describe('SyncOrchestrator', () => {
       mockGenerator as FileGeneratorPort,
       mockFs,
       mockVault,
+      saveResult as SaveConversionFn,
       syncLog,
       convertLog,
     );
@@ -129,7 +133,7 @@ describe('SyncOrchestrator', () => {
     mockFs.readdir.mockResolvedValue(['file.note']);
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
-    mockService.handleFileChange.mockResolvedValue('output/file.excalidraw.md');
+    mockService.handleFileChange.mockResolvedValue({ content: 'test', assets: new Map(), metadata: { source: '/watch/file.note', mtime: 1000 } });
 
     const result = await orchestrator.syncAll([createDefaultMapping()], false);
 
@@ -265,7 +269,7 @@ describe('SyncOrchestrator', () => {
     mockFs.readdir.mockResolvedValue(['file.note']);
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
-    mockService.handleFileChange.mockResolvedValue('output/file.excalidraw.md');
+    mockService.handleFileChange.mockResolvedValue({ content: 'test', assets: new Map(), metadata: { source: '/watch/file.note', mtime: 1000 } });
 
     const result = await orchestrator.syncAll([mapping1, mapping2], false);
 
@@ -352,7 +356,7 @@ describe('SyncOrchestrator', () => {
       async (event: { readData: () => Promise<ArrayBuffer> }) => {
         const data = await event.readData();
         expect(data).toBe(testBuffer);
-        return 'output/file.excalidraw.md';
+        return { content: 'test', assets: new Map(), metadata: { source: '/watch/file.note', mtime: 2000 } };
       },
     );
 

@@ -1,9 +1,15 @@
 import * as path from 'path';
 import type { App } from 'obsidian';
 import { ConversionError } from '@petrify/core';
-import type { PetrifyService, ParserPort } from '@petrify/core';
+import type { ConversionResult, PetrifyService, ParserPort } from '@petrify/core';
 import { createLogger } from './logger.js';
 import { ParserSelectModal } from './parser-select-modal.js';
+
+export type SaveConversionFn = (
+  result: ConversionResult,
+  outputDir: string,
+  baseName: string,
+) => Promise<string>;
 
 const log = createLogger('Drop');
 
@@ -14,6 +20,7 @@ export class DropHandler {
     private readonly app: App,
     private readonly petrifyService: PetrifyService,
     private readonly parserMap: Map<string, ParserPort>,
+    private readonly saveResult: SaveConversionFn,
   ) {}
 
   handleDrop = async (evt: DragEvent): Promise<void> => {
@@ -43,7 +50,8 @@ export class DropHandler {
 
         const data = await file.arrayBuffer();
         const baseName = path.basename(file.name, ext);
-        const outputPath = await this.petrifyService.convertDroppedFile(data, parser, dropFolder, baseName);
+        const result = await this.petrifyService.convertDroppedFile(data, parser, baseName);
+        const outputPath = await this.saveResult(result, dropFolder, baseName);
 
         converted++;
         log.info(`Converted: ${file.name} -> ${outputPath}`);

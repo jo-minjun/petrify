@@ -47,7 +47,6 @@ Adapters → Core ← Adapters
 | FileGeneratorPort | Excalidraw (.excalidraw.md) | @petrify/generator-excalidraw |
 | FileGeneratorPort | Markdown (.md) | @petrify/generator-markdown |
 | WatcherPort | chokidar (local FS) | @petrify/watcher-chokidar |
-| FileSystemPort | Obsidian vault adapter | @petrify/obsidian-plugin |
 | ConversionMetadataPort | Frontmatter-based | @petrify/obsidian-plugin |
 
 ### Data Flow
@@ -56,20 +55,21 @@ Adapters → Core ← Adapters
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                               @petrify/core                                  │
 │                                                                              │
-│  ┌──────────┐ ┌────────┐ ┌───────────┐ ┌─────────────┐ ┌────────────────┐   │
-│  │ParserPort│ │OcrPort │ │FileSystem │ │FileGenerator│ │Conversion      │   │
-│  │          │ │        │ │   Port    │ │    Port     │ │ MetadataPort   │   │
-│  └────┬─────┘ └───┬────┘ └─────┬─────┘ └──────┬──────┘ └───────┬────────┘   │
-│       │           │            │              │                │            │
-│       ▼           ▼            ▼              ▼                ▼            │
-│  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                          PetrifyService                              │   │
-│  │         filter ext → check mtime → parse → ocr → generate → save    │   │
-│  └──────────────────────────────┬───────────────────────────────────────┘   │
-└─────────────────────────────────┼──────────────────────────────────────────┘
-                                  │
+│  ┌──────────┐ ┌────────┐ ┌─────────────┐ ┌────────────────┐               │
+│  │ParserPort│ │OcrPort │ │FileGenerator│ │Conversion      │               │
+│  │          │ │        │ │    Port     │ │ MetadataPort   │               │
+│  └────┬─────┘ └───┬────┘ └──────┬──────┘ └───────┬────────┘               │
+│       │           │             │                │                        │
+│       ▼           ▼             ▼                ▼                        │
+│  ┌──────────────────────────────────────────────────────────────────┐     │
+│  │                        PetrifyService                            │     │
+│  │       filter ext → check mtime → parse → ocr → generate         │     │
+│  └──────────────────────────────┬───────────────────────────────────┘     │
+└─────────────────────────────────┼────────────────────────────────────────┘
+                                  │ ConversionResult
                                   ▼
                    ┌───────────────────────────────┐
+                   │     obsidian-plugin (save)     │
                    │  .excalidraw.md  |  .md       │
                    │       (Obsidian Vault)        │
                    └───────────────────────────────┘

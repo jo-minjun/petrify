@@ -10,4 +10,3 @@ export type {
   GeneratorOutput,
   OcrTextResult,
 } from './file-generator.js';
-export type { FileSystemPort } from './file-system.js';
