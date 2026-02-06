@@ -61,13 +61,12 @@ describe('ExcalidrawMdGenerator', () => {
     const md = generator.generate(originalData);
 
     const match = md.match(/```compressed-json\n(.+?)\n```/s);
-    expect(match).not.toBeNull();
+    if (!match) throw new Error('compressed-json block not found');
 
-    const compressed = match?.[1];
-    const decompressed = LZString.decompressFromBase64(compressed);
-    const restored = JSON.parse(decompressed!);
+    const decompressed = LZString.decompressFromBase64(match[1]);
+    if (!decompressed) throw new Error('decompression failed');
 
-    expect(restored).toEqual(originalData);
+    expect(JSON.parse(decompressed)).toEqual(originalData);
   });
 
   it('files 객체가 압축 데이터에 포함됨', () => {
@@ -90,12 +89,12 @@ describe('ExcalidrawMdGenerator', () => {
     const md = generator.generate(data);
 
     const match = md.match(/```compressed-json\n(.+?)\n```/s);
-    expect(match).not.toBeNull();
+    if (!match) throw new Error('compressed-json block not found');
 
-    const decompressed = LZString.decompressFromBase64(match?.[1]);
-    const restored = JSON.parse(decompressed!);
+    const decompressed = LZString.decompressFromBase64(match[1]);
+    if (!decompressed) throw new Error('decompression failed');
 
-    expect(restored.files['file-1']).toEqual(fileEntry);
+    expect(JSON.parse(decompressed).files['file-1']).toEqual(fileEntry);
   });
 });
 
