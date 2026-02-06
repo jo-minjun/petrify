@@ -96,16 +96,17 @@ describe('saveConversionResult', () => {
     writer.writeFile.mockRejectedValue(new Error('ENOSPC'));
     const result = createResult();
 
-    await expect(
-      saveConversionResult(result, 'output', 'file', '.excalidraw.md', writer, formatter),
-    ).rejects.toThrow(ConversionError);
+    const error = await saveConversionResult(
+      result,
+      'output',
+      'file',
+      '.excalidraw.md',
+      writer,
+      formatter,
+    ).catch((e: unknown) => e);
 
-    try {
-      await saveConversionResult(result, 'output', 'file', '.excalidraw.md', writer, formatter);
-    } catch (error) {
-      expect(error).toBeInstanceOf(ConversionError);
-      expect((error as ConversionError).phase).toBe('save');
-    }
+    expect(error).toBeInstanceOf(ConversionError);
+    expect((error as ConversionError).phase).toBe('save');
   });
 
   it('이미 ConversionError이면 그대로 rethrow', async () => {
