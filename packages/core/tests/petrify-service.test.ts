@@ -64,6 +64,35 @@ describe('PetrifyService', () => {
       expect(result).toBeNull();
     });
 
+    it('keep이 true면 원본이 변경되어도 null 반환', async () => {
+      const mockParser = createMockParserPort();
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
+        source: '/path/to/file.note',
+        mtime: 1000,
+        keep: true,
+      });
+
+      const service = new PetrifyService(parsers, createMockGeneratorPort(), null, mockMetadata, {
+        confidenceThreshold: 0.5,
+      });
+
+      const readData = vi.fn<() => Promise<ArrayBuffer>>();
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        mtime: 2000,
+        readData,
+      };
+
+      const result = await service.handleFileChange(event);
+      expect(result).toBeNull();
+      expect(readData).not.toHaveBeenCalled();
+    });
+
     it('mtime이 같거나 이전이면 null 반환', async () => {
       const mockParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);

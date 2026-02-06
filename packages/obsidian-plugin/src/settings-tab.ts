@@ -222,7 +222,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
       .setName('Delete converted files on source delete')
       .setDesc(
         'When a source file is deleted, move the converted .excalidraw.md file to trash. ' +
-          'Add "keep: true" to a file\'s petrify frontmatter to protect it.',
+          'Add "keep: true" to a file\'s petrify frontmatter to protect it from deletion and re-conversion.',
       )
       .addToggle((toggle) =>
         toggle.setValue(settings.deleteConvertedOnSourceDelete).onChange(async (value) => {
