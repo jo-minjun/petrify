@@ -104,6 +104,7 @@ describe('GoogleDriveClient', () => {
             file: {
               id: 'f1',
               name: 'test.note',
+              mimeType: 'application/octet-stream',
               modifiedTime: '2026-01-01T00:00:00Z',
               parents: ['folder-id'],
             },

@@ -11,11 +11,17 @@ import { formatConversionError } from './format-conversion-error.js';
 import type { Logger } from './logger.js';
 import type { WatchMapping } from './settings.js';
 
+export interface ReadDirEntry {
+  readonly name: string;
+  /** Opaque reference used by stat/readFile. Defaults to path.join(watchDir, name) when absent. */
+  readonly fileRef?: string;
+}
+
 export interface SyncFileSystem {
-  readdir(dirPath: string): Promise<string[]>;
-  stat(filePath: string): Promise<{ mtimeMs: number }>;
-  readFile(filePath: string): Promise<ArrayBuffer>;
-  access(filePath: string): Promise<void>;
+  readdir(dirPath: string): Promise<ReadDirEntry[]>;
+  stat(fileRef: string): Promise<{ mtimeMs: number }>;
+  readFile(fileRef: string): Promise<ArrayBuffer>;
+  access(fileRef: string): Promise<void>;
   rm(filePath: string, options?: { recursive: boolean }): Promise<void>;
 }
 
@@ -57,7 +63,6 @@ export class SyncOrchestrator {
       if (!mapping.watchDir || !mapping.outputDir) continue;
 
       const mappingFs = syncFsForMapping?.(mapping) ?? this.fs;
-      const isGoogleDrive = mapping.sourceType === 'google-drive';
 
       const parserForMapping = this.parserMap.get(mapping.parserId);
       if (!parserForMapping) {
@@ -67,7 +72,7 @@ export class SyncOrchestrator {
       }
       const supportedExts = parserForMapping.extensions.map((e) => e.toLowerCase());
 
-      let entries: string[];
+      let entries: ReadDirEntry[];
       try {
         entries = await mappingFs.readdir(mapping.watchDir);
       } catch {
@@ -77,39 +82,37 @@ export class SyncOrchestrator {
       }
 
       for (const entry of entries) {
-        const ext = path.extname(entry).toLowerCase();
+        const ext = path.extname(entry.name).toLowerCase();
         if (!supportedExts.includes(ext)) continue;
 
-        const filePath = isGoogleDrive ? entry : path.join(mapping.watchDir, entry);
+        const fileRef = entry.fileRef ?? path.join(mapping.watchDir, entry.name);
         let stat: { mtimeMs: number };
         try {
-          stat = await mappingFs.stat(filePath);
+          stat = await mappingFs.stat(fileRef);
         } catch {
-          this.syncLog.error(`File stat failed: ${entry}`);
+          this.syncLog.error(`File stat failed: ${entry.name}`);
           failed++;
           continue;
         }
 
-        const fileId = isGoogleDrive ? `gdrive://${filePath}` : filePath;
-
         const event: FileChangeEvent = {
-          id: fileId,
-          name: entry,
+          id: fileRef,
+          name: entry.name,
           extension: ext,
           mtime: stat.mtimeMs,
-          readData: () => mappingFs.readFile(filePath),
+          readData: () => mappingFs.readFile(fileRef),
         };
 
         try {
           const result = await this.petrifyService.handleFileChange(event);
           if (result) {
-            const baseName = entry.replace(/\.[^/.]+$/, '');
+            const baseName = entry.name.replace(/\.[^/.]+$/, '');
             const outputPath = await this.saveResult(result, mapping.outputDir, baseName);
-            this.convertLog.info(`Converted: ${entry} -> ${outputPath}`);
+            this.convertLog.info(`Converted: ${entry.name} -> ${outputPath}`);
             synced++;
           }
         } catch (error) {
-          const message = formatConversionError(entry, error);
+          const message = formatConversionError(entry.name, error);
           this.convertLog.error(message, error);
           failed++;
         }
@@ -118,17 +121,17 @@ export class SyncOrchestrator {
       if (deleteOnSourceDelete) {
         const vaultPath = this.vault.getBasePath();
 
-        let outputFiles: string[];
+        let outputEntries: ReadDirEntry[];
         try {
-          outputFiles = await this.fs.readdir(path.join(vaultPath, mapping.outputDir));
+          outputEntries = await this.fs.readdir(path.join(vaultPath, mapping.outputDir));
         } catch {
           continue;
         }
 
-        for (const outputFile of outputFiles) {
-          if (!outputFile.endsWith(this.generator.extension)) continue;
+        for (const outputEntry of outputEntries) {
+          if (!outputEntry.name.endsWith(this.generator.extension)) continue;
 
-          const outputPath = path.join(mapping.outputDir, outputFile);
+          const outputPath = path.join(mapping.outputDir, outputEntry.name);
           const canDelete = await this.petrifyService.handleFileDelete(outputPath);
           if (!canDelete) continue;
 
@@ -142,7 +145,7 @@ export class SyncOrchestrator {
             this.convertLog.info(`Cleaned orphan: ${outputPath}`);
             deleted++;
 
-            const baseName = outputFile.replace(this.generator.extension, '');
+            const baseName = outputEntry.name.replace(this.generator.extension, '');
             const assetsDir = path.join(mapping.outputDir, 'assets', baseName);
             const assetsFullPath = path.join(vaultPath, assetsDir);
             try {

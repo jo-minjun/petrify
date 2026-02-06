@@ -26,7 +26,7 @@ import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
 import { createParserMap, ParserId } from './parser-registry.js';
 import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
-import type { SyncFileSystem, VaultOperations } from './sync-orchestrator.js';
+import type { ReadDirEntry, SyncFileSystem, VaultOperations } from './sync-orchestrator.js';
 import { SyncOrchestrator } from './sync-orchestrator.js';
 
 interface FileSystemAdapter extends DataAdapter {
@@ -162,7 +162,10 @@ export default class PetrifyPlugin extends Plugin {
     );
 
     const syncFs: SyncFileSystem = {
-      readdir: (dirPath) => fs.readdir(dirPath),
+      readdir: async (dirPath): Promise<ReadDirEntry[]> => {
+        const names = await fs.readdir(dirPath);
+        return names.map((name) => ({ name }));
+      },
       stat: (filePath) => fs.stat(filePath),
       readFile: (filePath) => fs.readFile(filePath).then((buf) => buf.buffer as ArrayBuffer),
       access: (filePath) => fs.access(filePath),

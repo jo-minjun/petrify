@@ -9,8 +9,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SaveConversionFn } from '../src/drop-handler.js';
 import type { Logger } from '../src/logger.js';
 import type { WatchMapping } from '../src/settings.js';
-import type { SyncFileSystem, VaultOperations } from '../src/sync-orchestrator.js';
+import type { ReadDirEntry, SyncFileSystem, VaultOperations } from '../src/sync-orchestrator.js';
 import { SyncOrchestrator } from '../src/sync-orchestrator.js';
+
+/** Wrap filenames as ReadDirEntry[] for readdir mocks */
+function entries(...names: string[]): ReadDirEntry[] {
+  return names.map((name) => ({ name }));
+}
 
 vi.mock('obsidian', () => ({
   Notice: vi.fn(),
@@ -136,7 +141,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('정상 sync: 파일 발견 후 변환 성공', async () => {
-    mockFs.readdir.mockResolvedValue(['file.note']);
+    mockFs.readdir.mockResolvedValue(entries('file.note'));
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue({
@@ -162,7 +167,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('파일 stat 실패 시 failed 증가', async () => {
-    mockFs.readdir.mockResolvedValue(['file.note']);
+    mockFs.readdir.mockResolvedValue(entries('file.note'));
     mockFs.stat.mockRejectedValue(new Error('EACCES'));
 
     const result = await orchestrator.syncAll([createDefaultMapping()], false);
@@ -172,7 +177,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('변환 실패 시 ConversionError 메시지로 failed 증가', async () => {
-    mockFs.readdir.mockResolvedValue(['file.note']);
+    mockFs.readdir.mockResolvedValue(entries('file.note'));
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockRejectedValue(
@@ -189,7 +194,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('이미 변환된 파일은 스킵 (handleFileChange가 null 반환)', async () => {
-    mockFs.readdir.mockResolvedValue(['file.note']);
+    mockFs.readdir.mockResolvedValue(entries('file.note'));
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue(null);
@@ -200,7 +205,9 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: 원본 없는 변환 파일 삭제', async () => {
-    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir
+      .mockResolvedValueOnce(entries())
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',
@@ -218,7 +225,9 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: keep=true 파일은 삭제하지 않음', async () => {
-    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir
+      .mockResolvedValueOnce(entries())
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
     mockService.handleFileDelete.mockResolvedValue(false);
 
     const result = await orchestrator.syncAll([createDefaultMapping()], true);
@@ -228,7 +237,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('지원하지 않는 확장자 파일은 무시', async () => {
-    mockFs.readdir.mockResolvedValue(['file.txt', 'readme.md']);
+    mockFs.readdir.mockResolvedValue(entries('file.txt', 'readme.md'));
 
     const result = await orchestrator.syncAll([createDefaultMapping()], false);
 
@@ -267,7 +276,7 @@ describe('SyncOrchestrator', () => {
     const mapping1 = createDefaultMapping({ watchDir: '/watch1' });
     const mapping2 = createDefaultMapping({ watchDir: '/watch2' });
 
-    mockFs.readdir.mockResolvedValue(['file.note']);
+    mockFs.readdir.mockResolvedValue(entries('file.note'));
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue({
@@ -282,7 +291,9 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan assets 삭제 실패 시에도 deleted 카운트 유지', async () => {
-    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir
+      .mockResolvedValueOnce(entries())
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',
@@ -298,7 +309,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: 출력 디렉토리 읽기 실패 시 continue', async () => {
-    mockFs.readdir.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('ENOENT'));
+    mockFs.readdir.mockResolvedValueOnce(entries()).mockRejectedValueOnce(new Error('ENOENT'));
 
     const result = await orchestrator.syncAll([createDefaultMapping()], true);
 
@@ -307,7 +318,9 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: metadata에 source가 없으면 건너뜀', async () => {
-    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir
+      .mockResolvedValueOnce(entries())
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: null,
@@ -321,7 +334,9 @@ describe('SyncOrchestrator', () => {
   });
 
   it('orphan 정리: 원본이 존재하면 삭제하지 않음', async () => {
-    mockFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce(['file.excalidraw.md']);
+    mockFs.readdir
+      .mockResolvedValueOnce(entries())
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',
@@ -336,7 +351,7 @@ describe('SyncOrchestrator', () => {
   });
 
   it('deleteOnSourceDelete가 false면 orphan 정리를 건너뜀', async () => {
-    mockFs.readdir.mockResolvedValue([]);
+    mockFs.readdir.mockResolvedValue(entries());
 
     const result = await orchestrator.syncAll([createDefaultMapping()], false);
 
@@ -346,7 +361,7 @@ describe('SyncOrchestrator', () => {
 
   it('readData는 SyncFileSystem.readFile을 호출', async () => {
     const testBuffer = new ArrayBuffer(16);
-    mockFs.readdir.mockResolvedValue(['file.note']);
+    mockFs.readdir.mockResolvedValue(entries('file.note'));
     mockFs.stat.mockResolvedValue({ mtimeMs: 2000 });
     mockFs.readFile.mockResolvedValue(testBuffer);
     mockService.handleFileChange.mockImplementation(

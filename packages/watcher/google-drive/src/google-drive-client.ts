@@ -5,6 +5,29 @@ import type { ChangesResult, DriveFile } from './types.js';
 const FIELDS_FILE = 'id, name, mimeType, modifiedTime, md5Checksum, size, parents';
 const FIELDS_CHANGES = `nextPageToken, newStartPageToken, changes(fileId, removed, file(${FIELDS_FILE}))`;
 
+function toDriveFile(data: Record<string, unknown>): DriveFile {
+  const { id, name, mimeType, modifiedTime } = data;
+  if (
+    typeof id !== 'string' ||
+    typeof name !== 'string' ||
+    typeof mimeType !== 'string' ||
+    typeof modifiedTime !== 'string'
+  ) {
+    throw new Error(
+      `Invalid Drive API response: missing required fields (id=${String(id)}, name=${String(name)})`,
+    );
+  }
+  return {
+    id,
+    name,
+    mimeType,
+    modifiedTime,
+    md5Checksum: typeof data.md5Checksum === 'string' ? data.md5Checksum : undefined,
+    size: typeof data.size === 'string' ? data.size : undefined,
+    parents: Array.isArray(data.parents) ? (data.parents as string[]) : undefined,
+  };
+}
+
 export class GoogleDriveClient {
   private readonly drive;
 
@@ -25,7 +48,7 @@ export class GoogleDriveClient {
       });
 
       for (const file of res.data.files ?? []) {
-        allFiles.push(file as DriveFile);
+        allFiles.push(toDriveFile(file as Record<string, unknown>));
       }
 
       pageToken = res.data.nextPageToken ?? undefined;
@@ -57,7 +80,7 @@ export class GoogleDriveClient {
         changes.push({
           fileId: change.fileId ?? '',
           removed: change.removed ?? false,
-          file: change.file ? (change.file as DriveFile) : undefined,
+          file: change.file ? toDriveFile(change.file as Record<string, unknown>) : undefined,
           time: change.time ?? '',
         });
       }
@@ -92,6 +115,6 @@ export class GoogleDriveClient {
       fileId,
       fields: FIELDS_FILE,
     });
-    return res.data as DriveFile;
+    return toDriveFile(res.data as Record<string, unknown>);
   }
 }
