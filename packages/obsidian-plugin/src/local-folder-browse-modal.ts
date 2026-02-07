@@ -134,6 +134,7 @@ export class LocalFolderBrowseModal extends Modal {
     } catch (err) {
       loadingEl.remove();
       const message = err instanceof Error ? err.message : String(err);
+      console.error('Failed to list folders:', err);
       contentEl.createEl('p', { text: `Error: ${message}` });
     }
   }

@@ -1,6 +1,7 @@
 import type { GoogleDriveClient } from '@petrify/watcher-google-drive';
 import { type App, Notice, type Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { FolderBrowseModal } from './folder-browse-modal.js';
+import { LocalFolderBrowseModal } from './local-folder-browse-modal.js';
 import { ParserId } from './parser-registry.js';
 import {
   DEFAULT_SETTINGS,
@@ -186,25 +187,57 @@ export class PetrifySettingsTab extends PluginSettingTab {
             }),
         );
 
-      new Setting(mappingContainer).setName('Watch directory').addText((text) =>
-        text
-          .setPlaceholder('/path/to/watch')
-          .setValue(mapping.watchDir)
-          .onChange((value) => {
-            this.pendingLocalWatch.mappings[index].watchDir = value;
-            this.updateWatchSaveButton();
+      const watchDirSetting = new Setting(mappingContainer)
+        .setName('Watch directory')
+        .addText((text) => {
+          text
+            .setPlaceholder('/path/to/watch')
+            .setValue(mapping.watchDir)
+            .onChange((value) => {
+              this.pendingLocalWatch.mappings[index].watchDir = value;
+              this.updateWatchSaveButton();
+            });
+          text.inputEl.style.width = '100%';
+        })
+        .addButton((btn) =>
+          btn.setButtonText('Browse').onClick(() => {
+            new LocalFolderBrowseModal(this.app, (path) => {
+              this.pendingLocalWatch.mappings[index].watchDir = path;
+              this.updateWatchSaveButton();
+              this.display();
+            }, mapping.watchDir || undefined).open();
           }),
-      );
+        );
+      watchDirSetting.settingEl.style.flexWrap = 'wrap';
+      watchDirSetting.controlEl.style.width = '100%';
 
-      new Setting(mappingContainer).setName('Output directory').addText((text) =>
-        text
-          .setPlaceholder('Handwritings/')
-          .setValue(mapping.outputDir)
-          .onChange((value) => {
-            this.pendingLocalWatch.mappings[index].outputDir = value;
-            this.updateWatchSaveButton();
+      const outputDirSetting = new Setting(mappingContainer)
+        .setName('Output directory')
+        .addText((text) => {
+          text
+            .setPlaceholder('Handwritings/')
+            .setValue(mapping.outputDir)
+            .onChange((value) => {
+              this.pendingLocalWatch.mappings[index].outputDir = value;
+              this.updateWatchSaveButton();
+            });
+          text.inputEl.style.width = '100%';
+        })
+        .addButton((btn) =>
+          btn.setButtonText('Browse').onClick(() => {
+            const vaultPath = (this.app.vault.adapter as any).basePath as string;
+            new LocalFolderBrowseModal(this.app, (path) => {
+              const relative = path.startsWith(vaultPath)
+                ? path.slice(vaultPath.length + 1)
+                : path;
+              this.pendingLocalWatch.mappings[index].outputDir = relative;
+              this.updateWatchSaveButton();
+              this.display();
+            }, vaultPath).open();
           }),
-      );
+        );
+      outputDirSetting.settingEl.style.flexWrap = 'wrap';
+      outputDirSetting.controlEl.style.width = '100%';
 
       new Setting(mappingContainer).setName('Parser').addDropdown((dropdown) => {
         for (const id of Object.values(ParserId)) {
