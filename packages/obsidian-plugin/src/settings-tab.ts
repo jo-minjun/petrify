@@ -201,11 +201,15 @@ export class PetrifySettingsTab extends PluginSettingTab {
         })
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(() => {
-            new LocalFolderBrowseModal(this.app, (path) => {
-              this.pendingLocalWatch.mappings[index].watchDir = path;
-              this.updateWatchSaveButton();
-              this.display();
-            }, mapping.watchDir || undefined).open();
+            new LocalFolderBrowseModal(
+              this.app,
+              (path) => {
+                this.pendingLocalWatch.mappings[index].watchDir = path;
+                this.updateWatchSaveButton();
+                this.display();
+              },
+              mapping.watchDir || undefined,
+            ).open();
           }),
         );
       watchDirSetting.settingEl.style.flexWrap = 'wrap';
@@ -225,15 +229,20 @@ export class PetrifySettingsTab extends PluginSettingTab {
         })
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(() => {
+            // biome-ignore lint/suspicious/noExplicitAny: FileSystemAdapter.basePath는 런타임에 존재하지만 Obsidian 타입 선언에 미포함
             const vaultPath = (this.app.vault.adapter as any).basePath as string;
-            new LocalFolderBrowseModal(this.app, (path) => {
-              const relative = path.startsWith(vaultPath)
-                ? path.slice(vaultPath.length + 1)
-                : path;
-              this.pendingLocalWatch.mappings[index].outputDir = relative;
-              this.updateWatchSaveButton();
-              this.display();
-            }, vaultPath).open();
+            new LocalFolderBrowseModal(
+              this.app,
+              (path) => {
+                const relative = path.startsWith(vaultPath)
+                  ? path.slice(vaultPath.length + 1)
+                  : path;
+                this.pendingLocalWatch.mappings[index].outputDir = relative;
+                this.updateWatchSaveButton();
+                this.display();
+              },
+              vaultPath,
+            ).open();
           }),
         );
       outputDirSetting.settingEl.style.flexWrap = 'wrap';

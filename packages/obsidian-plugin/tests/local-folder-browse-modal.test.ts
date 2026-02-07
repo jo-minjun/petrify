@@ -132,7 +132,9 @@ describe('LocalFolderBrowseModal', () => {
     const { modal, onSelect } = createModal();
     await modal.onOpen();
 
-    const selectBtn = modal.contentEl.querySelector('button:not(.mod-cta)') as HTMLButtonElement | null;
+    const selectBtn = modal.contentEl.querySelector(
+      'button:not(.mod-cta)',
+    ) as HTMLButtonElement | null;
     selectBtn?.click();
 
     expect(onSelect).toHaveBeenCalledWith(expect.stringContaining('Documents'));
