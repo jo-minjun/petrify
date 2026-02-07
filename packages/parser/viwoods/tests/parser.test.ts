@@ -131,17 +131,23 @@ describe('NoteParser', () => {
       expect(note.pages[0].order).toBe(0);
     });
 
-    it('screenshotBmp가 없는 페이지이면 ParseError', async () => {
+    it('screenshotBmp가 없는 페이지는 스킵', async () => {
+      const img = new Uint8Array([1, 2, 3]);
       const data = await createMockZip({
-        pageList: [{ id: 'missing-page', order: 0 }],
-        screenshots: {},
+        pageList: [
+          { id: 'missing-page', order: 0 },
+          { id: 'valid-page', order: 1 },
+        ],
+        screenshots: {
+          'screenshotBmp_valid-page.png': img,
+        },
       });
 
       const parser = new NoteParser();
-      await expect(parser.parse(data)).rejects.toThrow(ParseError);
-      await expect(parser.parse(data)).rejects.toThrow(
-        'Screenshot not found for page missing-page',
-      );
+      const note = await parser.parse(data);
+
+      expect(note.pages).toHaveLength(1);
+      expect(note.pages[0].id).toBe('valid-page');
     });
 
     it('다중 페이지에서 각각의 screenshotBmp 추출', async () => {

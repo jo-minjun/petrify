@@ -66,7 +66,7 @@ export class SyncOrchestrator {
 
     for (const mapping of watchMappings) {
       if (!mapping.enabled) continue;
-      if (!mapping.watchDir || !mapping.outputDir) continue;
+      if (!mapping.watchDir) continue;
 
       const mappingFs = syncFsForMapping?.(mapping) ?? this.fs;
 

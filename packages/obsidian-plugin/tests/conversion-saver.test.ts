@@ -119,6 +119,36 @@ describe('saveConversionResult', () => {
     ).rejects.toBe(original);
   });
 
+  it('outputDir가 빈 문자열(vault 루트)이면 파일명만으로 경로 생성', async () => {
+    const result = createResult();
+
+    const outputPath = await saveConversionResult(
+      result,
+      '',
+      'file',
+      '.excalidraw.md',
+      writer,
+      formatter,
+    );
+
+    expect(outputPath).toBe('file.excalidraw.md');
+    expect(writer.writeFile).toHaveBeenCalledWith(
+      'file.excalidraw.md',
+      '---\nsource: test\n---\n# Test Content',
+    );
+  });
+
+  it('outputDir가 빈 문자열일 때 assets 경로도 올바르게 생성', async () => {
+    const assetData = new Uint8Array([1, 2, 3]);
+    const result = createResult({
+      assets: new Map([['image.png', assetData]]),
+    });
+
+    await saveConversionResult(result, '', 'file', '.excalidraw.md', writer, formatter);
+
+    expect(writer.writeAsset).toHaveBeenCalledWith('assets/file', 'image.png', assetData);
+  });
+
   it('markdown 확장자로도 올바른 경로 생성', async () => {
     const result = createResult();
 

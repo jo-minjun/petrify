@@ -53,6 +53,8 @@ packages/
 
 ## DO
 
+- 소스 파일 수정 후 `pnpm biome check --write`로 포매팅 적용. 커밋 전 `pnpm biome check`로 최종 확인
+
 - 테스트 통과 후 커밋
 
 - 공통 devDependencies(typescript, vitest, tsup)는 루트 package.json에서만 관리

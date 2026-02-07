@@ -81,7 +81,10 @@ export class NoteParser {
       const file = zip.file(screenshotFile);
 
       if (!file) {
-        throw new ParseError(`Screenshot not found for page ${entry.id}: ${screenshotFile}`);
+        console.warn(
+          `[Petrify:Parser] Screenshot not found, skipping page ${entry.id}: ${screenshotFile}`,
+        );
+        continue;
       }
 
       const imageData = await file.async('uint8array');
