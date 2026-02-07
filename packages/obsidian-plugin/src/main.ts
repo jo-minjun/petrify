@@ -14,7 +14,11 @@ import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import type { OAuth2Client, PageTokenStore, TokenStore } from '@petrify/watcher-google-drive';
-import { GoogleDriveAuth, GoogleDriveWatcher } from '@petrify/watcher-google-drive';
+import {
+  GoogleDriveAuth,
+  GoogleDriveClient,
+  GoogleDriveWatcher,
+} from '@petrify/watcher-google-drive';
 import type { DataAdapter } from 'obsidian';
 import { Notice, Plugin, setIcon, TFile } from 'obsidian';
 import { saveConversionResult as saveResult } from './conversion-saver.js';
@@ -23,11 +27,16 @@ import { formatConversionError } from './format-conversion-error.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
 import { createLogger } from './logger.js';
 import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
-import { createParserMap, ParserId } from './parser-registry.js';
+import { createParserMap } from './parser-registry.js';
 import { processFile as processFileImpl } from './process-file.js';
 import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
-import type { ReadDirEntry, SyncFileSystem, VaultOperations } from './sync-orchestrator.js';
+import type {
+  ReadDirEntry,
+  SyncFileSystem,
+  SyncMapping,
+  VaultOperations,
+} from './sync-orchestrator.js';
 import { SyncOrchestrator } from './sync-orchestrator.js';
 import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
 
@@ -58,6 +67,7 @@ export default class PetrifyPlugin extends Plugin {
   private isSyncing = false;
   private ribbonIconEl: HTMLElement | null = null;
   private googleDriveAuth: GoogleDriveAuth | null = null;
+  private readonly sourceOutputMap = new Map<string, string>();
   private readonly watcherLog = createLogger('Watcher');
   private readonly convertLog = createLogger('Convert');
   private readonly syncLog = createLogger('Sync');
@@ -116,6 +126,11 @@ export default class PetrifyPlugin extends Plugin {
         saveDataOnly: async (settings) => {
           this.settings = settings;
           await this.saveSettings();
+        },
+        getGoogleDriveClient: async () => {
+          const auth = await this.getGoogleDriveAuthClient();
+          if (!auth) return null;
+          return new GoogleDriveClient(auth);
         },
       }),
     );
@@ -229,60 +244,63 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async startWatchers(): Promise<void> {
-    for (const mapping of this.settings.watchMappings) {
-      if (!mapping.enabled) continue;
-      if (!mapping.watchDir || !mapping.outputDir) continue;
+    if (this.settings.localWatch.enabled) {
+      for (const mapping of this.settings.localWatch.mappings) {
+        if (!mapping.enabled || !mapping.watchDir || !mapping.outputDir) continue;
+        const watcher = new ChokidarWatcher(mapping.watchDir);
+        this.attachWatcherHandlers(watcher, mapping.outputDir);
+        await watcher.start();
+        this.watchers.push(watcher);
+      }
+    }
 
-      let watcher: WatcherPort;
-
-      if (mapping.sourceType === 'google-drive') {
-        const authClient = await this.getGoogleDriveAuthClient();
-        if (!authClient) {
-          this.watcherLog.error('Google Drive auth not configured or failed');
-          continue;
-        }
-
-        watcher = new GoogleDriveWatcher({
-          folderId: mapping.watchDir,
-          pollIntervalMs: this.settings.googleDrive.pollIntervalMs,
-          auth: authClient,
-          pageTokenStore: this.createPageTokenStore(mapping.watchDir),
-        });
-      } else {
-        watcher = new ChokidarWatcher(mapping.watchDir);
+    if (this.settings.googleDrive.enabled && this.settings.googleDrive.autoPolling) {
+      const authClient = await this.getGoogleDriveAuthClient();
+      if (!authClient) {
+        this.watcherLog.error('Google Drive auth not configured or failed');
+        return;
       }
 
-      watcher.onFileChange(async (event) => {
-        this.watcherLog.info(`File detected: ${event.name}`);
-
-        try {
-          const converted = await this.processFile(event, mapping.outputDir);
-
-          if (converted) {
-            this.convertLog.notify(`Converted: ${event.name}`);
-          }
-        } catch (error) {
-          const message = formatConversionError(event.name, error);
-          this.convertLog.error(message, error);
-          this.convertLog.notify(message);
-        }
-      });
-
-      watcher.onFileDelete(async (event) => {
-        if (!this.settings.deleteConvertedOnSourceDelete) return;
-
-        const outputPath = this.getOutputPath(event.name, mapping.outputDir);
-        await this.handleDeletedSource(outputPath);
-      });
-
-      watcher.onError((error) => {
-        this.watcherLog.error(`Watch error: ${error.message}`, error);
-        this.watcherLog.notify(`Watch error: ${error.message}`);
-      });
-
-      await watcher.start();
-      this.watchers.push(watcher);
+      for (const mapping of this.settings.googleDrive.mappings) {
+        if (!mapping.enabled || !mapping.folderId || !mapping.outputDir) continue;
+        const watcher = new GoogleDriveWatcher({
+          folderId: mapping.folderId,
+          pollIntervalMs: this.settings.googleDrive.pollIntervalMinutes * 60000,
+          auth: authClient,
+          pageTokenStore: this.createPageTokenStore(mapping.folderId),
+        });
+        this.attachWatcherHandlers(watcher, mapping.outputDir);
+        await watcher.start();
+        this.watchers.push(watcher);
+      }
     }
+  }
+
+  private attachWatcherHandlers(watcher: WatcherPort, outputDir: string): void {
+    watcher.onFileChange(async (event) => {
+      this.watcherLog.info(`File detected: ${event.name}`);
+      try {
+        const converted = await this.processFile(event, outputDir);
+        if (converted) {
+          this.convertLog.notify(`Converted: ${event.name}`);
+        }
+      } catch (error) {
+        const message = formatConversionError(event.name, error);
+        this.convertLog.error(message, error);
+        this.convertLog.notify(message);
+      }
+    });
+
+    watcher.onFileDelete(async (event) => {
+      if (!this.settings.autoSync) return;
+      const outputPath = this.getOutputPath(event.name, outputDir);
+      await this.handleDeletedSource(outputPath);
+    });
+
+    watcher.onError((error) => {
+      this.watcherLog.error(`Watch error: ${error.message}`, error);
+      this.watcherLog.notify(`Watch error: ${error.message}`);
+    });
   }
 
   private async processFile(event: FileChangeEvent, outputDir: string): Promise<boolean> {
@@ -300,7 +318,7 @@ export default class PetrifyPlugin extends Plugin {
     outputDir: string,
     baseName: string,
   ): Promise<string> {
-    return saveResult(
+    const outputPath = await saveResult(
       result,
       outputDir,
       baseName,
@@ -308,6 +326,10 @@ export default class PetrifyPlugin extends Plugin {
       this.fsAdapter,
       this.metadataAdapter,
     );
+    if (result.metadata.source) {
+      this.sourceOutputMap.set(result.metadata.source, outputPath);
+    }
+    return outputPath;
   }
 
   private async handleDeletedSource(outputPath: string): Promise<void> {
@@ -347,10 +369,13 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private getOutputPathForId(id: string): string {
-    const mapping = this.settings.watchMappings.find((m) => id.startsWith(m.watchDir));
-    if (!mapping) return '';
-    const fileName = path.basename(id, path.extname(id));
-    return path.join(mapping.outputDir, `${fileName}${this.generator.extension}`);
+    const localMapping = this.settings.localWatch.mappings.find((m) => id.startsWith(m.watchDir));
+    if (localMapping) {
+      const fileName = path.basename(id, path.extname(id));
+      return path.join(localMapping.outputDir, `${fileName}${this.generator.extension}`);
+    }
+
+    return this.sourceOutputMap.get(id) ?? '';
   }
 
   private getOutputPath(name: string, outputDir: string): string {
@@ -379,10 +404,8 @@ export default class PetrifyPlugin extends Plugin {
     }
 
     try {
-      const result = await this.syncOrchestrator.syncAll(
-        this.settings.watchMappings,
-        this.settings.deleteConvertedOnSourceDelete,
-      );
+      const syncMappings = this.buildSyncMappings();
+      const result = await this.syncOrchestrator.syncAll(syncMappings, this.settings.autoSync);
 
       const summary = `Sync complete: ${result.synced} converted, ${result.deleted} deleted, ${result.failed} failed`;
       this.syncLog.info(summary);
@@ -395,14 +418,36 @@ export default class PetrifyPlugin extends Plugin {
     }
   }
 
+  private buildSyncMappings(): SyncMapping[] {
+    const mappings: SyncMapping[] = [];
+
+    if (this.settings.localWatch.enabled) {
+      for (const m of this.settings.localWatch.mappings) {
+        mappings.push({
+          watchDir: m.watchDir,
+          outputDir: m.outputDir,
+          enabled: m.enabled,
+          parserId: m.parserId,
+        });
+      }
+    }
+
+    if (this.settings.googleDrive.enabled) {
+      for (const m of this.settings.googleDrive.mappings) {
+        mappings.push({
+          watchDir: m.folderId,
+          outputDir: m.outputDir,
+          enabled: m.enabled,
+          parserId: m.parserId,
+        });
+      }
+    }
+
+    return mappings;
+  }
+
   private async loadSettings(): Promise<void> {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    this.settings.watchMappings = this.settings.watchMappings.map((m) => ({
-      ...m,
-      enabled: m.enabled ?? true,
-      parserId: m.parserId ?? ParserId.Viwoods,
-      sourceType: m.sourceType ?? 'local',
-    }));
   }
 
   private async saveSettings(): Promise<void> {

@@ -9,7 +9,13 @@ import type {
 import type { SaveConversionFn } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import type { Logger } from './logger.js';
-import type { WatchMapping } from './settings.js';
+
+export interface SyncMapping {
+  readonly watchDir: string;
+  readonly outputDir: string;
+  readonly enabled: boolean;
+  readonly parserId: string;
+}
 
 export interface ReadDirEntry {
   readonly name: string;
@@ -50,9 +56,9 @@ export class SyncOrchestrator {
   ) {}
 
   async syncAll(
-    watchMappings: WatchMapping[],
+    watchMappings: SyncMapping[],
     deleteOnSourceDelete: boolean,
-    syncFsForMapping?: (mapping: WatchMapping) => SyncFileSystem | null,
+    syncFsForMapping?: (mapping: SyncMapping) => SyncFileSystem | null,
   ): Promise<SyncResult> {
     let synced = 0;
     let failed = 0;
@@ -84,7 +90,7 @@ export class SyncOrchestrator {
   }
 
   private async syncFiles(
-    mapping: WatchMapping,
+    mapping: SyncMapping,
     mappingFs: SyncFileSystem,
     parser: ParserPort,
   ): Promise<{ synced: number; failed: number }> {
@@ -141,7 +147,7 @@ export class SyncOrchestrator {
     return { synced, failed };
   }
 
-  private async cleanOrphans(mapping: WatchMapping, mappingFs: SyncFileSystem): Promise<number> {
+  private async cleanOrphans(mapping: SyncMapping, mappingFs: SyncFileSystem): Promise<number> {
     const vaultPath = this.vault.getBasePath();
     let deleted = 0;
 

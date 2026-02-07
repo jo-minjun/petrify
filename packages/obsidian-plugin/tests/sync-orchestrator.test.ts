@@ -8,8 +8,12 @@ import { ConversionError } from '@petrify/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SaveConversionFn } from '../src/drop-handler.js';
 import type { Logger } from '../src/logger.js';
-import type { WatchMapping } from '../src/settings.js';
-import type { ReadDirEntry, SyncFileSystem, VaultOperations } from '../src/sync-orchestrator.js';
+import type {
+  ReadDirEntry,
+  SyncFileSystem,
+  SyncMapping,
+  VaultOperations,
+} from '../src/sync-orchestrator.js';
 import { SyncOrchestrator } from '../src/sync-orchestrator.js';
 
 /** Wrap filenames as ReadDirEntry[] for readdir mocks */
@@ -91,13 +95,12 @@ function createMockParser(extensions: string[]): ParserPort {
   };
 }
 
-function createDefaultMapping(overrides?: Partial<WatchMapping>): WatchMapping {
+function createDefaultMapping(overrides?: Partial<SyncMapping>): SyncMapping {
   return {
     watchDir: '/watch',
     outputDir: 'output',
     enabled: true,
     parserId: 'viwoods',
-    sourceType: 'local',
     ...overrides,
   };
 }

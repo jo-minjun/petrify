@@ -58,6 +58,34 @@ export class GoogleDriveClient {
     return allFiles;
   }
 
+  async listFolders(parentFolderId?: string): Promise<DriveFile[]> {
+    const allFolders: DriveFile[] = [];
+    let pageToken: string | undefined;
+
+    const parent = parentFolderId
+      ? parentFolderId.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+      : 'root';
+    const query = `'${parent}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+
+    do {
+      const res = await this.drive.files.list({
+        q: query,
+        fields: `nextPageToken, files(${FIELDS_FILE})`,
+        pageSize: 100,
+        pageToken,
+        orderBy: 'name',
+      });
+
+      for (const file of res.data.files ?? []) {
+        allFolders.push(toDriveFile(file as Record<string, unknown>));
+      }
+
+      pageToken = res.data.nextPageToken ?? undefined;
+    } while (pageToken);
+
+    return allFolders;
+  }
+
   async getStartPageToken(): Promise<string> {
     const res = await this.drive.changes.getStartPageToken({});
     if (!res.data.startPageToken) {
