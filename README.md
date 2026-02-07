@@ -33,8 +33,11 @@ pnpm build
 Then copy the build output to your vault:
 
 ```bash
+mkdir -p <vault>/.obsidian/plugins/petrify/
 cp packages/obsidian-plugin/main.js <vault>/.obsidian/plugins/petrify/
 cp packages/obsidian-plugin/manifest.json <vault>/.obsidian/plugins/petrify/
+cp packages/obsidian-plugin/tesseract-ocr.cjs <vault>/.obsidian/plugins/petrify/
+cp packages/obsidian-plugin/worker.min.js <vault>/.obsidian/plugins/petrify/
 ```
 
 Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
