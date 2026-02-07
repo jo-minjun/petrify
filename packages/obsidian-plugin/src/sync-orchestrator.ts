@@ -10,11 +10,17 @@ import type { SaveConversionFn } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import type { Logger } from './logger.js';
 
+export enum SyncSource {
+  Local = 'local',
+  GoogleDrive = 'google-drive',
+}
+
 export interface SyncMapping {
   readonly watchDir: string;
   readonly outputDir: string;
   readonly enabled: boolean;
   readonly parserId: string;
+  readonly source: SyncSource;
 }
 
 export interface ReadDirEntry {

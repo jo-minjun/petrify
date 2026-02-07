@@ -1,5 +1,6 @@
 import type { GoogleDriveClient } from '@petrify/watcher-google-drive';
 import { type App, Notice, type Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { AuthCodeModal } from './auth-code-modal.js';
 import { FolderBrowseModal } from './folder-browse-modal.js';
 import { showNativeFolderDialog } from './native-folder-dialog.js';
 import { ParserId } from './parser-registry.js';
@@ -18,7 +19,17 @@ export interface SettingsTabCallbacks {
   readonly getSettings: () => PetrifySettings;
   readonly saveSettings: (settings: PetrifySettings) => Promise<void>;
   readonly saveDataOnly: (settings: PetrifySettings) => Promise<void>;
-  readonly getGoogleDriveClient: () => Promise<GoogleDriveClient | null>;
+  readonly getGoogleDriveClient: (
+    clientId: string,
+    clientSecret: string,
+  ) => Promise<GoogleDriveClient | null>;
+  readonly getGoogleDriveAuthUrl: (clientId: string, clientSecret: string) => string;
+  readonly handleGoogleDriveAuthCode: (
+    clientId: string,
+    clientSecret: string,
+    code: string,
+  ) => Promise<void>;
+  readonly hasGoogleDriveTokens: () => Promise<boolean>;
 }
 
 export class PetrifySettingsTab extends PluginSettingTab {
@@ -300,6 +311,33 @@ export class PetrifySettingsTab extends PluginSettingTab {
           });
       });
 
+    const authSetting = new Setting(driveContainer).setName('Authentication');
+    this.callbacks.hasGoogleDriveTokens().then((hasTokens) => {
+      authSetting.setDesc(hasTokens ? 'Authenticated' : 'Not authenticated');
+    });
+    authSetting.addButton((btn) =>
+      btn.setButtonText('Authenticate').onClick(() => {
+        const { clientId, clientSecret } = this.pendingGoogleDrive;
+        if (!clientId || !clientSecret) {
+          new Notice('Enter Client ID and Client Secret first');
+          return;
+        }
+        const authUrl = this.callbacks.getGoogleDriveAuthUrl(clientId, clientSecret);
+        window.open(authUrl);
+        new AuthCodeModal(this.app, async (code) => {
+          try {
+            await this.callbacks.handleGoogleDriveAuthCode(clientId, clientSecret, code);
+            new Notice('Google Drive authenticated successfully');
+            this.display();
+          } catch (e) {
+            new Notice(
+              `Authentication failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+            );
+          }
+        }).open();
+      }),
+    );
+
     new Setting(driveContainer)
       .setName('Auto Polling')
       .setDesc('Automatically poll for changes in Google Drive')
@@ -374,9 +412,14 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .setDesc(mapping.folderName || 'No folder selected')
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(async () => {
-            const client = await this.callbacks.getGoogleDriveClient();
+            const { clientId, clientSecret } = this.pendingGoogleDrive;
+            if (!clientId || !clientSecret) {
+              new Notice('Enter Client ID and Client Secret first');
+              return;
+            }
+            const client = await this.callbacks.getGoogleDriveClient(clientId, clientSecret);
             if (!client) {
-              new Notice('Configure Client ID and Secret first');
+              new Notice('Please authenticate with Google Drive first');
               return;
             }
             new FolderBrowseModal(this.app, client, (result) => {

@@ -125,4 +125,4 @@ Shared devDependencies (`typescript`, `vitest`, `tsup`) live in the root `packag
 4. Add path alias to root `tsconfig.base.json` `paths`
 5. Add alias to root `vitest.config.ts`
 6. Register the adapter in `obsidian-plugin` (the composition root)
-7. Update this document and `CLAUDE.md`
+7. Update this document, `README.md`, and `AGENTS.md`
