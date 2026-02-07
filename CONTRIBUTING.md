@@ -53,6 +53,12 @@ Adapters → Core ← Adapters
 ### Data Flow
 
 ```
+  ┌────────────────────────────┐
+  │        WatcherPort         │
+  │  chokidar | Google Drive   │
+  └────────────┬───────────────┘
+               │ FileChangeEvent
+               ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                               @petrify/core                                  │
 │                                                                              │
@@ -99,6 +105,7 @@ Shared devDependencies (`typescript`, `vitest`, `tsup`) live in the root `packag
 
 ## Code Conventions
 
+- **Formatting & linting** — this project uses [Biome](https://biomejs.dev/). Run `pnpm biome check --write` to auto-fix, and `pnpm biome check` to verify before committing
 - **ESM only** — no `require()` or `module.exports`
 - **Import paths** must include `.js` extension: `import { Note } from './models/index.js'`
 - **Type imports** use `import type`: `import type { ParserPort } from './ports/parser.js'`
