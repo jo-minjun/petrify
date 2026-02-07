@@ -19,7 +19,7 @@ Scan the codebase and interactively synchronize README.md and CONTRIBUTING.md wi
 
 Collect current state from code:
 
-**Packages** — Read `packages/*/package.json` and `packages/*/*/package.json`. Extract each `name` field. Build the directory tree.
+**Packages** — Read `pnpm-workspace.yaml` to get package globs, then find all matching `package.json` files. Extract each `name` field. Build the directory tree.
 
 **Ports & Adapters** — Read `packages/core/src/ports/*.ts` for port interface names. Search adapter `src/` dirs for `implements <PortName>` to build the mapping. Note supported file extensions per adapter.
 
