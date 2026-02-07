@@ -1,5 +1,5 @@
 import type { App } from 'obsidian';
-import { Modal, Setting } from 'obsidian';
+import { Modal, Notice, Setting } from 'obsidian';
 
 export class AuthCodeModal extends Modal {
   private input = '';
@@ -36,6 +36,8 @@ export class AuthCodeModal extends Modal {
           if (code) {
             this.onSubmit(code);
             this.close();
+          } else {
+            new Notice('Could not extract authorization code from the input');
           }
         }),
     );
@@ -45,10 +47,11 @@ export class AuthCodeModal extends Modal {
     this.contentEl.empty();
   }
 
-  private extractCode(input: string): string {
+  private extractCode(input: string): string | null {
+    if (!input) return null;
     try {
       const url = new URL(input);
-      return url.searchParams.get('code') ?? input;
+      return url.searchParams.get('code');
     } catch {
       return input;
     }

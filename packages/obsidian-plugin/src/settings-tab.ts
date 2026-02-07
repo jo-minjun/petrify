@@ -412,12 +412,14 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .setDesc(mapping.folderName || 'No folder selected')
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(async () => {
-            const client = await this.callbacks.getGoogleDriveClient(
-              this.pendingGoogleDrive.clientId,
-              this.pendingGoogleDrive.clientSecret,
-            );
+            const { clientId, clientSecret } = this.pendingGoogleDrive;
+            if (!clientId || !clientSecret) {
+              new Notice('Enter Client ID and Client Secret first');
+              return;
+            }
+            const client = await this.callbacks.getGoogleDriveClient(clientId, clientSecret);
             if (!client) {
-              new Notice('Configure Client ID and Secret first');
+              new Notice('Please authenticate with Google Drive first');
               return;
             }
             new FolderBrowseModal(this.app, client, (result) => {
