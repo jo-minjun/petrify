@@ -1,7 +1,7 @@
 import type { GoogleDriveClient } from '@petrify/watcher-google-drive';
 import { type App, Notice, type Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { FolderBrowseModal } from './folder-browse-modal.js';
-import { LocalFolderBrowseModal } from './local-folder-browse-modal.js';
+import { showNativeFolderDialog } from './native-folder-dialog.js';
 import { ParserId } from './parser-registry.js';
 import {
   DEFAULT_SETTINGS,
@@ -200,16 +200,12 @@ export class PetrifySettingsTab extends PluginSettingTab {
           text.inputEl.style.width = '100%';
         })
         .addButton((btn) =>
-          btn.setButtonText('Browse').onClick(() => {
-            new LocalFolderBrowseModal(
-              this.app,
-              (path) => {
-                this.pendingLocalWatch.mappings[index].watchDir = path;
-                this.updateWatchSaveButton();
-                this.display();
-              },
-              mapping.watchDir || undefined,
-            ).open();
+          btn.setButtonText('Browse').onClick(async () => {
+            const selected = await showNativeFolderDialog(mapping.watchDir || undefined);
+            if (!selected) return;
+            this.pendingLocalWatch.mappings[index].watchDir = selected;
+            this.updateWatchSaveButton();
+            this.display();
           }),
         );
       watchDirSetting.settingEl.style.flexWrap = 'wrap';
@@ -228,21 +224,17 @@ export class PetrifySettingsTab extends PluginSettingTab {
           text.inputEl.style.width = '100%';
         })
         .addButton((btn) =>
-          btn.setButtonText('Browse').onClick(() => {
+          btn.setButtonText('Browse').onClick(async () => {
             // biome-ignore lint/suspicious/noExplicitAny: FileSystemAdapter.basePath는 런타임에 존재하지만 Obsidian 타입 선언에 미포함
             const vaultPath = (this.app.vault.adapter as any).basePath as string;
-            new LocalFolderBrowseModal(
-              this.app,
-              (path) => {
-                const relative = path.startsWith(vaultPath)
-                  ? path.slice(vaultPath.length + 1)
-                  : path;
-                this.pendingLocalWatch.mappings[index].outputDir = relative;
-                this.updateWatchSaveButton();
-                this.display();
-              },
-              vaultPath,
-            ).open();
+            const selected = await showNativeFolderDialog(vaultPath);
+            if (!selected) return;
+            const relative = selected.startsWith(vaultPath)
+              ? selected.slice(vaultPath.length + 1)
+              : selected;
+            this.pendingLocalWatch.mappings[index].outputDir = relative;
+            this.updateWatchSaveButton();
+            this.display();
           }),
         );
       outputDirSetting.settingEl.style.flexWrap = 'wrap';
