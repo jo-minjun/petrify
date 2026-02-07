@@ -13,7 +13,6 @@ Petrify converts handwriting note files into Excalidraw or Markdown format withi
 - Watcher: chokidar (local filesystem), Google Drive API (remote change detection)
 
 **Planned:**
-- Watch files inside Obsidian Vault (VaultWatcher)
 - Additional parsers for other handwriting note apps
 
 ## Obsidian Plugin
@@ -27,6 +26,7 @@ Petrify converts handwriting note files into Excalidraw or Markdown format withi
 - **OCR**: Extract handwritten text so your notes become searchable in Obsidian
 - **Duplicate prevention**: Skips already-converted files by comparing modification time
 - **Source delete sync**: Optionally remove converted files when the source file is deleted
+- **Keep protection**: Mark converted files as protected via frontmatter (`keep: true`) to prevent deletion or re-conversion — toggle via command palette or file context menu
 
 ### Settings
 
@@ -41,7 +41,7 @@ Petrify converts handwriting note files into Excalidraw or Markdown format withi
 | Google Vision API Key | API key for Google Cloud Vision (shown when Google Vision is selected) |
 | Language Hints | OCR language hints for Google Vision (Korean, English, Japanese, Chinese) |
 | Confidence Threshold | OCR confidence threshold (0–100, default: 50) |
-| Delete on source delete | Delete converted file when source is deleted (default: off) |
+| Delete on source delete | Delete converted file when source is deleted (default: off). Files with `keep: true` frontmatter are protected |
 | Google Drive Client ID | OAuth2 Client ID for Google Drive API integration |
 | Google Drive Client Secret | OAuth2 Client Secret for Google Drive API integration |
 | Google Drive Poll Interval | How often to check for changes (30s / 60s / 120s) |
