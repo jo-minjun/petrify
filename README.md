@@ -30,21 +30,44 @@ Petrify converts handwriting note files into Excalidraw or Markdown format withi
 
 ### Settings
 
+#### General
+
 | Setting | Description |
 |---------|-------------|
 | Output Format | Output file format (Excalidraw / Markdown) |
-| Source Type | Watch source type per mapping (Local Directory / Google Drive Folder) |
-| Watch Directories | External folder paths to watch (multiple mappings supported) |
-| Output Directories | Vault paths for converted files (per mapping) |
-| Parser | Parser to use for each watch folder (currently Viwoods only) |
+| Auto-sync | Automatically update or delete converted files when the source changes or is removed. Files with `keep: true` frontmatter are excluded |
+
+#### Watch Sources — Local File Watch
+
+| Setting | Description |
+|---------|-------------|
+| Local File Watch | Enable/disable local directory watching |
+| Watch Directory | External folder path to watch |
+| Output Directory | Vault path for converted files |
+| Parser | Parser to use (currently Viwoods only) |
+
+#### Watch Sources — Google Drive API
+
+| Setting | Description |
+|---------|-------------|
+| Google Drive API | Enable/disable Google Drive integration |
+| Client ID | OAuth2 Client ID from Google Cloud Console |
+| Client Secret | OAuth2 Client Secret from Google Cloud Console |
+| Authentication | Authenticate with Google account |
+| Auto Polling | Automatically poll for changes |
+| Poll Interval | Minutes between polling (1–60, default: 5) |
+| Folder | Google Drive folder to watch (via Browse button) |
+| Output Directory | Vault path for converted files |
+| Parser | Parser to use (currently Viwoods only) |
+
+#### OCR
+
+| Setting | Description |
+|---------|-------------|
 | OCR Provider | OCR engine (Tesseract / Google Vision) |
 | Google Vision API Key | API key for Google Cloud Vision (shown when Google Vision is selected) |
-| Language Hints | OCR language hints for Google Vision (Korean, English, Japanese, Chinese) |
-| Confidence Threshold | OCR confidence threshold (0–100, default: 50) |
-| Delete on source delete | Delete converted file when source is deleted (default: off). Files with `keep: true` frontmatter are protected |
-| Google Drive Client ID | OAuth2 Client ID for Google Drive API integration |
-| Google Drive Client Secret | OAuth2 Client Secret for Google Drive API integration |
-| Google Drive Poll Interval | How often to check for changes (30s / 60s / 120s) |
+| Language Hints | Preferred languages for recognition (Korean, English, Japanese, Simplified Chinese, Traditional Chinese) |
+| Confidence Threshold | Minimum OCR confidence (0–100, default: 50) |
 
 ### Drag & Drop
 
@@ -73,14 +96,19 @@ If you use Google Drive for Desktop to sync your handwriting files locally, you 
 
 If virtual drive mounting is blocked (e.g. corporate policy), the Google Drive API adapter detects changes and downloads files directly via API.
 
-1. Create an OAuth 2.0 Client ID (Desktop app type) in [Google Cloud Console](https://console.cloud.google.com/)
-2. Enter Client ID / Client Secret in Petrify settings > Google Drive Settings
-3. Set Source Type to "Google Drive" when adding a Watch Mapping
-4. Enter the Google Drive folder ID as the Watch Directory (the string after `folders/` in the URL)
-5. Complete OAuth authentication via the "Authenticate" button
+Each user needs their own Google Cloud OAuth credentials:
+
+1. Create a Google Cloud project and enable the Google Drive API
+2. Configure the OAuth consent screen (External, add your Google account as a test user)
+3. Create an OAuth 2.0 Client ID (Desktop app type) in **APIs & Services > Credentials**
+4. In Petrify settings, enable **Google Drive API** and enter Client ID / Client Secret
+5. Click **Authenticate** → sign in with Google in the browser
+6. After redirect to `localhost`, copy the entire URL from the address bar and paste it into the Obsidian modal
+7. Click **Add mapping** → **Browse** to select a Google Drive folder
+8. Set the output directory and parser → **Save**
 
 **Key features:**
-- Polling via Google Drive Changes API (configurable: 30s / 60s / 120s)
+- Polling via Google Drive Changes API (configurable: 1–60 min)
 - Direct binary download via API — no local file sync required
 - Automatic session restore via OAuth refresh token
 

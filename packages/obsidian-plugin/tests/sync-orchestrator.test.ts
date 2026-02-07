@@ -14,7 +14,7 @@ import type {
   SyncMapping,
   VaultOperations,
 } from '../src/sync-orchestrator.js';
-import { SyncOrchestrator } from '../src/sync-orchestrator.js';
+import { SyncOrchestrator, SyncSource } from '../src/sync-orchestrator.js';
 
 /** Wrap filenames as ReadDirEntry[] for readdir mocks */
 function entries(...names: string[]): ReadDirEntry[] {
@@ -95,12 +95,15 @@ function createMockParser(extensions: string[]): ParserPort {
   };
 }
 
-function createDefaultMapping(overrides?: Partial<SyncMapping>): SyncMapping {
+function createDefaultMapping(
+  overrides?: Partial<Omit<SyncMapping, 'source'>> & { source?: SyncMapping['source'] },
+): SyncMapping {
   return {
     watchDir: '/watch',
     outputDir: 'output',
     enabled: true,
     parserId: 'viwoods',
+    source: SyncSource.Local,
     ...overrides,
   };
 }

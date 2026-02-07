@@ -37,7 +37,7 @@ import type {
   SyncMapping,
   VaultOperations,
 } from './sync-orchestrator.js';
-import { SyncOrchestrator } from './sync-orchestrator.js';
+import { SyncOrchestrator, SyncSource } from './sync-orchestrator.js';
 import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
 
 interface FileSystemAdapter extends DataAdapter {
@@ -127,10 +127,36 @@ export default class PetrifyPlugin extends Plugin {
           this.settings = settings;
           await this.saveSettings();
         },
-        getGoogleDriveClient: async () => {
-          const auth = await this.getGoogleDriveAuthClient();
-          if (!auth) return null;
-          return new GoogleDriveClient(auth);
+        getGoogleDriveClient: async (clientId, clientSecret) => {
+          if (!clientId || !clientSecret) return null;
+          const auth = new GoogleDriveAuth({
+            clientId,
+            clientSecret,
+            tokenStore: this.createTokenStore(),
+          });
+          const client = await auth.restoreSession();
+          if (!client) return null;
+          return new GoogleDriveClient(client);
+        },
+        getGoogleDriveAuthUrl: (clientId, clientSecret) => {
+          const auth = new GoogleDriveAuth({
+            clientId,
+            clientSecret,
+            tokenStore: this.createTokenStore(),
+          });
+          return auth.getAuthUrl();
+        },
+        handleGoogleDriveAuthCode: async (clientId, clientSecret, code) => {
+          const auth = new GoogleDriveAuth({
+            clientId,
+            clientSecret,
+            tokenStore: this.createTokenStore(),
+          });
+          await auth.handleAuthCode(code);
+        },
+        hasGoogleDriveTokens: async () => {
+          const data = await this.loadData();
+          return !!data?.googleDriveTokens?.refresh_token;
         },
       }),
     );
@@ -404,8 +430,22 @@ export default class PetrifyPlugin extends Plugin {
     }
 
     try {
-      const syncMappings = this.buildSyncMappings();
-      const result = await this.syncOrchestrator.syncAll(syncMappings, this.settings.autoSync);
+      const allMappings = this.buildSyncMappings();
+      const hasDriveMappings = allMappings.some((m) => m.source === SyncSource.GoogleDrive);
+      const driveFs = hasDriveMappings ? await this.createGoogleDriveSyncFs() : null;
+
+      if (hasDriveMappings && !driveFs) {
+        this.syncLog.error('Google Drive auth not configured — skipping Drive mappings');
+      }
+
+      const syncMappings = driveFs
+        ? allMappings
+        : allMappings.filter((m) => m.source !== SyncSource.GoogleDrive);
+      const result = await this.syncOrchestrator.syncAll(
+        syncMappings,
+        this.settings.autoSync,
+        (mapping) => (mapping.source === SyncSource.GoogleDrive ? driveFs : null),
+      );
 
       const summary = `Sync complete: ${result.synced} converted, ${result.deleted} deleted, ${result.failed} failed`;
       this.syncLog.info(summary);
@@ -428,6 +468,7 @@ export default class PetrifyPlugin extends Plugin {
           outputDir: m.outputDir,
           enabled: m.enabled,
           parserId: m.parserId,
+          source: SyncSource.Local,
         });
       }
     }
@@ -439,6 +480,7 @@ export default class PetrifyPlugin extends Plugin {
           outputDir: m.outputDir,
           enabled: m.enabled,
           parserId: m.parserId,
+          source: SyncSource.GoogleDrive,
         });
       }
     }
@@ -446,12 +488,35 @@ export default class PetrifyPlugin extends Plugin {
     return mappings;
   }
 
+  private async createGoogleDriveSyncFs(): Promise<SyncFileSystem | null> {
+    const authClient = await this.getGoogleDriveAuthClient();
+    if (!authClient) return null;
+    const client = new GoogleDriveClient(authClient);
+
+    return {
+      readdir: async (folderId): Promise<ReadDirEntry[]> => {
+        const files = await client.listFiles(folderId);
+        return files.map((f) => ({ name: f.name, fileRef: f.id }));
+      },
+      stat: async (fileId) => {
+        const file = await client.getFile(fileId);
+        return { mtimeMs: new Date(file.modifiedTime).getTime() };
+      },
+      readFile: (fileId) => client.downloadFile(fileId),
+      access: async (fileId) => {
+        await client.getFile(fileId);
+      },
+      rm: async () => {},
+    };
+  }
+
   private async loadSettings(): Promise<void> {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
   private async saveSettings(): Promise<void> {
-    await this.saveData(this.settings);
+    const existing = (await this.loadData()) ?? {};
+    await this.saveData({ ...existing, ...this.settings });
   }
 
   private async getGoogleDriveAuthClient(): Promise<OAuth2Client | null> {
