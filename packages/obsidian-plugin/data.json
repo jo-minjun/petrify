@@ -18,7 +18,10 @@
     "confidenceThreshold": 50,
     "googleVision": {
       "apiKey": "",
-      "languageHints": ["ko", "en"]
+      "languageHints": [
+        "ko",
+        "en"
+      ]
     }
   }
 }

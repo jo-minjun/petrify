@@ -4,8 +4,10 @@ import { FolderBrowseModal } from './folder-browse-modal.js';
 import { ParserId } from './parser-registry.js';
 import {
   DEFAULT_SETTINGS,
+  type GoogleDriveSettings,
   LANGUAGE_HINT_OPTIONS,
   type LanguageHint,
+  type LocalWatchSettings,
   type OcrProvider,
   type OutputFormat,
   type PetrifySettings,
@@ -29,6 +31,14 @@ export class PetrifySettingsTab extends PluginSettingTab {
   private pendingConfidenceThreshold: number = DEFAULT_SETTINGS.ocr.confidenceThreshold;
   private hasPendingOcrEdits = false;
 
+  private pendingOutputFormat: OutputFormat = DEFAULT_SETTINGS.outputFormat;
+  private pendingAutoSync: boolean = DEFAULT_SETTINGS.autoSync;
+  private hasPendingGeneralEdits = false;
+
+  private pendingLocalWatch: LocalWatchSettings = structuredClone(DEFAULT_SETTINGS.localWatch);
+  private pendingGoogleDrive: GoogleDriveSettings = structuredClone(DEFAULT_SETTINGS.googleDrive);
+  private hasPendingWatchEdits = false;
+
   constructor(app: App, plugin: Plugin, callbacks: SettingsTabCallbacks) {
     super(app, plugin);
     this.callbacks = callbacks;
@@ -48,6 +58,12 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     const settings = this.callbacks.getSettings();
 
+    if (!this.hasPendingGeneralEdits) {
+      this.pendingOutputFormat = settings.outputFormat;
+      this.pendingAutoSync = settings.autoSync;
+      this.hasPendingGeneralEdits = true;
+    }
+
     new Setting(containerEl)
       .setName('Output format')
       .setDesc('File format for converted output')
@@ -55,10 +71,9 @@ export class PetrifySettingsTab extends PluginSettingTab {
         dropdown
           .addOption('excalidraw', 'Excalidraw (.excalidraw.md)')
           .addOption('markdown', 'Markdown (.md)')
-          .setValue(settings.outputFormat)
-          .onChange(async (value) => {
-            settings.outputFormat = value as OutputFormat;
-            await this.callbacks.saveDataOnly(settings);
+          .setValue(this.pendingOutputFormat)
+          .onChange((value) => {
+            this.pendingOutputFormat = value as OutputFormat;
           }),
       );
 
@@ -69,11 +84,30 @@ export class PetrifySettingsTab extends PluginSettingTab {
           "Files with 'keep: true' in frontmatter are excluded from both updates and deletions.",
       )
       .addToggle((toggle) =>
-        toggle.setValue(settings.autoSync).onChange(async (value) => {
-          settings.autoSync = value;
-          await this.callbacks.saveSettings(settings);
+        toggle.setValue(this.pendingAutoSync).onChange((value) => {
+          this.pendingAutoSync = value;
         }),
       );
+
+    const hasChanges =
+      this.pendingOutputFormat !== settings.outputFormat ||
+      this.pendingAutoSync !== settings.autoSync;
+
+    new Setting(containerEl).addButton((btn) => {
+      btn
+        .setButtonText('Save')
+        .setCta()
+        .onClick(async () => {
+          settings.outputFormat = this.pendingOutputFormat;
+          settings.autoSync = this.pendingAutoSync;
+          await this.callbacks.saveSettings(settings);
+          this.hasPendingGeneralEdits = false;
+          this.display();
+        });
+
+      btn.buttonEl.disabled = !hasChanges;
+      btn.buttonEl.toggleClass('is-disabled', !hasChanges);
+    });
   }
 
   private displayWatchSourcesSettings(containerEl: HTMLElement): void {
@@ -81,35 +115,43 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     const settings = this.callbacks.getSettings();
 
-    this.displayLocalWatchSection(containerEl, settings);
-    this.displayGoogleDriveSection(containerEl, settings);
+    if (!this.hasPendingWatchEdits) {
+      this.pendingLocalWatch = structuredClone(settings.localWatch);
+      this.pendingGoogleDrive = structuredClone(settings.googleDrive);
+      this.hasPendingWatchEdits = true;
+    }
+
+    this.displayLocalWatchSection(containerEl);
+    this.displayGoogleDriveSection(containerEl);
+    this.displayWatchSourcesSaveButton(containerEl);
   }
 
-  private displayLocalWatchSection(containerEl: HTMLElement, settings: PetrifySettings): void {
-    new Setting(containerEl).setName('Local File Watch').addToggle((toggle) =>
-      toggle.setValue(settings.localWatch.enabled).onChange(async (value) => {
-        settings.localWatch.enabled = value;
-        await this.callbacks.saveSettings(settings);
-        this.display();
-      }),
-    );
+  private displayLocalWatchSection(containerEl: HTMLElement): void {
+    new Setting(containerEl)
+      .setName('Local File Watch')
+      .setDesc('Watch local directories for file changes')
+      .addToggle((toggle) =>
+        toggle.setValue(this.pendingLocalWatch.enabled).onChange((value) => {
+          this.pendingLocalWatch.enabled = value;
+          this.display();
+        }),
+      );
 
-    if (!settings.localWatch.enabled) return;
+    if (!this.pendingLocalWatch.enabled) return;
 
     new Setting(containerEl).addButton((btn) =>
-      btn.setButtonText('Add mapping').onClick(async () => {
-        settings.localWatch.mappings.push({
+      btn.setButtonText('Add mapping').onClick(() => {
+        this.pendingLocalWatch.mappings.push({
           watchDir: '',
           outputDir: '',
           enabled: false,
           parserId: ParserId.Viwoods,
         });
-        await this.callbacks.saveSettings(settings);
         this.display();
       }),
     );
 
-    settings.localWatch.mappings.forEach((mapping, index) => {
+    this.pendingLocalWatch.mappings.forEach((mapping, index) => {
       const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
       mappingContainer.style.border = '1px solid var(--background-modifier-border)';
       mappingContainer.style.borderRadius = '8px';
@@ -119,18 +161,16 @@ export class PetrifySettingsTab extends PluginSettingTab {
       new Setting(mappingContainer)
         .setName(`Mapping #${index + 1}`)
         .addToggle((toggle) =>
-          toggle.setValue(mapping.enabled).onChange(async (value) => {
-            settings.localWatch.mappings[index].enabled = value;
-            await this.callbacks.saveSettings(settings);
+          toggle.setValue(mapping.enabled).onChange((value) => {
+            this.pendingLocalWatch.mappings[index].enabled = value;
           }),
         )
         .addButton((btn) =>
           btn
             .setButtonText('Remove')
             .setWarning()
-            .onClick(async () => {
-              settings.localWatch.mappings.splice(index, 1);
-              await this.callbacks.saveSettings(settings);
+            .onClick(() => {
+              this.pendingLocalWatch.mappings.splice(index, 1);
               this.display();
             }),
         );
@@ -139,9 +179,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
         text
           .setPlaceholder('/path/to/watch')
           .setValue(mapping.watchDir)
-          .onChange(async (value) => {
-            settings.localWatch.mappings[index].watchDir = value;
-            await this.callbacks.saveDataOnly(settings);
+          .onChange((value) => {
+            this.pendingLocalWatch.mappings[index].watchDir = value;
           }),
       );
 
@@ -149,9 +188,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
         text
           .setPlaceholder('Handwritings/')
           .setValue(mapping.outputDir)
-          .onChange(async (value) => {
-            settings.localWatch.mappings[index].outputDir = value;
-            await this.callbacks.saveDataOnly(settings);
+          .onChange((value) => {
+            this.pendingLocalWatch.mappings[index].outputDir = value;
           }),
       );
 
@@ -160,65 +198,70 @@ export class PetrifySettingsTab extends PluginSettingTab {
           dropdown.addOption(id, id);
         }
         dropdown.setValue(mapping.parserId || ParserId.Viwoods);
-        dropdown.onChange(async (value) => {
-          settings.localWatch.mappings[index].parserId = value;
-          await this.callbacks.saveSettings(settings);
+        dropdown.onChange((value) => {
+          this.pendingLocalWatch.mappings[index].parserId = value;
         });
       });
     });
   }
 
-  private displayGoogleDriveSection(containerEl: HTMLElement, settings: PetrifySettings): void {
-    new Setting(containerEl).setName('Google Drive API').addToggle((toggle) =>
-      toggle.setValue(settings.googleDrive.enabled).onChange(async (value) => {
-        settings.googleDrive.enabled = value;
-        await this.callbacks.saveSettings(settings);
-        this.display();
-      }),
-    );
-
-    if (!settings.googleDrive.enabled) return;
-
+  private displayGoogleDriveSection(containerEl: HTMLElement): void {
     new Setting(containerEl)
+      .setName('Google Drive API')
+      .setDesc('Sync and convert files from Google Drive')
+      .addToggle((toggle) =>
+        toggle.setValue(this.pendingGoogleDrive.enabled).onChange((value) => {
+          this.pendingGoogleDrive.enabled = value;
+          this.display();
+        }),
+      );
+
+    if (!this.pendingGoogleDrive.enabled) return;
+
+    const driveContainer = containerEl.createDiv({ cls: 'petrify-drive-settings' });
+    driveContainer.style.border = '1px solid var(--background-modifier-border)';
+    driveContainer.style.borderRadius = '8px';
+    driveContainer.style.padding = '8px 12px';
+    driveContainer.style.marginBottom = '12px';
+    driveContainer.style.marginLeft = '16px';
+
+    new Setting(driveContainer)
       .setName('Client ID')
       .setDesc('OAuth2 Client ID from Google Cloud Console')
       .addText((text) =>
         text
           .setPlaceholder('Enter Client ID')
-          .setValue(settings.googleDrive.clientId)
-          .onChange(async (value) => {
-            settings.googleDrive.clientId = value;
-            await this.callbacks.saveDataOnly(settings);
+          .setValue(this.pendingGoogleDrive.clientId)
+          .onChange((value) => {
+            this.pendingGoogleDrive.clientId = value;
           }),
       );
 
-    new Setting(containerEl)
+    new Setting(driveContainer)
       .setName('Client Secret')
       .setDesc('OAuth2 Client Secret from Google Cloud Console')
       .addText((text) => {
         text.inputEl.type = 'password';
         text
           .setPlaceholder('Enter Client Secret')
-          .setValue(settings.googleDrive.clientSecret)
-          .onChange(async (value) => {
-            settings.googleDrive.clientSecret = value;
-            await this.callbacks.saveDataOnly(settings);
+          .setValue(this.pendingGoogleDrive.clientSecret)
+          .onChange((value) => {
+            this.pendingGoogleDrive.clientSecret = value;
           });
       });
 
-    new Setting(containerEl)
+    new Setting(driveContainer)
       .setName('Auto Polling')
       .setDesc('Automatically poll for changes in Google Drive')
       .addToggle((toggle) =>
-        toggle.setValue(settings.googleDrive.autoPolling).onChange(async (value) => {
-          settings.googleDrive.autoPolling = value;
-          await this.callbacks.saveSettings(settings);
+        toggle.setValue(this.pendingGoogleDrive.autoPolling).onChange((value) => {
+          this.pendingGoogleDrive.autoPolling = value;
           this.display();
         }),
       );
 
-    if (settings.googleDrive.autoPolling) {
-      new Setting(containerEl)
+    if (this.pendingGoogleDrive.autoPolling) {
+      new Setting(driveContainer)
         .setName('Poll Interval')
         .setDesc('Minutes between polling (1-60)')
         .addText((text) => {
@@ -226,36 +269,32 @@ export class PetrifySettingsTab extends PluginSettingTab {
           text.inputEl.min = '1';
           text.inputEl.max = '60';
           text.inputEl.step = '1';
-          text
-            .setValue(String(settings.googleDrive.pollIntervalMinutes))
-            .onChange(async (value) => {
-              const num = Number(value);
-              const valid = !Number.isNaN(num) && num >= 1 && num <= 60;
-              text.inputEl.style.borderColor = valid ? '' : 'var(--text-error)';
-              if (valid) {
-                settings.googleDrive.pollIntervalMinutes = num;
-                await this.callbacks.saveDataOnly(settings);
-              }
-            });
+          text.setValue(String(this.pendingGoogleDrive.pollIntervalMinutes)).onChange((value) => {
+            const num = Number(value);
+            const valid = !Number.isNaN(num) && num >= 1 && num <= 60;
+            text.inputEl.style.borderColor = valid ? '' : 'var(--text-error)';
+            if (valid) {
+              this.pendingGoogleDrive.pollIntervalMinutes = num;
+            }
+          });
         });
     }
 
-    new Setting(containerEl).addButton((btn) =>
-      btn.setButtonText('Add mapping').onClick(async () => {
-        settings.googleDrive.mappings.push({
+    new Setting(driveContainer).addButton((btn) =>
+      btn.setButtonText('Add mapping').onClick(() => {
+        this.pendingGoogleDrive.mappings.push({
           folderId: '',
           folderName: '',
           outputDir: '',
           enabled: false,
           parserId: ParserId.Viwoods,
         });
-        await this.callbacks.saveSettings(settings);
         this.display();
       }),
     );
 
-    settings.googleDrive.mappings.forEach((mapping, index) => {
-      const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
+    this.pendingGoogleDrive.mappings.forEach((mapping, index) => {
+      const mappingContainer = driveContainer.createDiv({ cls: 'petrify-mapping' });
       mappingContainer.style.border = '1px solid var(--background-modifier-border)';
       mappingContainer.style.borderRadius = '8px';
       mappingContainer.style.padding = '8px 12px';
@@ -264,18 +303,16 @@ export class PetrifySettingsTab extends PluginSettingTab {
       new Setting(mappingContainer)
         .setName(`Mapping #${index + 1}`)
         .addToggle((toggle) =>
-          toggle.setValue(mapping.enabled).onChange(async (value) => {
-            settings.googleDrive.mappings[index].enabled = value;
-            await this.callbacks.saveSettings(settings);
+          toggle.setValue(mapping.enabled).onChange((value) => {
+            this.pendingGoogleDrive.mappings[index].enabled = value;
           }),
         )
         .addButton((btn) =>
           btn
             .setButtonText('Remove')
             .setWarning()
-            .onClick(async () => {
-              settings.googleDrive.mappings.splice(index, 1);
-              await this.callbacks.saveSettings(settings);
+            .onClick(() => {
+              this.pendingGoogleDrive.mappings.splice(index, 1);
               this.display();
             }),
         );
@@ -291,9 +328,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
               return;
             }
             new FolderBrowseModal(this.app, client, (result) => {
-              settings.googleDrive.mappings[index].folderId = result.folderId;
-              settings.googleDrive.mappings[index].folderName = result.folderName;
-              this.callbacks.saveSettings(settings);
+              this.pendingGoogleDrive.mappings[index].folderId = result.folderId;
+              this.pendingGoogleDrive.mappings[index].folderName = result.folderName;
               this.display();
             }).open();
           }),
@@ -303,9 +339,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
         text
           .setPlaceholder('Handwritings/')
           .setValue(mapping.outputDir)
-          .onChange(async (value) => {
-            settings.googleDrive.mappings[index].outputDir = value;
-            await this.callbacks.saveDataOnly(settings);
+          .onChange((value) => {
+            this.pendingGoogleDrive.mappings[index].outputDir = value;
           }),
       );
 
@@ -314,12 +349,52 @@ export class PetrifySettingsTab extends PluginSettingTab {
           dropdown.addOption(id, id);
         }
         dropdown.setValue(mapping.parserId || ParserId.Viwoods);
-        dropdown.onChange(async (value) => {
-          settings.googleDrive.mappings[index].parserId = value;
-          await this.callbacks.saveSettings(settings);
+        dropdown.onChange((value) => {
+          this.pendingGoogleDrive.mappings[index].parserId = value;
         });
       });
     });
+  }
+
+  private displayWatchSourcesSaveButton(containerEl: HTMLElement): void {
+    const settings = this.callbacks.getSettings();
+
+    const hasChanges =
+      JSON.stringify({
+        localWatch: this.pendingLocalWatch,
+        googleDrive: this.pendingGoogleDrive,
+      }) !==
+      JSON.stringify({
+        localWatch: settings.localWatch,
+        googleDrive: settings.googleDrive,
+      });
+
+    const isValid = this.isWatchSourcesValid();
+
+    new Setting(containerEl).addButton((btn) => {
+      btn
+        .setButtonText('Save')
+        .setCta()
+        .onClick(async () => {
+          settings.localWatch = structuredClone(this.pendingLocalWatch);
+          settings.googleDrive = structuredClone(this.pendingGoogleDrive);
+          await this.callbacks.saveSettings(settings);
+          this.hasPendingWatchEdits = false;
+          this.display();
+        });
+
+      const canSave = hasChanges && isValid;
+      btn.buttonEl.disabled = !canSave;
+      btn.buttonEl.toggleClass('is-disabled', !canSave);
+    });
+  }
+
+  private isWatchSourcesValid(): boolean {
+    if (this.pendingGoogleDrive.enabled && this.pendingGoogleDrive.autoPolling) {
+      const interval = this.pendingGoogleDrive.pollIntervalMinutes;
+      if (Number.isNaN(interval) || interval < 1 || interval > 60) return false;
+    }
+    return true;
   }
 
   private displayOcrSettings(containerEl: HTMLElement): void {
@@ -341,7 +416,16 @@ export class PetrifySettingsTab extends PluginSettingTab {
       if (!saveButton) return;
       const isGoogleVision = this.pendingProvider === 'google-vision';
       const hasApiKey = this.pendingApiKey.trim().length > 0;
-      const canSave = !isGoogleVision || hasApiKey;
+      const isValid = !isGoogleVision || hasApiKey;
+
+      const hasChanges =
+        this.pendingProvider !== settings.ocr.provider ||
+        this.pendingApiKey !== settings.ocr.googleVision.apiKey ||
+        JSON.stringify(this.pendingLanguageHints) !==
+          JSON.stringify(settings.ocr.googleVision.languageHints) ||
+        this.pendingConfidenceThreshold !== settings.ocr.confidenceThreshold;
+
+      const canSave = isValid && hasChanges;
       saveButton.disabled = !canSave;
       saveButton.toggleClass('is-disabled', !canSave);
     };
@@ -378,25 +462,60 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
       const languageSetting = new Setting(containerEl)
         .setName('Language Hints')
-        .setDesc('Preferred languages for recognition (multiple selection)');
+        .setDesc('Preferred languages for recognition');
 
-      for (const option of LANGUAGE_HINT_OPTIONS) {
-        languageSetting.addToggle((toggle) => {
-          toggle
-            .setValue(this.pendingLanguageHints.includes(option.value))
-            .setTooltip(option.label)
-            .onChange((enabled) => {
-              if (enabled) {
-                if (!this.pendingLanguageHints.includes(option.value)) {
-                  this.pendingLanguageHints.push(option.value);
-                }
-              } else {
-                this.pendingLanguageHints = this.pendingLanguageHints.filter(
-                  (h) => h !== option.value,
-                );
-              }
-            });
+      const unselected = LANGUAGE_HINT_OPTIONS.filter(
+        (opt) => !this.pendingLanguageHints.includes(opt.value),
+      );
+
+      if (unselected.length > 0) {
+        languageSetting.addDropdown((dropdown) => {
+          dropdown.addOption('', 'Add language...');
+          for (const opt of unselected) {
+            dropdown.addOption(opt.value, opt.label);
+          }
+          dropdown.onChange((value) => {
+            if (value && !this.pendingLanguageHints.includes(value as LanguageHint)) {
+              this.pendingLanguageHints.push(value as LanguageHint);
+              updateSaveButton();
+              this.display();
+            }
+          });
         });
+      }
+
+      if (this.pendingLanguageHints.length > 0) {
+        const tagContainer = containerEl.createDiv({ cls: 'petrify-language-tags' });
+        tagContainer.style.display = 'flex';
+        tagContainer.style.flexWrap = 'wrap';
+        tagContainer.style.gap = '4px';
+        tagContainer.style.marginBottom = '12px';
+
+        for (const hint of this.pendingLanguageHints) {
+          const option = LANGUAGE_HINT_OPTIONS.find((o) => o.value === hint);
+          if (!option) continue;
+
+          const tag = tagContainer.createDiv({ cls: 'petrify-language-tag' });
+          tag.style.display = 'inline-flex';
+          tag.style.alignItems = 'center';
+          tag.style.gap = '4px';
+          tag.style.padding = '2px 8px';
+          tag.style.borderRadius = '12px';
+          tag.style.backgroundColor = 'var(--background-modifier-hover)';
+          tag.style.fontSize = '12px';
+
+          tag.createSpan({ text: option.label });
+
+          const removeBtn = tag.createEl('span', { text: '\u00d7', cls: 'petrify-tag-remove' });
+          removeBtn.style.cursor = 'pointer';
+          removeBtn.style.fontWeight = 'bold';
+          removeBtn.style.marginLeft = '2px';
+          removeBtn.addEventListener('click', () => {
+            this.pendingLanguageHints = this.pendingLanguageHints.filter((h) => h !== hint);
+            updateSaveButton();
+            this.display();
+          });
+        }
       }
     }
 
@@ -418,13 +537,14 @@ export class PetrifySettingsTab extends PluginSettingTab {
             if (valid) {
               this.pendingConfidenceThreshold = num;
             }
+            updateSaveButton();
           });
       });
 
     new Setting(containerEl).addButton((btn) => {
       saveButton = btn.buttonEl;
       btn
-        .setButtonText('Save OCR Settings')
+        .setButtonText('Save')
         .setCta()
         .onClick(async () => {
           settings.ocr.provider = this.pendingProvider;
@@ -433,6 +553,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           settings.ocr.confidenceThreshold = this.pendingConfidenceThreshold;
           await this.callbacks.saveSettings(settings);
           this.hasPendingOcrEdits = false;
+          this.display();
         });
     });
 
