@@ -246,7 +246,7 @@ export default class PetrifyPlugin extends Plugin {
   private async startWatchers(): Promise<void> {
     if (this.settings.localWatch.enabled) {
       for (const mapping of this.settings.localWatch.mappings) {
-        if (!mapping.enabled || !mapping.watchDir || !mapping.outputDir) continue;
+        if (!mapping.enabled || !mapping.watchDir) continue;
         const watcher = new ChokidarWatcher(mapping.watchDir);
         this.attachWatcherHandlers(watcher, mapping.outputDir);
         await watcher.start();
@@ -262,7 +262,7 @@ export default class PetrifyPlugin extends Plugin {
       }
 
       for (const mapping of this.settings.googleDrive.mappings) {
-        if (!mapping.enabled || !mapping.folderId || !mapping.outputDir) continue;
+        if (!mapping.enabled || !mapping.folderId) continue;
         const watcher = new GoogleDriveWatcher({
           folderId: mapping.folderId,
           pollIntervalMs: this.settings.googleDrive.pollIntervalMinutes * 60000,

@@ -19,13 +19,15 @@ export async function saveConversionResult(
   metadataFormatter: MetadataFormatter,
 ): Promise<string> {
   try {
-    const outputPath = `${outputDir}/${baseName}${extension}`;
+    const outputPath = outputDir
+      ? `${outputDir}/${baseName}${extension}`
+      : `${baseName}${extension}`;
     const frontmatter = metadataFormatter.formatMetadata(result.metadata);
 
     await fileWriter.writeFile(outputPath, frontmatter + result.content);
 
     if (result.assets.size > 0) {
-      const assetsDir = `${outputDir}/assets/${baseName}`;
+      const assetsDir = outputDir ? `${outputDir}/assets/${baseName}` : `assets/${baseName}`;
       for (const [name, data] of result.assets) {
         await fileWriter.writeAsset(assetsDir, name, data);
       }

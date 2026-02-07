@@ -257,13 +257,30 @@ describe('SyncOrchestrator', () => {
     expect(mockFs.readdir).not.toHaveBeenCalled();
   });
 
-  it('watchDir 또는 outputDir가 빈 문자열이면 건너뜀', async () => {
+  it('watchDir가 빈 문자열이면 건너뜀', async () => {
     const mapping = createDefaultMapping({ watchDir: '' });
 
     const result = await orchestrator.syncAll([mapping], false);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
     expect(mockFs.readdir).not.toHaveBeenCalled();
+  });
+
+  it('outputDir가 빈 문자열(vault 루트)이면 정상 동작', async () => {
+    mockFs.readdir.mockResolvedValue(entries('file.note'));
+    mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
+    mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
+    mockService.handleFileChange.mockResolvedValue({
+      content: 'test',
+      assets: new Map(),
+      metadata: { source: '/watch/file.note', mtime: 1000 },
+    });
+
+    const mapping = createDefaultMapping({ outputDir: '' });
+    const result = await orchestrator.syncAll([mapping], false);
+
+    expect(result).toEqual({ synced: 1, failed: 0, deleted: 0 });
+    expect(mockService.handleFileChange).toHaveBeenCalledOnce();
   });
 
   it('알 수 없는 parserId일 때 failed 증가', async () => {

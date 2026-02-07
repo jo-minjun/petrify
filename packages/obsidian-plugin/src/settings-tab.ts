@@ -155,7 +155,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         this.pendingLocalWatch.mappings.push({
           watchDir: '',
           outputDir: '',
-          enabled: false,
+          enabled: true,
           parserId: ParserId.Viwoods,
         });
         this.display();
@@ -337,7 +337,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           folderId: '',
           folderName: '',
           outputDir: '',
-          enabled: false,
+          enabled: true,
           parserId: ParserId.Viwoods,
         });
         this.display();
