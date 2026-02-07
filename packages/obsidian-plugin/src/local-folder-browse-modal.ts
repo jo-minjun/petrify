@@ -1,6 +1,6 @@
 import { readdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join, sep } from 'node:path';
 import type { App } from 'obsidian';
 import { Modal } from 'obsidian';
 
@@ -27,13 +27,12 @@ export class LocalFolderBrowseModal extends Modal {
   private buildBreadcrumb(path: string): string[] {
     const parts: string[] = [];
     let current = path;
-    while (current !== '/' && current !== '') {
+    while (true) {
       parts.unshift(current);
-      const parent = join(current, '..');
+      const parent = dirname(current);
       if (parent === current) break;
       current = parent;
     }
-    parts.unshift('/');
     return parts;
   }
 
@@ -50,10 +49,10 @@ export class LocalFolderBrowseModal extends Modal {
     for (let i = 0; i < this.breadcrumb.length; i++) {
       const segment = this.breadcrumb[i];
       const isLast = i === this.breadcrumb.length - 1;
-      const displayName = i === 0 ? '/' : (segment.split('/').pop() ?? segment);
+      const displayName = basename(segment) || segment;
 
       if (i > 0) {
-        breadcrumbContainer.createSpan({ text: ' / ' });
+        breadcrumbContainer.createSpan({ text: ` ${sep} ` });
       }
 
       if (isLast) {
