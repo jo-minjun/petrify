@@ -14,20 +14,33 @@ export const LANGUAGE_HINT_OPTIONS: { value: LanguageHint; label: string }[] = [
 
 export type OutputFormat = 'excalidraw' | 'markdown';
 
-export type WatchSourceType = 'local' | 'google-drive';
-
-export interface WatchMapping {
+export interface LocalWatchMapping {
   watchDir: string;
   outputDir: string;
   enabled: boolean;
   parserId: string;
-  sourceType: WatchSourceType;
+}
+
+export interface GoogleDriveMapping {
+  folderId: string;
+  folderName: string;
+  outputDir: string;
+  enabled: boolean;
+  parserId: string;
+}
+
+export interface LocalWatchSettings {
+  enabled: boolean;
+  mappings: LocalWatchMapping[];
 }
 
 export interface GoogleDriveSettings {
+  enabled: boolean;
   clientId: string;
   clientSecret: string;
-  pollIntervalMs: number;
+  autoPolling: boolean;
+  pollIntervalMinutes: number;
+  mappings: GoogleDriveMapping[];
 }
 
 export interface OcrSettings {
@@ -40,15 +53,28 @@ export interface OcrSettings {
 }
 
 export interface PetrifySettings {
-  watchMappings: WatchMapping[];
-  ocr: OcrSettings;
-  deleteConvertedOnSourceDelete: boolean;
   outputFormat: OutputFormat;
+  autoSync: boolean;
+  localWatch: LocalWatchSettings;
   googleDrive: GoogleDriveSettings;
+  ocr: OcrSettings;
 }
 
 export const DEFAULT_SETTINGS: PetrifySettings = {
-  watchMappings: [],
+  outputFormat: 'excalidraw',
+  autoSync: false,
+  localWatch: {
+    enabled: false,
+    mappings: [],
+  },
+  googleDrive: {
+    enabled: false,
+    clientId: '',
+    clientSecret: '',
+    autoPolling: true,
+    pollIntervalMinutes: 5,
+    mappings: [],
+  },
   ocr: {
     provider: 'tesseract',
     confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD,
@@ -56,12 +82,5 @@ export const DEFAULT_SETTINGS: PetrifySettings = {
       apiKey: '',
       languageHints: ['ko', 'en'],
     },
-  },
-  deleteConvertedOnSourceDelete: false,
-  outputFormat: 'excalidraw',
-  googleDrive: {
-    clientId: '',
-    clientSecret: '',
-    pollIntervalMs: 30000,
   },
 };

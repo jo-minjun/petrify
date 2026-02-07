@@ -1,17 +1,31 @@
 {
-  "watchMappings": [
-    {
-      "watchDir": "/Users/minjun.jo/Library/CloudStorage/GoogleDrive-alswns9288@gmail.com/내 드라이브/Viwoods-Note/Aipaper Mini/S5AA4905M00327/Paper",
-      "outputDir": "/test",
-      "enabled": true
-    },
-    {
-      "watchDir": "/Users/minjun.jo/Library/CloudStorage/GoogleDrive-alswns9288@gmail.com/내 드라이브/Viwoods-Note/Aipaper Mini/S5AA4905M00327/Paper/Projects",
-      "outputDir": "/test/project",
-      "enabled": true
-    }
-  ],
+  "outputFormat": "markdown",
+  "autoSync": false,
+  "localWatch": {
+    "enabled": true,
+    "mappings": [
+      {
+        "watchDir": "/Users/minjun.jo/Library/CloudStorage/GoogleDrive-alswns9288@gmail.com/내 드라이브/Viwoods-Note/Aipaper Mini/S5AA4905M00327/Paper",
+        "outputDir": "/test",
+        "enabled": true,
+        "parserId": "viwoods"
+      }
+    ]
+  },
+  "googleDrive": {
+    "enabled": false,
+    "clientId": "",
+    "clientSecret": "",
+    "autoPolling": true,
+    "pollIntervalMinutes": 5,
+    "mappings": []
+  },
   "ocr": {
-    "confidenceThreshold": 1
+    "provider": "tesseract",
+    "confidenceThreshold": 1,
+    "googleVision": {
+      "apiKey": "",
+      "languageHints": ["ko", "en"]
+    }
   }
 }

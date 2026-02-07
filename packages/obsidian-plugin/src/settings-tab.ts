@@ -1,4 +1,6 @@
-import { type App, type Plugin, PluginSettingTab, Setting } from 'obsidian';
+import type { GoogleDriveClient } from '@petrify/watcher-google-drive';
+import { type App, Notice, type Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { FolderBrowseModal } from './folder-browse-modal.js';
 import { ParserId } from './parser-registry.js';
 import {
   DEFAULT_SETTINGS,
@@ -7,13 +9,13 @@ import {
   type OcrProvider,
   type OutputFormat,
   type PetrifySettings,
-  type WatchSourceType,
 } from './settings.js';
 
 export interface SettingsTabCallbacks {
   readonly getSettings: () => PetrifySettings;
   readonly saveSettings: (settings: PetrifySettings) => Promise<void>;
   readonly saveDataOnly: (settings: PetrifySettings) => Promise<void>;
+  readonly getGoogleDriveClient: () => Promise<GoogleDriveClient | null>;
 }
 
 export class PetrifySettingsTab extends PluginSettingTab {
@@ -37,20 +39,18 @@ export class PetrifySettingsTab extends PluginSettingTab {
     containerEl.empty();
 
     this.displayGeneralSettings(containerEl);
-    this.displayWatchMappings(containerEl);
-    this.displayGoogleDriveSettings(containerEl);
+    this.displayWatchSourcesSettings(containerEl);
     this.displayOcrSettings(containerEl);
-    this.displayDeleteSettings(containerEl);
   }
 
   private displayGeneralSettings(containerEl: HTMLElement): void {
-    containerEl.createEl('h2', { text: 'General Settings' });
+    containerEl.createEl('h2', { text: 'General' });
 
     const settings = this.callbacks.getSettings();
 
     new Setting(containerEl)
-      .setName('출력 포맷')
-      .setDesc('변환 결과 파일 형식')
+      .setName('Output format')
+      .setDesc('File format for converted output')
       .addDropdown((dropdown) =>
         dropdown
           .addOption('excalidraw', 'Excalidraw (.excalidraw.md)')
@@ -61,103 +61,101 @@ export class PetrifySettingsTab extends PluginSettingTab {
             await this.callbacks.saveDataOnly(settings);
           }),
       );
+
+    new Setting(containerEl)
+      .setName('Auto-sync converted files')
+      .setDesc(
+        'Automatically update or delete converted files when the source changes or is removed. ' +
+          "Files with 'keep: true' in frontmatter are excluded from both updates and deletions.",
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(settings.autoSync).onChange(async (value) => {
+          settings.autoSync = value;
+          await this.callbacks.saveSettings(settings);
+        }),
+      );
   }
 
-  private displayWatchMappings(containerEl: HTMLElement): void {
-    containerEl.createEl('h2', { text: 'Watch Directories' });
+  private displayWatchSourcesSettings(containerEl: HTMLElement): void {
+    containerEl.createEl('h2', { text: 'Watch Sources' });
 
     const settings = this.callbacks.getSettings();
 
-    settings.watchMappings.forEach((mapping, index) => {
+    this.displayLocalWatchSection(containerEl, settings);
+    this.displayGoogleDriveSection(containerEl, settings);
+  }
+
+  private displayLocalWatchSection(containerEl: HTMLElement, settings: PetrifySettings): void {
+    new Setting(containerEl).setName('Local File Watch').addToggle((toggle) =>
+      toggle.setValue(settings.localWatch.enabled).onChange(async (value) => {
+        settings.localWatch.enabled = value;
+        await this.callbacks.saveSettings(settings);
+        this.display();
+      }),
+    );
+
+    if (!settings.localWatch.enabled) return;
+
+    settings.localWatch.mappings.forEach((mapping, index) => {
       const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
 
+      new Setting(mappingContainer).setName('Watch directory').addText((text) =>
+        text
+          .setPlaceholder('/path/to/watch')
+          .setValue(mapping.watchDir)
+          .onChange(async (value) => {
+            settings.localWatch.mappings[index].watchDir = value;
+            await this.callbacks.saveDataOnly(settings);
+          }),
+      );
+
+      new Setting(mappingContainer).setName('Output directory').addText((text) =>
+        text
+          .setPlaceholder('Handwritings/')
+          .setValue(mapping.outputDir)
+          .onChange(async (value) => {
+            settings.localWatch.mappings[index].outputDir = value;
+            await this.callbacks.saveDataOnly(settings);
+          }),
+      );
+
+      new Setting(mappingContainer).setName('Parser').addDropdown((dropdown) => {
+        for (const id of Object.values(ParserId)) {
+          dropdown.addOption(id, id);
+        }
+        dropdown.setValue(mapping.parserId || ParserId.Viwoods);
+        dropdown.onChange(async (value) => {
+          settings.localWatch.mappings[index].parserId = value;
+          await this.callbacks.saveSettings(settings);
+        });
+      });
+
       new Setting(mappingContainer)
-        .setName('Source Type')
-        .setDesc('Watch a local directory or a Google Drive folder')
-        .addDropdown((dropdown) =>
-          dropdown
-            .addOption('local', 'Local Directory')
-            .addOption('google-drive', 'Google Drive Folder')
-            .setValue(mapping.sourceType ?? 'local')
-            .onChange(async (value) => {
-              settings.watchMappings[index].sourceType = value as WatchSourceType;
+        .addToggle((toggle) =>
+          toggle.setValue(mapping.enabled).onChange(async (value) => {
+            settings.localWatch.mappings[index].enabled = value;
+            await this.callbacks.saveSettings(settings);
+          }),
+        )
+        .addButton((btn) =>
+          btn
+            .setButtonText('Remove')
+            .setWarning()
+            .onClick(async () => {
+              settings.localWatch.mappings.splice(index, 1);
               await this.callbacks.saveSettings(settings);
               this.display();
             }),
         );
-
-      const isGoogleDrive = mapping.sourceType === 'google-drive';
-
-      new Setting(mappingContainer)
-        .setName(`${isGoogleDrive ? 'Google Drive Folder ID' : 'Watch Directory'} ${index + 1}`)
-        .setDesc(
-          isGoogleDrive
-            ? 'Google Drive folder ID to watch'
-            : 'External folder to watch for handwriting files',
-        )
-        .addToggle((toggle) =>
-          toggle.setValue(mapping.enabled).onChange(async (value) => {
-            settings.watchMappings[index].enabled = value;
-            await this.callbacks.saveSettings(settings);
-          }),
-        )
-        .addText((text) =>
-          text
-            .setPlaceholder(isGoogleDrive ? 'Google Drive Folder ID' : '/path/to/watch')
-            .setValue(mapping.watchDir)
-            .onChange(async (value) => {
-              settings.watchMappings[index].watchDir = value;
-              await this.callbacks.saveDataOnly(settings);
-            }),
-        );
-
-      new Setting(mappingContainer)
-        .setName('Output Directory')
-        .setDesc('Folder in vault for converted files')
-        .addText((text) =>
-          text
-            .setPlaceholder('Handwritings/')
-            .setValue(mapping.outputDir)
-            .onChange(async (value) => {
-              settings.watchMappings[index].outputDir = value;
-              await this.callbacks.saveDataOnly(settings);
-            }),
-        );
-
-      new Setting(mappingContainer)
-        .setName('Parser')
-        .setDesc('File format parser for this directory')
-        .addDropdown((dropdown) => {
-          for (const id of Object.values(ParserId)) {
-            dropdown.addOption(id, id);
-          }
-          dropdown.setValue(mapping.parserId || ParserId.Viwoods);
-          dropdown.onChange(async (value) => {
-            settings.watchMappings[index].parserId = value;
-            await this.callbacks.saveSettings(settings);
-          });
-        });
-
-      new Setting(mappingContainer).addButton((btn) =>
-        btn
-          .setButtonText('Remove')
-          .setWarning()
-          .onClick(async () => {
-            settings.watchMappings.splice(index, 1);
-            await this.callbacks.saveSettings(settings);
-            this.display();
-          }),
-      );
     });
 
     new Setting(containerEl).addButton((btn) =>
-      btn.setButtonText('Add Watch Directory').onClick(async () => {
-        settings.watchMappings.push({
+      btn.setButtonText('Add mapping').onClick(async () => {
+        settings.localWatch.mappings.push({
           watchDir: '',
           outputDir: '',
           enabled: false,
           parserId: ParserId.Viwoods,
-          sourceType: 'local',
         });
         await this.callbacks.saveSettings(settings);
         this.display();
@@ -165,10 +163,16 @@ export class PetrifySettingsTab extends PluginSettingTab {
     );
   }
 
-  private displayGoogleDriveSettings(containerEl: HTMLElement): void {
-    containerEl.createEl('h2', { text: 'Google Drive Settings' });
+  private displayGoogleDriveSection(containerEl: HTMLElement, settings: PetrifySettings): void {
+    new Setting(containerEl).setName('Google Drive').addToggle((toggle) =>
+      toggle.setValue(settings.googleDrive.enabled).onChange(async (value) => {
+        settings.googleDrive.enabled = value;
+        await this.callbacks.saveSettings(settings);
+        this.display();
+      }),
+    );
 
-    const settings = this.callbacks.getSettings();
+    if (!settings.googleDrive.enabled) return;
 
     new Setting(containerEl)
       .setName('Client ID')
@@ -198,38 +202,112 @@ export class PetrifySettingsTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName('Poll Interval')
-      .setDesc('How often to check for changes (in seconds)')
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption('30000', '30 seconds')
-          .addOption('60000', '1 minute')
-          .addOption('120000', '2 minutes')
-          .setValue(String(settings.googleDrive.pollIntervalMs))
+      .setName('Auto Polling')
+      .setDesc('Automatically poll for changes in Google Drive')
+      .addToggle((toggle) =>
+        toggle.setValue(settings.googleDrive.autoPolling).onChange(async (value) => {
+          settings.googleDrive.autoPolling = value;
+          await this.callbacks.saveSettings(settings);
+          this.display();
+        }),
+      );
+
+    if (settings.googleDrive.autoPolling) {
+      new Setting(containerEl)
+        .setName('Poll Interval')
+        .setDesc('Minutes between polling (1-60)')
+        .addText((text) => {
+          text.inputEl.type = 'number';
+          text.inputEl.min = '1';
+          text.inputEl.max = '60';
+          text.inputEl.step = '1';
+          text
+            .setValue(String(settings.googleDrive.pollIntervalMinutes))
+            .onChange(async (value) => {
+              const num = Number(value);
+              if (!Number.isNaN(num) && num >= 1 && num <= 60) {
+                settings.googleDrive.pollIntervalMinutes = num;
+                await this.callbacks.saveDataOnly(settings);
+              }
+            });
+        });
+    }
+
+    settings.googleDrive.mappings.forEach((mapping, index) => {
+      const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
+
+      new Setting(mappingContainer)
+        .setName('Folder')
+        .setDesc(mapping.folderName || 'No folder selected')
+        .addButton((btn) =>
+          btn.setButtonText('Browse').onClick(async () => {
+            const client = await this.callbacks.getGoogleDriveClient();
+            if (!client) {
+              new Notice('Configure Client ID and Secret first');
+              return;
+            }
+            new FolderBrowseModal(this.app, client, (result) => {
+              settings.googleDrive.mappings[index].folderId = result.folderId;
+              settings.googleDrive.mappings[index].folderName = result.folderName;
+              this.callbacks.saveSettings(settings);
+              this.display();
+            }).open();
+          }),
+        );
+
+      new Setting(mappingContainer).setName('Output directory').addText((text) =>
+        text
+          .setPlaceholder('Handwritings/')
+          .setValue(mapping.outputDir)
           .onChange(async (value) => {
-            settings.googleDrive.pollIntervalMs = Number(value);
+            settings.googleDrive.mappings[index].outputDir = value;
             await this.callbacks.saveDataOnly(settings);
           }),
       );
-  }
 
-  private displayDeleteSettings(containerEl: HTMLElement): void {
-    containerEl.createEl('h2', { text: 'File Management' });
-
-    const settings = this.callbacks.getSettings();
-
-    new Setting(containerEl)
-      .setName('Delete converted files on source delete')
-      .setDesc(
-        'When a source file is deleted, move the converted .excalidraw.md file to trash. ' +
-          'Add "keep: true" to a file\'s petrify frontmatter to protect it from deletion and re-conversion.',
-      )
-      .addToggle((toggle) =>
-        toggle.setValue(settings.deleteConvertedOnSourceDelete).onChange(async (value) => {
-          settings.deleteConvertedOnSourceDelete = value;
+      new Setting(mappingContainer).setName('Parser').addDropdown((dropdown) => {
+        for (const id of Object.values(ParserId)) {
+          dropdown.addOption(id, id);
+        }
+        dropdown.setValue(mapping.parserId || ParserId.Viwoods);
+        dropdown.onChange(async (value) => {
+          settings.googleDrive.mappings[index].parserId = value;
           await this.callbacks.saveSettings(settings);
-        }),
-      );
+        });
+      });
+
+      new Setting(mappingContainer)
+        .addToggle((toggle) =>
+          toggle.setValue(mapping.enabled).onChange(async (value) => {
+            settings.googleDrive.mappings[index].enabled = value;
+            await this.callbacks.saveSettings(settings);
+          }),
+        )
+        .addButton((btn) =>
+          btn
+            .setButtonText('Remove')
+            .setWarning()
+            .onClick(async () => {
+              settings.googleDrive.mappings.splice(index, 1);
+              await this.callbacks.saveSettings(settings);
+              this.display();
+            }),
+        );
+    });
+
+    new Setting(containerEl).addButton((btn) =>
+      btn.setButtonText('Add mapping').onClick(async () => {
+        settings.googleDrive.mappings.push({
+          folderId: '',
+          folderName: '',
+          outputDir: '',
+          enabled: false,
+          parserId: ParserId.Viwoods,
+        });
+        await this.callbacks.saveSettings(settings);
+        this.display();
+      }),
+    );
   }
 
   private displayOcrSettings(containerEl: HTMLElement): void {
@@ -256,7 +334,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
       saveButton.toggleClass('is-disabled', !canSave);
     };
 
-    // 1. OCR Provider
     new Setting(containerEl)
       .setName('OCR Provider')
       .setDesc('Engine for text recognition')
@@ -272,7 +349,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
           });
       });
 
-    // 2. Google Vision API Key & Language Hints (Google Vision only)
     if (this.pendingProvider === 'google-vision') {
       new Setting(containerEl)
         .setName('Google Vision API Key')
@@ -312,7 +388,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
       }
     }
 
-    // 3. Confidence Threshold
     new Setting(containerEl)
       .setName('Confidence Threshold')
       .setDesc('Minimum OCR confidence (0-100)')
@@ -332,7 +407,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
           });
       });
 
-    // 4. Save Button
     new Setting(containerEl).addButton((btn) => {
       saveButton = btn.buttonEl;
       btn
