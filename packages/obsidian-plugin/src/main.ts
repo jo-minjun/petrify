@@ -67,6 +67,7 @@ export default class PetrifyPlugin extends Plugin {
   private isSyncing = false;
   private ribbonIconEl: HTMLElement | null = null;
   private googleDriveAuth: GoogleDriveAuth | null = null;
+  private readonly sourceOutputMap = new Map<string, string>();
   private readonly watcherLog = createLogger('Watcher');
   private readonly convertLog = createLogger('Convert');
   private readonly syncLog = createLogger('Sync');
@@ -317,7 +318,7 @@ export default class PetrifyPlugin extends Plugin {
     outputDir: string,
     baseName: string,
   ): Promise<string> {
-    return saveResult(
+    const outputPath = await saveResult(
       result,
       outputDir,
       baseName,
@@ -325,6 +326,10 @@ export default class PetrifyPlugin extends Plugin {
       this.fsAdapter,
       this.metadataAdapter,
     );
+    if (result.metadata.source) {
+      this.sourceOutputMap.set(result.metadata.source, outputPath);
+    }
+    return outputPath;
   }
 
   private async handleDeletedSource(outputPath: string): Promise<void> {
@@ -370,13 +375,7 @@ export default class PetrifyPlugin extends Plugin {
       return path.join(localMapping.outputDir, `${fileName}${this.generator.extension}`);
     }
 
-    const driveMapping = this.settings.googleDrive.mappings.find((m) => id.includes(m.folderId));
-    if (driveMapping) {
-      const fileName = path.basename(id, path.extname(id));
-      return path.join(driveMapping.outputDir, `${fileName}${this.generator.extension}`);
-    }
-
-    return '';
+    return this.sourceOutputMap.get(id) ?? '';
   }
 
   private getOutputPath(name: string, outputDir: string): string {

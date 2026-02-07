@@ -34,10 +34,12 @@ export class PetrifySettingsTab extends PluginSettingTab {
   private pendingOutputFormat: OutputFormat = DEFAULT_SETTINGS.outputFormat;
   private pendingAutoSync: boolean = DEFAULT_SETTINGS.autoSync;
   private hasPendingGeneralEdits = false;
+  private generalSaveButton: HTMLButtonElement | null = null;
 
   private pendingLocalWatch: LocalWatchSettings = structuredClone(DEFAULT_SETTINGS.localWatch);
   private pendingGoogleDrive: GoogleDriveSettings = structuredClone(DEFAULT_SETTINGS.googleDrive);
   private hasPendingWatchEdits = false;
+  private watchSaveButton: HTMLButtonElement | null = null;
 
   constructor(app: App, plugin: Plugin, callbacks: SettingsTabCallbacks) {
     super(app, plugin);
@@ -74,6 +76,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .setValue(this.pendingOutputFormat)
           .onChange((value) => {
             this.pendingOutputFormat = value as OutputFormat;
+            this.updateGeneralSaveButton();
           }),
       );
 
@@ -86,14 +89,12 @@ export class PetrifySettingsTab extends PluginSettingTab {
       .addToggle((toggle) =>
         toggle.setValue(this.pendingAutoSync).onChange((value) => {
           this.pendingAutoSync = value;
+          this.updateGeneralSaveButton();
         }),
       );
 
-    const hasChanges =
-      this.pendingOutputFormat !== settings.outputFormat ||
-      this.pendingAutoSync !== settings.autoSync;
-
     new Setting(containerEl).addButton((btn) => {
+      this.generalSaveButton = btn.buttonEl;
       btn
         .setButtonText('Save')
         .setCta()
@@ -104,10 +105,19 @@ export class PetrifySettingsTab extends PluginSettingTab {
           this.hasPendingGeneralEdits = false;
           this.display();
         });
-
-      btn.buttonEl.disabled = !hasChanges;
-      btn.buttonEl.toggleClass('is-disabled', !hasChanges);
     });
+
+    this.updateGeneralSaveButton();
+  }
+
+  private updateGeneralSaveButton(): void {
+    if (!this.generalSaveButton) return;
+    const settings = this.callbacks.getSettings();
+    const hasChanges =
+      this.pendingOutputFormat !== settings.outputFormat ||
+      this.pendingAutoSync !== settings.autoSync;
+    this.generalSaveButton.disabled = !hasChanges;
+    this.generalSaveButton.toggleClass('is-disabled', !hasChanges);
   }
 
   private displayWatchSourcesSettings(containerEl: HTMLElement): void {
@@ -163,6 +173,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .addToggle((toggle) =>
           toggle.setValue(mapping.enabled).onChange((value) => {
             this.pendingLocalWatch.mappings[index].enabled = value;
+            this.updateWatchSaveButton();
           }),
         )
         .addButton((btn) =>
@@ -181,6 +192,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .setValue(mapping.watchDir)
           .onChange((value) => {
             this.pendingLocalWatch.mappings[index].watchDir = value;
+            this.updateWatchSaveButton();
           }),
       );
 
@@ -190,6 +202,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .setValue(mapping.outputDir)
           .onChange((value) => {
             this.pendingLocalWatch.mappings[index].outputDir = value;
+            this.updateWatchSaveButton();
           }),
       );
 
@@ -200,6 +213,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         dropdown.setValue(mapping.parserId || ParserId.Viwoods);
         dropdown.onChange((value) => {
           this.pendingLocalWatch.mappings[index].parserId = value;
+          this.updateWatchSaveButton();
         });
       });
     });
@@ -234,6 +248,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .setValue(this.pendingGoogleDrive.clientId)
           .onChange((value) => {
             this.pendingGoogleDrive.clientId = value;
+            this.updateWatchSaveButton();
           }),
       );
 
@@ -247,6 +262,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .setValue(this.pendingGoogleDrive.clientSecret)
           .onChange((value) => {
             this.pendingGoogleDrive.clientSecret = value;
+            this.updateWatchSaveButton();
           });
       });
 
@@ -276,6 +292,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
             if (valid) {
               this.pendingGoogleDrive.pollIntervalMinutes = num;
             }
+            this.updateWatchSaveButton();
           });
         });
     }
@@ -305,6 +322,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .addToggle((toggle) =>
           toggle.setValue(mapping.enabled).onChange((value) => {
             this.pendingGoogleDrive.mappings[index].enabled = value;
+            this.updateWatchSaveButton();
           }),
         )
         .addButton((btn) =>
@@ -341,6 +359,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .setValue(mapping.outputDir)
           .onChange((value) => {
             this.pendingGoogleDrive.mappings[index].outputDir = value;
+            this.updateWatchSaveButton();
           }),
       );
 
@@ -351,6 +370,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         dropdown.setValue(mapping.parserId || ParserId.Viwoods);
         dropdown.onChange((value) => {
           this.pendingGoogleDrive.mappings[index].parserId = value;
+          this.updateWatchSaveButton();
         });
       });
     });
@@ -359,19 +379,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
   private displayWatchSourcesSaveButton(containerEl: HTMLElement): void {
     const settings = this.callbacks.getSettings();
 
-    const hasChanges =
-      JSON.stringify({
-        localWatch: this.pendingLocalWatch,
-        googleDrive: this.pendingGoogleDrive,
-      }) !==
-      JSON.stringify({
-        localWatch: settings.localWatch,
-        googleDrive: settings.googleDrive,
-      });
-
-    const isValid = this.isWatchSourcesValid();
-
     new Setting(containerEl).addButton((btn) => {
+      this.watchSaveButton = btn.buttonEl;
       btn
         .setButtonText('Save')
         .setCta()
@@ -382,11 +391,27 @@ export class PetrifySettingsTab extends PluginSettingTab {
           this.hasPendingWatchEdits = false;
           this.display();
         });
-
-      const canSave = hasChanges && isValid;
-      btn.buttonEl.disabled = !canSave;
-      btn.buttonEl.toggleClass('is-disabled', !canSave);
     });
+
+    this.updateWatchSaveButton();
+  }
+
+  private updateWatchSaveButton(): void {
+    if (!this.watchSaveButton) return;
+    const settings = this.callbacks.getSettings();
+    const hasChanges =
+      JSON.stringify({
+        localWatch: this.pendingLocalWatch,
+        googleDrive: this.pendingGoogleDrive,
+      }) !==
+      JSON.stringify({
+        localWatch: settings.localWatch,
+        googleDrive: settings.googleDrive,
+      });
+    const isValid = this.isWatchSourcesValid();
+    const canSave = hasChanges && isValid;
+    this.watchSaveButton.disabled = !canSave;
+    this.watchSaveButton.toggleClass('is-disabled', !canSave);
   }
 
   private isWatchSourcesValid(): boolean {
