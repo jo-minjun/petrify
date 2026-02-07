@@ -4,7 +4,9 @@ Convert handwritten note app files to Obsidian Excalidraw.
 
 ## Introduction
 
-Petrify converts handwriting note files into Excalidraw or Markdown format within Obsidian. It watches external folders for changes and automatically converts new or updated files into your vault.
+Petrify converts handwriting note files into [Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) or Markdown format within Obsidian. It watches external folders for changes and automatically converts new or updated files into your vault.
+
+> [Viwoods](https://www.viwoods.com/) is a handwriting note app for e-ink tablets (e.g. Viwoods AiPaper). Petrify reads the `.note` format exported by this app.
 
 **Currently supported:**
 - Parser: Viwoods (.note)
@@ -16,6 +18,26 @@ Petrify converts handwriting note files into Excalidraw or Markdown format withi
 - Additional parsers for other handwriting note apps
 
 ## Obsidian Plugin
+
+### Installation
+
+This plugin is not yet published in the Obsidian Community Plugin directory. To use it, build from source:
+
+```bash
+git clone https://github.com/jo-minjun/petrify.git
+cd petrify
+pnpm install
+pnpm build
+```
+
+Then copy the build output to your vault:
+
+```bash
+cp packages/obsidian-plugin/main.js <vault>/.obsidian/plugins/petrify/
+cp packages/obsidian-plugin/manifest.json <vault>/.obsidian/plugins/petrify/
+```
+
+Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
 
 ### Features
 
@@ -115,6 +137,7 @@ Each user needs their own Google Cloud OAuth credentials:
 ### Requirements
 
 - Obsidian 1.11.0+
+- [Excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin) (when using Excalidraw output format)
 - Desktop only (requires Node.js filesystem access)
 
 ## License
