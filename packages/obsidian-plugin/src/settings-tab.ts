@@ -96,8 +96,44 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     if (!settings.localWatch.enabled) return;
 
+    new Setting(containerEl).addButton((btn) =>
+      btn.setButtonText('Add mapping').onClick(async () => {
+        settings.localWatch.mappings.push({
+          watchDir: '',
+          outputDir: '',
+          enabled: false,
+          parserId: ParserId.Viwoods,
+        });
+        await this.callbacks.saveSettings(settings);
+        this.display();
+      }),
+    );
+
     settings.localWatch.mappings.forEach((mapping, index) => {
       const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
+      mappingContainer.style.border = '1px solid var(--background-modifier-border)';
+      mappingContainer.style.borderRadius = '8px';
+      mappingContainer.style.padding = '8px 12px';
+      mappingContainer.style.marginBottom = '12px';
+
+      new Setting(mappingContainer)
+        .setName(`Mapping #${index + 1}`)
+        .addToggle((toggle) =>
+          toggle.setValue(mapping.enabled).onChange(async (value) => {
+            settings.localWatch.mappings[index].enabled = value;
+            await this.callbacks.saveSettings(settings);
+          }),
+        )
+        .addButton((btn) =>
+          btn
+            .setButtonText('Remove')
+            .setWarning()
+            .onClick(async () => {
+              settings.localWatch.mappings.splice(index, 1);
+              await this.callbacks.saveSettings(settings);
+              this.display();
+            }),
+        );
 
       new Setting(mappingContainer).setName('Watch directory').addText((text) =>
         text
@@ -129,42 +165,11 @@ export class PetrifySettingsTab extends PluginSettingTab {
           await this.callbacks.saveSettings(settings);
         });
       });
-
-      new Setting(mappingContainer)
-        .addToggle((toggle) =>
-          toggle.setValue(mapping.enabled).onChange(async (value) => {
-            settings.localWatch.mappings[index].enabled = value;
-            await this.callbacks.saveSettings(settings);
-          }),
-        )
-        .addButton((btn) =>
-          btn
-            .setButtonText('Remove')
-            .setWarning()
-            .onClick(async () => {
-              settings.localWatch.mappings.splice(index, 1);
-              await this.callbacks.saveSettings(settings);
-              this.display();
-            }),
-        );
     });
-
-    new Setting(containerEl).addButton((btn) =>
-      btn.setButtonText('Add mapping').onClick(async () => {
-        settings.localWatch.mappings.push({
-          watchDir: '',
-          outputDir: '',
-          enabled: false,
-          parserId: ParserId.Viwoods,
-        });
-        await this.callbacks.saveSettings(settings);
-        this.display();
-      }),
-    );
   }
 
   private displayGoogleDriveSection(containerEl: HTMLElement, settings: PetrifySettings): void {
-    new Setting(containerEl).setName('Google Drive').addToggle((toggle) =>
+    new Setting(containerEl).setName('Google Drive API').addToggle((toggle) =>
       toggle.setValue(settings.googleDrive.enabled).onChange(async (value) => {
         settings.googleDrive.enabled = value;
         await this.callbacks.saveSettings(settings);
@@ -225,7 +230,9 @@ export class PetrifySettingsTab extends PluginSettingTab {
             .setValue(String(settings.googleDrive.pollIntervalMinutes))
             .onChange(async (value) => {
               const num = Number(value);
-              if (!Number.isNaN(num) && num >= 1 && num <= 60) {
+              const valid = !Number.isNaN(num) && num >= 1 && num <= 60;
+              text.inputEl.style.borderColor = valid ? '' : 'var(--text-error)';
+              if (valid) {
                 settings.googleDrive.pollIntervalMinutes = num;
                 await this.callbacks.saveDataOnly(settings);
               }
@@ -233,8 +240,45 @@ export class PetrifySettingsTab extends PluginSettingTab {
         });
     }
 
+    new Setting(containerEl).addButton((btn) =>
+      btn.setButtonText('Add mapping').onClick(async () => {
+        settings.googleDrive.mappings.push({
+          folderId: '',
+          folderName: '',
+          outputDir: '',
+          enabled: false,
+          parserId: ParserId.Viwoods,
+        });
+        await this.callbacks.saveSettings(settings);
+        this.display();
+      }),
+    );
+
     settings.googleDrive.mappings.forEach((mapping, index) => {
       const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
+      mappingContainer.style.border = '1px solid var(--background-modifier-border)';
+      mappingContainer.style.borderRadius = '8px';
+      mappingContainer.style.padding = '8px 12px';
+      mappingContainer.style.marginBottom = '12px';
+
+      new Setting(mappingContainer)
+        .setName(`Mapping #${index + 1}`)
+        .addToggle((toggle) =>
+          toggle.setValue(mapping.enabled).onChange(async (value) => {
+            settings.googleDrive.mappings[index].enabled = value;
+            await this.callbacks.saveSettings(settings);
+          }),
+        )
+        .addButton((btn) =>
+          btn
+            .setButtonText('Remove')
+            .setWarning()
+            .onClick(async () => {
+              settings.googleDrive.mappings.splice(index, 1);
+              await this.callbacks.saveSettings(settings);
+              this.display();
+            }),
+        );
 
       new Setting(mappingContainer)
         .setName('Folder')
@@ -275,39 +319,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           await this.callbacks.saveSettings(settings);
         });
       });
-
-      new Setting(mappingContainer)
-        .addToggle((toggle) =>
-          toggle.setValue(mapping.enabled).onChange(async (value) => {
-            settings.googleDrive.mappings[index].enabled = value;
-            await this.callbacks.saveSettings(settings);
-          }),
-        )
-        .addButton((btn) =>
-          btn
-            .setButtonText('Remove')
-            .setWarning()
-            .onClick(async () => {
-              settings.googleDrive.mappings.splice(index, 1);
-              await this.callbacks.saveSettings(settings);
-              this.display();
-            }),
-        );
     });
-
-    new Setting(containerEl).addButton((btn) =>
-      btn.setButtonText('Add mapping').onClick(async () => {
-        settings.googleDrive.mappings.push({
-          folderId: '',
-          folderName: '',
-          outputDir: '',
-          enabled: false,
-          parserId: ParserId.Viwoods,
-        });
-        await this.callbacks.saveSettings(settings);
-        this.display();
-      }),
-    );
   }
 
   private displayOcrSettings(containerEl: HTMLElement): void {
@@ -401,7 +413,9 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .setValue(String(this.pendingConfidenceThreshold))
           .onChange((value) => {
             const num = Number(value);
-            if (!Number.isNaN(num) && num >= 0 && num <= 100) {
+            const valid = !Number.isNaN(num) && num >= 0 && num <= 100;
+            text.inputEl.style.borderColor = valid ? '' : 'var(--text-error)';
+            if (valid) {
               this.pendingConfidenceThreshold = num;
             }
           });

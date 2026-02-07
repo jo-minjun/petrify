@@ -1,16 +1,9 @@
 {
-  "outputFormat": "markdown",
+  "outputFormat": "excalidraw",
   "autoSync": false,
   "localWatch": {
-    "enabled": true,
-    "mappings": [
-      {
-        "watchDir": "/Users/minjun.jo/Library/CloudStorage/GoogleDrive-alswns9288@gmail.com/내 드라이브/Viwoods-Note/Aipaper Mini/S5AA4905M00327/Paper",
-        "outputDir": "/test",
-        "enabled": true,
-        "parserId": "viwoods"
-      }
-    ]
+    "enabled": false,
+    "mappings": []
   },
   "googleDrive": {
     "enabled": false,
@@ -22,7 +15,7 @@
   },
   "ocr": {
     "provider": "tesseract",
-    "confidenceThreshold": 1,
+    "confidenceThreshold": 50,
     "googleVision": {
       "apiKey": "",
       "languageHints": ["ko", "en"]
