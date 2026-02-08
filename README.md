@@ -159,6 +159,23 @@ Each user needs their own Google Cloud OAuth credentials:
 - Direct binary download via API — no local file sync required
 - Automatic session restore via OAuth refresh token
 
+### Network usage
+
+By default, this plugin does not make any network requests. Network features (Google Drive, Cloud Vision) are only active when explicitly enabled in settings.
+
+- **Tesseract.js (OCR)**: On first use with the Tesseract provider, language data files (~15 MB per language) are downloaded from the [petrify GitHub releases](https://github.com/jo-minjun/petrify/releases) and cached locally. Once downloaded, all OCR processing happens entirely on your device. No image data is sent to external servers.
+- **Google Cloud Vision API**: When selected as OCR provider, images are sent to Google servers for text recognition. Requires a user-provided API key.
+- **Google Drive API**: When Google Drive integration is enabled, the plugin communicates with Google servers to list and download files. Requires OAuth2 authentication.
+
+### Data access
+
+This plugin reads files from directories **outside your Obsidian vault**. Specifically:
+
+- **Local file watch**: Reads handwriting files from external directories you configure in settings. Only the configured watch directories are accessed.
+- **Google Drive**: Downloads files from your Google Drive folders via API.
+
+All configured directory paths and OAuth credentials are stored in the plugin's local data file within your vault.
+
 ### Requirements
 
 - Obsidian 1.11.0+

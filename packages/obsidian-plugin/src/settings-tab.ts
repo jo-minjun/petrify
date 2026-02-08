@@ -132,7 +132,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
   private displayLocalWatchSection(containerEl: HTMLElement): void {
     new Setting(containerEl)
-      .setName('Local File Watch')
+      .setName('Local file watch')
       .setDesc('Watch local directories for file changes')
       .addToggle((toggle) =>
         toggle.setValue(this.pendingLocalWatch.enabled).onChange((value) => {
@@ -257,7 +257,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     new Setting(driveContainer)
       .setName('Client ID')
-      .setDesc('OAuth2 Client ID from Google Cloud Console')
+      .setDesc('OAuth2 client ID from Google Cloud Console')
       .addText((text) =>
         text
           .setPlaceholder('Enter Client ID')
@@ -269,8 +269,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
       );
 
     new Setting(driveContainer)
-      .setName('Client Secret')
-      .setDesc('OAuth2 Client Secret from Google Cloud Console')
+      .setName('Client secret')
+      .setDesc('OAuth2 client secret from Google Cloud Console')
       .addText((text) => {
         text.inputEl.type = 'password';
         text
@@ -283,9 +283,14 @@ export class PetrifySettingsTab extends PluginSettingTab {
       });
 
     const authSetting = new Setting(driveContainer).setName('Authentication');
-    this.callbacks.hasGoogleDriveTokens().then((hasTokens) => {
-      authSetting.setDesc(hasTokens ? 'Authenticated' : 'Not authenticated');
-    });
+    void this.callbacks
+      .hasGoogleDriveTokens()
+      .then((hasTokens) => {
+        authSetting.setDesc(hasTokens ? 'Authenticated' : 'Not authenticated');
+      })
+      .catch(() => {
+        authSetting.setDesc('Not authenticated');
+      });
     authSetting.addButton((btn) =>
       btn.setButtonText('Authenticate').onClick(() => {
         const { clientId, clientSecret } = this.pendingGoogleDrive;
@@ -310,7 +315,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
     );
 
     new Setting(driveContainer)
-      .setName('Auto Polling')
+      .setName('Auto polling')
       .setDesc('Automatically poll for changes in Google Drive')
       .addToggle((toggle) =>
         toggle.setValue(this.pendingGoogleDrive.autoPolling).onChange((value) => {
@@ -321,7 +326,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     if (this.pendingGoogleDrive.autoPolling) {
       new Setting(driveContainer)
-        .setName('Poll Interval')
+        .setName('Poll interval')
         .setDesc('Minutes between polling (1-60)')
         .addText((text) => {
           text.inputEl.type = 'number';
@@ -467,7 +472,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
   }
 
   private displayOcrSettings(containerEl: HTMLElement): void {
-    containerEl.createEl('h2', { text: 'OCR Settings' });
+    containerEl.createEl('h2', { text: 'OCR settings' });
 
     const settings = this.callbacks.getSettings();
 
@@ -500,7 +505,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
     };
 
     new Setting(containerEl)
-      .setName('OCR Provider')
+      .setName('OCR provider')
       .setDesc('Engine for text recognition')
       .addDropdown((dropdown) => {
         dropdown
@@ -516,7 +521,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     if (this.pendingProvider === 'google-vision') {
       new Setting(containerEl)
-        .setName('Google Vision API Key')
+        .setName('Google Vision API key')
         .setDesc('Google Cloud Vision API key')
         .addText((text) => {
           text.inputEl.type = 'password';
@@ -530,7 +535,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         });
 
       const languageSetting = new Setting(containerEl)
-        .setName('Language Hints')
+        .setName('Language hints')
         .setDesc('Preferred languages for recognition');
 
       const unselected = LANGUAGE_HINT_OPTIONS.filter(
@@ -574,7 +579,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
     }
 
     new Setting(containerEl)
-      .setName('Confidence Threshold')
+      .setName('Confidence threshold')
       .setDesc('Minimum OCR confidence (0-100)')
       .addText((text) => {
         text.inputEl.type = 'number';

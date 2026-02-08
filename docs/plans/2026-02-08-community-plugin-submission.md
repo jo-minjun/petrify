@@ -138,15 +138,15 @@ References:
 - [x] A3: description 마침표 추가
 - [x] A4: console.log → console.debug
 - [x] A5: 인라인 스타일 → styles.css
-- [ ] B1: 네트워크 사용 공개
-- [ ] B2: vault 외부 파일 접근 공개
+- [x] B1: 네트워크 사용 공개
+- [x] B2: vault 외부 파일 접근 공개
 - [x] B3: authorUrl 추가
 - [x] B5: release.yml에 styles.css 추가
-- [ ] B6: minAppVersion 검증
-- [ ] C1: version 동기화
-- [ ] C2: data.json gitignore 확인
-- [ ] C3: sentence case 검증
+- [x] B6: minAppVersion 검증
+- [x] C1: version 동기화
+- [x] C2: data.json gitignore 확인
+- [x] C3: sentence case 검증
 - [ ] C4: 스크린샷 추가
-- [ ] C5: Promise 처리 검증
+- [x] C5: Promise 처리 검증
 - [ ] 새 릴리스 생성
 - [ ] community-plugins.json PR 제출
