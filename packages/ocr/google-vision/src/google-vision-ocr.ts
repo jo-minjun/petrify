@@ -9,9 +9,15 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+export type HttpPostFn = (
+  url: string,
+  options: { body: string; headers: Record<string, string> },
+) => Promise<{ status: number; body: string }>;
+
 export interface GoogleVisionOcrConfig {
   readonly apiKey: string;
   readonly languageHints?: string[];
+  readonly httpPost?: HttpPostFn;
 }
 
 interface VisionVertex {
@@ -54,11 +60,18 @@ interface VisionResponse {
 
 const VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate';
 
+const defaultHttpPost: HttpPostFn = async (url, { body, headers }) => {
+  const res = await fetch(url, { method: 'POST', headers, body });
+  return { status: res.status, body: await res.text() };
+};
+
 export class GoogleVisionOcr implements OcrPort {
   private readonly config: GoogleVisionOcrConfig;
+  private readonly httpPost: HttpPostFn;
 
   constructor(config: GoogleVisionOcrConfig) {
     this.config = config;
+    this.httpPost = config.httpPost ?? defaultHttpPost;
   }
 
   async recognize(image: ArrayBuffer, options?: OcrOptions): Promise<OcrResult> {
@@ -83,12 +96,11 @@ export class GoogleVisionOcr implements OcrPort {
       ],
     };
 
-    let res: Response;
+    let res: { status: number; body: string };
     try {
-      res = await fetch(`${VISION_API_URL}?key=${this.config.apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      res = await this.httpPost(`${VISION_API_URL}?key=${this.config.apiKey}`, {
         body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
       throw new OcrRecognitionError(
@@ -97,18 +109,16 @@ export class GoogleVisionOcr implements OcrPort {
     }
 
     if (res.status === 401 || res.status === 403) {
-      const errorBody = await res.text();
       throw new OcrInitializationError(
-        `Vision API authentication failed (${res.status}): ${errorBody}`,
+        `Vision API authentication failed (${res.status}): ${res.body}`,
       );
     }
 
-    if (!res.ok) {
-      const errorBody = await res.text();
-      throw new OcrRecognitionError(`Vision API error (${res.status}): ${errorBody}`);
+    if (res.status < 200 || res.status >= 300) {
+      throw new OcrRecognitionError(`Vision API error (${res.status}): ${res.body}`);
     }
 
-    return (await res.json()) as VisionResponse;
+    return JSON.parse(res.body) as VisionResponse;
   }
 
   private mapResponse(response: VisionResponse, confidenceThreshold?: number): OcrResult {

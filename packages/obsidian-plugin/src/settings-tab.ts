@@ -1,5 +1,12 @@
 import type { GoogleDriveClient } from '@petrify/watcher-google-drive';
-import { type App, Notice, type Plugin, PluginSettingTab, Setting } from 'obsidian';
+import {
+  type App,
+  type DataAdapter,
+  Notice,
+  type Plugin,
+  PluginSettingTab,
+  Setting,
+} from 'obsidian';
 import { AuthCodeModal } from './auth-code-modal.js';
 import { FolderBrowseModal } from './folder-browse-modal.js';
 import { showNativeFolderDialog } from './native-folder-dialog.js';
@@ -68,7 +75,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
   }
 
   private displayGeneralSettings(containerEl: HTMLElement): void {
-    new Setting(containerEl).setName('General').setHeading();
+    new Setting(containerEl).setName('Output').setHeading();
 
     const settings = this.callbacks.getSettings();
 
@@ -216,8 +223,9 @@ export class PetrifySettingsTab extends PluginSettingTab {
         })
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(async () => {
-            // biome-ignore lint/suspicious/noExplicitAny: FileSystemAdapter.basePath exists at runtime but is not included in Obsidian type declarations
-            const vaultPath = (this.app.vault.adapter as any).basePath as string;
+            const vaultPath = (
+              this.app.vault.adapter as DataAdapter & { getBasePath(): string }
+            ).getBasePath();
             const selected = await showNativeFolderDialog(vaultPath);
             if (!selected) return;
             const relative = selected.startsWith(vaultPath)
@@ -263,7 +271,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
       .setDesc('OAuth2 client ID from Google Cloud Console')
       .addText((text) =>
         text
-          .setPlaceholder('Enter Client ID')
+          .setPlaceholder('Enter client ID')
           .setValue(this.pendingGoogleDrive.clientId)
           .onChange((value) => {
             this.pendingGoogleDrive.clientId = value;
@@ -277,7 +285,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
       .addText((text) => {
         text.inputEl.type = 'password';
         text
-          .setPlaceholder('Enter Client Secret')
+          .setPlaceholder('Enter client secret')
           .setValue(this.pendingClientSecret)
           .onChange((value) => {
             this.pendingClientSecret = value;
@@ -299,21 +307,23 @@ export class PetrifySettingsTab extends PluginSettingTab {
         const { clientId } = this.pendingGoogleDrive;
         const clientSecret = this.pendingClientSecret;
         if (!clientId || !clientSecret) {
-          new Notice('Enter Client ID and Client Secret first');
+          new Notice('Enter client ID and client secret first');
           return;
         }
         const authUrl = this.callbacks.getGoogleDriveAuthUrl(clientId, clientSecret);
         window.open(authUrl);
-        new AuthCodeModal(this.app, async (code) => {
-          try {
-            await this.callbacks.handleGoogleDriveAuthCode(clientId, clientSecret, code);
-            new Notice('Google Drive authenticated successfully');
-            this.display();
-          } catch (e) {
-            new Notice(
-              `Authentication failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
-            );
-          }
+        new AuthCodeModal(this.app, (code) => {
+          this.callbacks
+            .handleGoogleDriveAuthCode(clientId, clientSecret, code)
+            .then(() => {
+              new Notice('Google Drive authenticated successfully');
+              this.display();
+            })
+            .catch((e: unknown) => {
+              new Notice(
+                `Authentication failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+              );
+            });
         }).open();
       }),
     );
@@ -391,7 +401,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
             const { clientId } = this.pendingGoogleDrive;
             const clientSecret = this.pendingClientSecret;
             if (!clientId || !clientSecret) {
-              new Notice('Enter Client ID and Client Secret first');
+              new Notice('Enter client ID and client secret first');
               return;
             }
             const client = await this.callbacks.getGoogleDriveClient(clientId, clientSecret);
@@ -518,7 +528,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
       .setDesc('Engine for text recognition')
       .addDropdown((dropdown) => {
         dropdown
-          .addOption('tesseract', 'Tesseract (Local)')
+          .addOption('tesseract', 'Tesseract (local)')
           .addOption('google-vision', 'Google Vision API')
           .setValue(this.pendingProvider)
           .onChange((value) => {

@@ -13,7 +13,7 @@ export class AuthCodeModal extends Modal {
   onOpen(): void {
     const { contentEl } = this;
 
-    contentEl.createEl('h3', { text: 'Google Drive Authentication' });
+    contentEl.createEl('h3', { text: 'Google Drive authentication' });
     contentEl.createEl('p', {
       text: 'Sign in with Google in the browser. After approval, the page will redirect to localhost — this is expected.',
     });
@@ -21,7 +21,7 @@ export class AuthCodeModal extends Modal {
       text: 'Copy the entire URL from the browser address bar and paste it below.',
     });
 
-    new Setting(contentEl).setName('Authorization Code').addText((text) =>
+    new Setting(contentEl).setName('Authorization code').addText((text) =>
       text.setPlaceholder('Paste URL or code here').onChange((value) => {
         this.input = value;
       }),

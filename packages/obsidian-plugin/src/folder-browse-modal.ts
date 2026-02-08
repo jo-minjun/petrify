@@ -33,7 +33,7 @@ export class FolderBrowseModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl('h2', { text: 'Select Google Drive Folder' });
+    contentEl.createEl('h2', { text: 'Select Google Drive folder' });
 
     const breadcrumbContainer = contentEl.createDiv({ cls: 'petrify-breadcrumb' });
 
@@ -53,7 +53,7 @@ export class FolderBrowseModal extends Modal {
           e.preventDefault();
           this.breadcrumb = this.breadcrumb.slice(0, i + 1);
           this.currentFolderId = crumb.id;
-          this.renderFolderList();
+          void this.renderFolderList();
         });
       }
     }
@@ -96,7 +96,7 @@ export class FolderBrowseModal extends Modal {
           e.preventDefault();
           this.breadcrumb.push({ id: folder.id, name: folder.name });
           this.currentFolderId = folder.id;
-          this.renderFolderList();
+          void this.renderFolderList();
         });
 
         const selectBtn = itemDiv.createEl('button', { text: 'Select' });

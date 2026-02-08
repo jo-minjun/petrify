@@ -2,7 +2,9 @@ import type { FileChangeEvent, FileDeleteEvent } from '@petrify/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChokidarWatcher } from '../src/chokidar-watcher.js';
 
-type EventHandler = (...args: unknown[]) => Promise<void> | void;
+type EventHandler = (...args: unknown[]) => void;
+
+const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 const mockWatcher = {
   on: vi.fn().mockReturnThis(),
@@ -24,7 +26,7 @@ describe('ChokidarWatcher', () => {
   function emit(event: string, ...args: unknown[]) {
     const handler = handlers.get(event);
     if (!handler) throw new Error(`No handler for event: ${event}`);
-    return handler(...args);
+    handler(...args);
   }
 
   beforeEach(() => {
@@ -64,7 +66,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 });
+    await flushPromises();
 
     expect(events).toHaveLength(1);
     expect(events[0].id).toBe('/test/dir/note.note');
@@ -80,7 +83,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('change', '/test/dir/note.note', { mtimeMs: 1700000001000 });
+    emit('change', '/test/dir/note.note', { mtimeMs: 1700000001000 });
+    await flushPromises();
 
     expect(events).toHaveLength(1);
     expect(events[0].id).toBe('/test/dir/note.note');
@@ -94,7 +98,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('unlink', '/test/dir/old.note');
+    emit('unlink', '/test/dir/old.note');
+    await flushPromises();
 
     expect(deleteEvents).toHaveLength(1);
     expect(deleteEvents[0].id).toBe('/test/dir/old.note');
@@ -113,7 +118,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('add', '/test/dir/test.note', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/test.note', { mtimeMs: 1700000000000 });
+    await flushPromises();
 
     const data = await events[0].readData();
     expect(readFile).toHaveBeenCalledWith('/test/dir/test.note');
@@ -129,7 +135,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('add', '/test/dir/note.note', undefined);
+    emit('add', '/test/dir/note.note', undefined);
+    await flushPromises();
 
     expect(events[0].mtime).toBe(9999999999999);
 
@@ -143,7 +150,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('add', '/test/dir/file.NOTE', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/file.NOTE', { mtimeMs: 1700000000000 });
+    await flushPromises();
 
     expect(events[0].extension).toBe('.note');
   });
@@ -160,7 +168,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 });
+    await flushPromises();
 
     expect(errors).toHaveLength(1);
     expect(errors[0]).toBe(handlerError);
@@ -178,7 +187,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('unlink', '/test/dir/note.note');
+    emit('unlink', '/test/dir/note.note');
+    await flushPromises();
 
     expect(errors).toHaveLength(1);
     expect(errors[0]).toBe(handlerError);
@@ -221,10 +231,8 @@ describe('ChokidarWatcher', () => {
   it('does not crash when events fire with no handlers registered', async () => {
     await watcher.start();
 
-    await expect(
-      emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 }),
-    ).resolves.toBeUndefined();
-    await expect(emit('unlink', '/test/dir/note.note')).resolves.toBeUndefined();
+    expect(() => emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 })).not.toThrow();
+    expect(() => emit('unlink', '/test/dir/note.note')).not.toThrow();
   });
 
   it('is safe to call stop before start', async () => {
@@ -238,7 +246,8 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    await emit('add', '/test/dir/Makefile', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/Makefile', { mtimeMs: 1700000000000 });
+    await flushPromises();
 
     expect(events).toHaveLength(1);
     expect(events[0].name).toBe('Makefile');

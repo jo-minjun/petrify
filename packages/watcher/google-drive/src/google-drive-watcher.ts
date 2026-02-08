@@ -56,11 +56,12 @@ export class GoogleDriveWatcher implements WatcherPort {
     }, this.pollIntervalMs);
   }
 
-  async stop(): Promise<void> {
+  stop(): Promise<void> {
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
+    return Promise.resolve();
   }
 
   private async pollOnce(): Promise<void> {

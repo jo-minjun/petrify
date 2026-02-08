@@ -82,7 +82,7 @@ export class DropHandler {
   }
 
   private resolveDropFolder(target: HTMLElement): string {
-    const navFolder = target.closest('[data-path]') as HTMLElement | null;
+    const navFolder = target.closest('[data-path]');
     if (navFolder) {
       const dataPath = navFolder.getAttribute('data-path');
       if (dataPath !== null) return dataPath;

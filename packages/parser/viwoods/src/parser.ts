@@ -48,7 +48,8 @@ export class NoteParser {
       const content = await file.async('string');
       return JSON.parse(content) as NoteFileInfo;
     } catch (e) {
-      throw new ParseError(`Failed to parse NoteFileInfo: ${e}`);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new ParseError(`Failed to parse NoteFileInfo: ${message}`);
     }
   }
 
@@ -68,7 +69,8 @@ export class NoteParser {
       return entries.sort((a, b) => a.order - b.order);
     } catch (e) {
       if (e instanceof ParseError) throw e;
-      throw new ParseError(`Failed to parse PageListFileInfo: ${e}`);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new ParseError(`Failed to parse PageListFileInfo: ${message}`);
     }
   }
 

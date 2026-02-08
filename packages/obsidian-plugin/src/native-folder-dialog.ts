@@ -1,8 +1,16 @@
-// biome-ignore lint/suspicious/noExplicitAny: Electron remote module requires dynamic require at runtime
-function getElectronRemote(): any {
+interface ElectronRemote {
+  dialog: {
+    showOpenDialog(options: {
+      properties: string[];
+      defaultPath?: string;
+    }): Promise<{ canceled: boolean; filePaths: string[] }>;
+  };
+}
+
+function getElectronRemote(): ElectronRemote | undefined {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('electron')?.remote;
+    const electronModule = require('electron');
+    return electronModule?.remote as ElectronRemote | undefined;
   } catch {
     return undefined;
   }
@@ -14,8 +22,7 @@ function getElectronRemote(): any {
  */
 export async function showNativeFolderDialog(
   defaultPath?: string,
-  // biome-ignore lint/suspicious/noExplicitAny: Parameter for injecting remote in tests
-  remote: any = getElectronRemote(),
+  remote: ElectronRemote | undefined = getElectronRemote(),
 ): Promise<string | null> {
   try {
     if (!remote?.dialog?.showOpenDialog) {

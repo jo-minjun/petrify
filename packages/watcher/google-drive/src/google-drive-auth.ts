@@ -27,8 +27,8 @@ export class GoogleDriveAuth {
       expiry_date: tokens.expiry_date,
     });
 
-    client.on('tokens', async (newTokens) => {
-      await this.tokenStore.saveTokens({
+    client.on('tokens', (newTokens) => {
+      void this.tokenStore.saveTokens({
         access_token: newTokens.access_token ?? tokens.access_token,
         refresh_token: newTokens.refresh_token ?? tokens.refresh_token,
         expiry_date: newTokens.expiry_date ?? tokens.expiry_date,
