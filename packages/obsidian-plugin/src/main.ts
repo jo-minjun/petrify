@@ -184,8 +184,9 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   onunload(): void {
-    this.assetServer?.stop();
-    void Promise.all(this.watchers.map((w) => w.stop())).then(() => this.ocr?.terminate?.());
+    void Promise.all(this.watchers.map((w) => w.stop()))
+      .then(() => this.ocr?.terminate?.())
+      .then(() => this.assetServer?.stop());
   }
 
   private async initializeOcr(): Promise<void> {
