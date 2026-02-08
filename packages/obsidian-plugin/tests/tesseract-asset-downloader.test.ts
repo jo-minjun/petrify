@@ -28,6 +28,9 @@ describe('TesseractAssetDownloader', () => {
     'tesseract-core/tesseract-core-simd-lstm.js',
     'tesseract-core/tesseract-core-simd-lstm.wasm',
     'tesseract-core/tesseract-core-simd-lstm.wasm.js',
+    'tesseract-core/tesseract-core-relaxedsimd-lstm.js',
+    'tesseract-core/tesseract-core-relaxedsimd-lstm.wasm',
+    'tesseract-core/tesseract-core-relaxedsimd-lstm.wasm.js',
   ].map((f) => `${pluginDir}/${f}`);
 
   it('모든 자산이 존재하면 다운로드를 스킵한다', async () => {
@@ -50,7 +53,7 @@ describe('TesseractAssetDownloader', () => {
     const result = await downloader.ensureAssets(pluginDir, version);
 
     expect(result).toBe('downloaded');
-    expect(http.download).toHaveBeenCalledTimes(8);
+    expect(http.download).toHaveBeenCalledTimes(11);
   });
 
   it('자산이 없으면 모든 파일을 다운로드한다', async () => {
@@ -61,7 +64,7 @@ describe('TesseractAssetDownloader', () => {
     const result = await downloader.ensureAssets(pluginDir, version);
 
     expect(result).toBe('downloaded');
-    expect(http.download).toHaveBeenCalledTimes(8);
+    expect(http.download).toHaveBeenCalledTimes(11);
     expect(http.download).toHaveBeenCalledWith(expect.stringContaining('worker.min.js'));
     expect(fs.mkdir).toHaveBeenCalledWith(`${pluginDir}/tesseract-core`);
   });
@@ -74,8 +77,8 @@ describe('TesseractAssetDownloader', () => {
     const downloader = new TesseractAssetDownloader(fs, http);
     await downloader.ensureAssets(pluginDir, version, onProgress);
 
-    expect(onProgress).toHaveBeenCalledTimes(8);
-    expect(onProgress).toHaveBeenLastCalledWith(8, 8);
+    expect(onProgress).toHaveBeenCalledTimes(11);
+    expect(onProgress).toHaveBeenLastCalledWith(11, 11);
   });
 
   it('다운로드 실패 시 에러를 throw한다', async () => {
