@@ -203,6 +203,38 @@ describe('DropHandler', () => {
     expect(saveResult).toHaveBeenCalledWith(expect.anything(), 'deep/nested/folder', 'test');
   });
 
+  it('updateService 후 새 서비스로 변환 수행', async () => {
+    const newParser = createMockParser(['.note']);
+    const newService = createMockPetrifyService([newParser]);
+    const newResult: ConversionResult = {
+      content: '# markdown content',
+      assets: new Map(),
+      metadata: { source: null, mtime: null, keep: true },
+    };
+    newService.convertDroppedFile.mockResolvedValue(newResult);
+
+    handler.updateService(
+      newService as unknown as PetrifyService,
+      new Map([['viwoods', newParser]]),
+    );
+
+    const files = createMockFileList([createMockFile('test.note')]);
+    const evt = createDragEvent({
+      target: createFileExplorerTarget('notes'),
+      files,
+    });
+
+    await handler.handleDrop(evt);
+
+    expect(mockService.convertDroppedFile).not.toHaveBeenCalled();
+    expect(newService.convertDroppedFile).toHaveBeenCalledWith(
+      expect.any(ArrayBuffer),
+      newParser,
+      'test',
+    );
+    expect(saveResult).toHaveBeenCalledWith(newResult, 'notes', 'test');
+  });
+
   it('data-path 없으면 루트 폴더("")로 저장', async () => {
     const target: Partial<HTMLElement> = {
       closest: vi.fn().mockImplementation((selector: string) => {

@@ -15,13 +15,24 @@ const log = createLogger('Drop');
 
 export class DropHandler {
   private readonly parserChoices = new Map<string, ParserPort>();
+  private petrifyService: PetrifyService;
+  private parserMap: Map<string, ParserPort>;
 
   constructor(
     private readonly app: App,
-    private readonly petrifyService: PetrifyService,
-    private readonly parserMap: Map<string, ParserPort>,
+    petrifyService: PetrifyService,
+    parserMap: Map<string, ParserPort>,
     private readonly saveResult: SaveConversionFn,
-  ) {}
+  ) {
+    this.petrifyService = petrifyService;
+    this.parserMap = parserMap;
+  }
+
+  updateService(petrifyService: PetrifyService, parserMap: Map<string, ParserPort>): void {
+    this.petrifyService = petrifyService;
+    this.parserMap = parserMap;
+    this.parserChoices.clear();
+  }
 
   handleDrop = async (evt: DragEvent): Promise<void> => {
     const target = evt.target as HTMLElement;
