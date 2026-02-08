@@ -65,6 +65,9 @@ importers:
       '@petrify/ocr-tesseract':
         specifier: workspace:*
         version: link:../ocr/tesseract
+      '@petrify/parser-supernote-x':
+        specifier: workspace:*
+        version: link:../parser/supernote-x
       '@petrify/parser-viwoods':
         specifier: workspace:*
         version: link:../parser/viwoods
