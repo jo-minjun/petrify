@@ -28,10 +28,10 @@ describe('frontmatter', () => {
       expect(result).toContain('excalidraw-plugin: parsed');
     });
 
-    it('keep이 없으면 keep 필드를 생략한다', () => {
+    it('keep이 없으면 keep: false를 출력한다', () => {
       const result = createFrontmatter({ source: '/path/to/file', mtime: 123 });
 
-      expect(result).not.toContain('keep');
+      expect(result).toContain('keep: false');
     });
   });
 
@@ -138,7 +138,7 @@ excalidraw-plugin: parsed
       expect(result).toContain('source: /path/to/file.note');
     });
 
-    it('keep: true를 제거한다', () => {
+    it('keep: true를 keep: false로 변경한다', () => {
       const content = `---
 petrify:
   source: /path/to/file.note
@@ -151,7 +151,8 @@ excalidraw-plugin: parsed
 
       const result = updateKeepInContent(content, false);
 
-      expect(result).not.toContain('keep');
+      expect(result).toContain('keep: false');
+      expect(result).not.toContain('keep: true');
       expect(result).toContain('# Content');
       expect(result).toContain('source: /path/to/file.note');
     });
@@ -195,6 +196,22 @@ content`;
       const result = updateKeepInContent(content, true);
 
       expect(result).toBe(content);
+    });
+
+    it('프론트매터 뒤 개행이 하나여도 정상 교체한다', () => {
+      const content = `---
+petrify:
+  source: /path/to/file.note
+  mtime: 1705315800000
+  keep: false
+excalidraw-plugin: parsed
+---
+# Content`;
+
+      const result = updateKeepInContent(content, true);
+
+      expect(result).toContain('keep: true');
+      expect(result).toContain('# Content');
     });
 
     it('petrify 메타데이터가 없는 frontmatter는 변경 없이 반환한다', () => {

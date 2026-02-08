@@ -273,6 +273,7 @@ describe('PetrifyService', () => {
       expect(result?.metadata).toEqual({
         source: event.id,
         mtime: event.mtime,
+        keep: false,
       });
     });
 
