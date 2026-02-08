@@ -17,7 +17,7 @@ import {
   X2_PAGE_HEIGHT,
   X2_PAGE_WIDTH,
 } from './constants.js';
-import { decodeFlate, decodeRattaRle } from './decoder.js';
+import { decodeFlate, decodePng, decodeRattaRle } from './decoder.js';
 import { InvalidFileFormatError, ParseError } from './exceptions.js';
 import { getMetadataValue, getMetadataValues, parseMetadata } from './metadata.js';
 import { compositeLayers, grayscaleToPng, type LayerBitmap } from './renderer.js';
@@ -28,10 +28,20 @@ interface LayerVisibility {
   readonly isVisible: boolean;
 }
 
+function decodeLayerInfoJson(raw: string): string {
+  const json = raw.replace(/#/g, ':');
+  try {
+    JSON.parse(json);
+    return json;
+  } catch {
+    return Buffer.from(json, 'base64').toString('utf-8');
+  }
+}
+
 function parseLayerVisibility(raw: string): Map<string, boolean> {
   const visibility = new Map<string, boolean>();
   try {
-    const json = raw.replace(/#/g, ':');
+    const json = decodeLayerInfoJson(raw);
     const layers = JSON.parse(json) as LayerVisibility[];
     for (const layer of layers) {
       let name: string;
@@ -167,13 +177,16 @@ export class NoteParser {
         const bitmapData = reader.readBlock();
         if (bitmapData.length === 0) continue;
 
+        const isCustomBg = layerName === 'BGLAYER' && pageStyle.startsWith('user_');
         const isBlank =
           layerName === 'BGLAYER' &&
           pageStyle === STYLE_WHITE &&
           bitmapData.length === BLANK_CONTENT_LENGTH;
 
         let pixels: Uint8Array;
-        if (protocol === PROTOCOL_FLATE) {
+        if (isCustomBg) {
+          pixels = decodePng(bitmapData, width, height);
+        } else if (protocol === PROTOCOL_FLATE) {
           pixels = decodeFlate(bitmapData, width, height);
         } else if (protocol === PROTOCOL_RLE || protocol === '') {
           pixels = decodeRattaRle(bitmapData, width, height, isX2, isBlank);
