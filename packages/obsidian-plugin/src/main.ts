@@ -40,6 +40,7 @@ import type {
 } from './sync-orchestrator.js';
 import { SyncOrchestrator, SyncSource } from './sync-orchestrator.js';
 import { TesseractAssetDownloader } from './tesseract-asset-downloader.js';
+import { TesseractAssetServer } from './tesseract-asset-server.js';
 import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
 
 interface FileSystemAdapter extends DataAdapter {
@@ -62,6 +63,7 @@ export default class PetrifyPlugin extends Plugin {
   private metadataAdapter!: FrontmatterMetadataAdapter;
   private fsAdapter!: ObsidianFileSystemAdapter;
   private ocr: OcrPort | null = null;
+  private assetServer: TesseractAssetServer | null = null;
   private generator!: FileGeneratorPort;
   private parserMap!: Map<string, ParserPort>;
   private dropHandler!: DropHandler;
@@ -177,6 +179,7 @@ export default class PetrifyPlugin extends Plugin {
   async onunload(): Promise<void> {
     await Promise.all(this.watchers.map((w) => w.stop()));
     await this.ocr?.terminate?.();
+    this.assetServer?.stop();
   }
 
   private async initializeOcr(): Promise<void> {
@@ -224,7 +227,9 @@ export default class PetrifyPlugin extends Plugin {
     }
 
     const workerPath = `file://${path.join(pluginDir, 'worker.min.js')}`;
-    const corePath = `file://${path.join(pluginDir, 'tesseract-core')}/`;
+
+    this.assetServer = new TesseractAssetServer(path.join(pluginDir, 'tesseract-core'));
+    const corePath = await this.assetServer.start();
 
     const tesseract = new TesseractOcr({ lang: 'kor+eng', workerPath, corePath });
     await tesseract.initialize();

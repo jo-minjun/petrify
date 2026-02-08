@@ -7,11 +7,8 @@ const { fileURLToPath } = require('node:url');
  */
 module.exports = ({ workerPath }) => {
   if (workerPath.startsWith('file://')) {
-    // file:// URL을 로컬 경로로 변환
     const localPath = fileURLToPath(workerPath);
-    // 파일 내용을 동기적으로 읽음
     const workerCode = fs.readFileSync(localPath, 'utf-8');
-    // Blob URL 생성
     const blob = new Blob([workerCode], { type: 'application/javascript' });
     const blobUrl = URL.createObjectURL(blob);
     return new Worker(blobUrl);
