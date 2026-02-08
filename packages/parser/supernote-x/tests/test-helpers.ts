@@ -106,5 +106,5 @@ export function buildTestNote(options?: { pages?: TestPageOptions[] }): ArrayBuf
   new DataView(footerAddr.buffer).setUint32(0, footerOffset, true);
   parts.push(footerAddr);
 
-  return concat(...parts).buffer;
+  return concat(...parts).buffer as ArrayBuffer;
 }
