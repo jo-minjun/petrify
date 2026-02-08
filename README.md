@@ -161,9 +161,9 @@ Each user needs their own Google Cloud OAuth credentials:
 
 ### Network usage
 
-This plugin makes network requests in the following cases:
+By default, this plugin does not make any network requests. Network features (Google Drive, Cloud Vision) are only active when explicitly enabled in settings.
 
-- **Tesseract.js (OCR)**: On first use with the Tesseract provider, language data files (~15 MB per language) are downloaded from the [petrify GitHub releases](https://github.com/jo-minjun/petrify/releases) and cached locally. No image data is sent to external servers.
+- **Tesseract.js (OCR)**: On first use with the Tesseract provider, language data files (~15 MB per language) are downloaded from the [petrify GitHub releases](https://github.com/jo-minjun/petrify/releases) and cached locally. Once downloaded, all OCR processing happens entirely on your device. No image data is sent to external servers.
 - **Google Cloud Vision API**: When selected as OCR provider, images are sent to Google servers for text recognition. Requires a user-provided API key.
 - **Google Drive API**: When Google Drive integration is enabled, the plugin communicates with Google servers to list and download files. Requires OAuth2 authentication.
 
