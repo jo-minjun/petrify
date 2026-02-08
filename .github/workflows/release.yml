@@ -38,6 +38,7 @@ jobs:
           # BRAT이 다운로드하는 필수 파일
           cp main.js release-assets/
           cp manifest.json release-assets/
+          cp styles.css release-assets/
           cp versions.json release-assets/
 
           # Tesseract 자산 파일 (경로 구분자를 --로 변환)

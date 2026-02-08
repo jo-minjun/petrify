@@ -12,9 +12,9 @@ describe('createLogger', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.clearAllMocks();
+    consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -22,7 +22,7 @@ describe('createLogger', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('info calls console.log with [Petrify:Namespace] prefix', () => {
+  it('info calls console.debug with [Petrify:Namespace] prefix', () => {
     const log = createLogger('Watcher');
     log.info('File detected: test.note');
     expect(consoleSpy).toHaveBeenCalledWith('[Petrify:Watcher] File detected: test.note');

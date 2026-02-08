@@ -11,7 +11,7 @@ export interface Logger {
 export function createLogger(namespace: Namespace): Logger {
   const prefix = `[Petrify:${namespace}]`;
   return {
-    info: (msg: string) => console.log(`${prefix} ${msg}`),
+    info: (msg: string) => console.debug(`${prefix} ${msg}`),
     error: (msg: string, err?: unknown) =>
       err ? console.error(`${prefix} ${msg}`, err) : console.error(`${prefix} ${msg}`),
     notify: (msg: string, timeout?: number) => new Notice(`Petrify: ${msg}`, timeout),

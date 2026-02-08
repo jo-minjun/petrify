@@ -36,7 +36,6 @@ export class FolderBrowseModal extends Modal {
     contentEl.createEl('h2', { text: 'Select Google Drive Folder' });
 
     const breadcrumbContainer = contentEl.createDiv({ cls: 'petrify-breadcrumb' });
-    breadcrumbContainer.style.marginBottom = '12px';
 
     for (let i = 0; i < this.breadcrumb.length; i++) {
       const crumb = this.breadcrumb[i];
@@ -47,11 +46,9 @@ export class FolderBrowseModal extends Modal {
       }
 
       if (isLast) {
-        const bold = breadcrumbContainer.createEl('strong', { text: crumb.name });
-        bold.style.cursor = 'default';
+        breadcrumbContainer.createEl('strong', { text: crumb.name });
       } else {
         const link = breadcrumbContainer.createEl('a', { text: crumb.name, href: '#' });
-        link.style.cursor = 'pointer';
         link.addEventListener('click', (e) => {
           e.preventDefault();
           this.breadcrumb = this.breadcrumb.slice(0, i + 1);
@@ -64,11 +61,8 @@ export class FolderBrowseModal extends Modal {
     if (this.currentFolderId !== undefined) {
       const selectCurrentBtn = contentEl.createEl('button', {
         text: 'Select current folder',
-        cls: 'mod-cta',
+        cls: 'mod-cta petrify-select-current-btn',
       });
-      selectCurrentBtn.style.marginTop = '8px';
-      selectCurrentBtn.style.marginBottom = '8px';
-      selectCurrentBtn.style.display = 'block';
       selectCurrentBtn.addEventListener('click', () => {
         const current = this.breadcrumb[this.breadcrumb.length - 1];
         if (current.id !== undefined) {
@@ -93,17 +87,11 @@ export class FolderBrowseModal extends Modal {
 
       for (const folder of folders) {
         const itemDiv = listContainer.createDiv({ cls: 'petrify-folder-item' });
-        itemDiv.style.display = 'flex';
-        itemDiv.style.alignItems = 'center';
-        itemDiv.style.justifyContent = 'space-between';
-        itemDiv.style.padding = '4px 0';
 
         const nameEl = itemDiv.createEl('a', {
           text: `\u{1F4C1} ${folder.name}`,
           href: '#',
         });
-        nameEl.style.cursor = 'pointer';
-        nameEl.style.flexGrow = '1';
         nameEl.addEventListener('click', (e) => {
           e.preventDefault();
           this.breadcrumb.push({ id: folder.id, name: folder.name });
@@ -112,8 +100,6 @@ export class FolderBrowseModal extends Modal {
         });
 
         const selectBtn = itemDiv.createEl('button', { text: 'Select' });
-        selectBtn.style.marginLeft = '8px';
-        selectBtn.style.flexShrink = '0';
         selectBtn.addEventListener('click', () => {
           this.onSelect({ folderId: folder.id, folderName: folder.name });
           this.close();

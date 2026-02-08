@@ -157,10 +157,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     this.pendingLocalWatch.mappings.forEach((mapping, index) => {
       const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
-      mappingContainer.style.border = '1px solid var(--background-modifier-border)';
-      mappingContainer.style.borderRadius = '8px';
-      mappingContainer.style.padding = '8px 12px';
-      mappingContainer.style.marginBottom = '12px';
 
       new Setting(mappingContainer)
         .setName(`Mapping #${index + 1}`)
@@ -190,7 +186,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
               this.pendingLocalWatch.mappings[index].watchDir = value;
               this.updateWatchSaveButton();
             });
-          text.inputEl.style.width = '100%';
+          text.inputEl.addClass('petrify-input-full-width');
         })
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(async () => {
@@ -201,8 +197,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
             this.display();
           }),
         );
-      watchDirSetting.settingEl.style.flexWrap = 'wrap';
-      watchDirSetting.controlEl.style.width = '100%';
+      watchDirSetting.settingEl.addClass('petrify-setting-full-width');
 
       const outputDirSetting = new Setting(mappingContainer)
         .setName('Output directory')
@@ -214,7 +209,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
               this.pendingLocalWatch.mappings[index].outputDir = value;
               this.updateWatchSaveButton();
             });
-          text.inputEl.style.width = '100%';
+          text.inputEl.addClass('petrify-input-full-width');
         })
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(async () => {
@@ -230,8 +225,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
             this.display();
           }),
         );
-      outputDirSetting.settingEl.style.flexWrap = 'wrap';
-      outputDirSetting.controlEl.style.width = '100%';
+      outputDirSetting.settingEl.addClass('petrify-setting-full-width');
 
       new Setting(mappingContainer).setName('Parser').addDropdown((dropdown) => {
         for (const id of Object.values(ParserId)) {
@@ -260,11 +254,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
     if (!this.pendingGoogleDrive.enabled) return;
 
     const driveContainer = containerEl.createDiv({ cls: 'petrify-drive-settings' });
-    driveContainer.style.border = '1px solid var(--background-modifier-border)';
-    driveContainer.style.borderRadius = '8px';
-    driveContainer.style.padding = '8px 12px';
-    driveContainer.style.marginBottom = '12px';
-    driveContainer.style.marginLeft = '16px';
 
     new Setting(driveContainer)
       .setName('Client ID')
@@ -342,7 +331,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           text.setValue(String(this.pendingGoogleDrive.pollIntervalMinutes)).onChange((value) => {
             const num = Number(value);
             const valid = !Number.isNaN(num) && num >= 1 && num <= 60;
-            text.inputEl.style.borderColor = valid ? '' : 'var(--text-error)';
+            text.inputEl.toggleClass('petrify-input-error', !valid);
             if (valid) {
               this.pendingGoogleDrive.pollIntervalMinutes = num;
             }
@@ -366,10 +355,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     this.pendingGoogleDrive.mappings.forEach((mapping, index) => {
       const mappingContainer = driveContainer.createDiv({ cls: 'petrify-mapping' });
-      mappingContainer.style.border = '1px solid var(--background-modifier-border)';
-      mappingContainer.style.borderRadius = '8px';
-      mappingContainer.style.padding = '8px 12px';
-      mappingContainer.style.marginBottom = '12px';
 
       new Setting(mappingContainer)
         .setName(`Mapping #${index + 1}`)
@@ -570,30 +555,15 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
       if (this.pendingLanguageHints.length > 0) {
         const tagContainer = containerEl.createDiv({ cls: 'petrify-language-tags' });
-        tagContainer.style.display = 'flex';
-        tagContainer.style.flexWrap = 'wrap';
-        tagContainer.style.gap = '4px';
-        tagContainer.style.marginBottom = '12px';
 
         for (const hint of this.pendingLanguageHints) {
           const option = LANGUAGE_HINT_OPTIONS.find((o) => o.value === hint);
           if (!option) continue;
 
           const tag = tagContainer.createDiv({ cls: 'petrify-language-tag' });
-          tag.style.display = 'inline-flex';
-          tag.style.alignItems = 'center';
-          tag.style.gap = '4px';
-          tag.style.padding = '2px 8px';
-          tag.style.borderRadius = '12px';
-          tag.style.backgroundColor = 'var(--background-modifier-hover)';
-          tag.style.fontSize = '12px';
-
           tag.createSpan({ text: option.label });
 
           const removeBtn = tag.createEl('span', { text: '\u00d7', cls: 'petrify-tag-remove' });
-          removeBtn.style.cursor = 'pointer';
-          removeBtn.style.fontWeight = 'bold';
-          removeBtn.style.marginLeft = '2px';
           removeBtn.addEventListener('click', () => {
             this.pendingLanguageHints = this.pendingLanguageHints.filter((h) => h !== hint);
             updateSaveButton();
@@ -617,7 +587,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
           .onChange((value) => {
             const num = Number(value);
             const valid = !Number.isNaN(num) && num >= 0 && num <= 100;
-            text.inputEl.style.borderColor = valid ? '' : 'var(--text-error)';
+            text.inputEl.toggleClass('petrify-input-error', !valid);
             if (valid) {
               this.pendingConfidenceThreshold = num;
             }

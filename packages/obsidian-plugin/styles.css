@@ -1,0 +1,94 @@
+/* Bordered section block (mapping, Google Drive settings) */
+.petrify-mapping,
+.petrify-drive-settings {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+/* Google Drive settings indent */
+.petrify-drive-settings {
+  margin-left: 16px;
+}
+
+/* Setting rows that need full-width controls */
+.petrify-setting-full-width {
+  flex-wrap: wrap;
+}
+
+.petrify-setting-full-width .setting-item-control {
+  width: 100%;
+}
+
+/* Text inputs that fill available width */
+.petrify-input-full-width {
+  width: 100%;
+}
+
+/* Language hint tags */
+.petrify-language-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.petrify-language-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: var(--background-modifier-hover);
+  font-size: 12px;
+}
+
+.petrify-tag-remove {
+  cursor: pointer;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+/* Validation error */
+.petrify-input-error {
+  border-color: var(--text-error);
+}
+
+/* Breadcrumb */
+.petrify-breadcrumb {
+  margin-bottom: 12px;
+}
+
+.petrify-breadcrumb strong {
+  cursor: default;
+}
+
+.petrify-breadcrumb a {
+  cursor: pointer;
+}
+
+/* Select current folder button */
+.petrify-select-current-btn {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Folder item row */
+.petrify-folder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.petrify-folder-item a {
+  cursor: pointer;
+  flex-grow: 1;
+}
+
+.petrify-folder-item button {
+  margin-left: 8px;
+  flex-shrink: 0;
+}
