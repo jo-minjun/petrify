@@ -37,7 +37,6 @@ export interface LocalWatchSettings {
 export interface GoogleDriveSettings {
   enabled: boolean;
   clientId: string;
-  clientSecret: string;
   autoPolling: boolean;
   pollIntervalMinutes: number;
   mappings: GoogleDriveMapping[];
@@ -47,7 +46,6 @@ export interface OcrSettings {
   provider: OcrProvider;
   confidenceThreshold: number;
   googleVision: {
-    apiKey: string;
     languageHints: LanguageHint[];
   };
 }
@@ -68,7 +66,6 @@ export const DEFAULT_SETTINGS: PetrifySettings = {
   googleDrive: {
     enabled: false,
     clientId: '',
-    clientSecret: '',
     autoPolling: true,
     pollIntervalMinutes: 5,
     mappings: [],
@@ -77,7 +74,6 @@ export const DEFAULT_SETTINGS: PetrifySettings = {
     provider: 'tesseract',
     confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD,
     googleVision: {
-      apiKey: '',
       languageHints: ['ko', 'en'],
     },
   },

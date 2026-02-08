@@ -76,7 +76,7 @@ importers:
         specifier: ^0.25.0
         version: 0.25.12
       obsidian:
-        specifier: ^1.11.0
+        specifier: ^1.11.4
         version: 1.11.4(@codemirror/state@6.5.0)(@codemirror/view@6.38.6)
 
   packages/ocr/google-vision:

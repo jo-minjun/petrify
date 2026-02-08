@@ -12,3 +12,4 @@ export type {
   PageTokenStore,
   TokenStore,
 } from './types.js';
+export { validateDriveId } from './validate-drive-id.js';

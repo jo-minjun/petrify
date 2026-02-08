@@ -1,6 +1,7 @@
 import { drive_v3 } from '@googleapis/drive';
 import type { OAuth2Client } from 'google-auth-library';
 import type { ChangesResult, DriveFile } from './types.js';
+import { validateDriveId } from './validate-drive-id.js';
 
 const FIELDS_FILE = 'id, name, mimeType, modifiedTime, md5Checksum, size, parents';
 const FIELDS_CHANGES = `nextPageToken, newStartPageToken, changes(fileId, removed, file(${FIELDS_FILE}))`;
@@ -36,13 +37,13 @@ export class GoogleDriveClient {
   }
 
   async listFiles(folderId: string): Promise<DriveFile[]> {
+    validateDriveId(folderId);
     const allFiles: DriveFile[] = [];
     let pageToken: string | undefined;
 
     do {
-      const safeFolderId = folderId.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
       const res = await this.drive.files.list({
-        q: `'${safeFolderId}' in parents and trashed = false`,
+        q: `'${folderId}' in parents and trashed = false`,
         fields: `nextPageToken, files(${FIELDS_FILE})`,
         pageSize: 100,
         pageToken,
@@ -62,9 +63,10 @@ export class GoogleDriveClient {
     const allFolders: DriveFile[] = [];
     let pageToken: string | undefined;
 
-    const parent = parentFolderId
-      ? parentFolderId.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
-      : 'root';
+    if (parentFolderId) {
+      validateDriveId(parentFolderId);
+    }
+    const parent = parentFolderId ?? 'root';
     const query = `'${parent}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
 
     do {
@@ -132,6 +134,7 @@ export class GoogleDriveClient {
   }
 
   async downloadFile(fileId: string): Promise<ArrayBuffer> {
+    validateDriveId(fileId);
     const res = await this.drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
 
     const chunks: Buffer[] = [];
@@ -143,6 +146,7 @@ export class GoogleDriveClient {
   }
 
   async getFile(fileId: string): Promise<DriveFile> {
+    validateDriveId(fileId);
     const res = await this.drive.files.get({
       fileId,
       fields: FIELDS_FILE,
