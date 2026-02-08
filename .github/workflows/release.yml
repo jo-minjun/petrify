@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+      - name: Prepare release assets
+        run: |
+          cd packages/obsidian-plugin
+          mkdir -p release-assets
+
+          # BRAT이 다운로드하는 필수 파일
+          cp main.js release-assets/
+          cp manifest.json release-assets/
+          cp versions.json release-assets/
+
+          # Tesseract 자산 파일 (경로 구분자를 --로 변환)
+          cp worker.min.js release-assets/worker.min.js
+          for f in tesseract-core/*; do
+            name=$(basename "$f")
+            cp "$f" "release-assets/tesseract-core--${name}"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/obsidian-plugin/release-assets/*
+          generate_release_notes: true

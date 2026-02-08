@@ -12,6 +12,7 @@ import { PetrifyService } from '@petrify/core';
 import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
 import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
+import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
 import type { OAuth2Client, PageTokenStore, TokenStore } from '@petrify/watcher-google-drive';
 import {
@@ -20,7 +21,7 @@ import {
   GoogleDriveWatcher,
 } from '@petrify/watcher-google-drive';
 import type { DataAdapter } from 'obsidian';
-import { Notice, Plugin, setIcon, TFile } from 'obsidian';
+import { Notice, Plugin, requestUrl, setIcon, TFile } from 'obsidian';
 import { saveConversionResult as saveResult } from './conversion-saver.js';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
@@ -38,6 +39,7 @@ import type {
   VaultOperations,
 } from './sync-orchestrator.js';
 import { SyncOrchestrator, SyncSource } from './sync-orchestrator.js';
+import { TesseractAssetDownloader } from './tesseract-asset-downloader.js';
 import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
 
 interface FileSystemAdapter extends DataAdapter {
@@ -188,19 +190,43 @@ export default class PetrifyPlugin extends Plugin {
       return;
     }
 
-    // Tesseract (default) — 별도 번들에서 동적 로드
+    // Tesseract (default)
     const adapter = this.app.vault.adapter as FileSystemAdapter;
     const vaultPath = adapter.getBasePath();
     const pluginDir = path.join(vaultPath, '.obsidian', 'plugins', 'petrify');
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { TesseractOcr } = require(path.join(pluginDir, 'tesseract-ocr.cjs')) as {
-      TesseractOcr: typeof import('@petrify/ocr-tesseract').TesseractOcr;
+    const assetFs = {
+      exists: (p: string) =>
+        fs.access(p).then(
+          () => true,
+          () => false,
+        ),
+      mkdir: (p: string) => fs.mkdir(p, { recursive: true }).then(() => {}),
+      writeFile: (p: string, data: ArrayBuffer) => fs.writeFile(p, Buffer.from(data)),
+    };
+    const assetHttp = {
+      download: async (url: string) => {
+        const response = await requestUrl({ url });
+        return response.arrayBuffer;
+      },
     };
 
-    const workerPath = `file://${path.join(pluginDir, 'worker.min.js')}`;
+    const downloader = new TesseractAssetDownloader(assetFs, assetHttp);
+    const downloadResult = await downloader.ensureAssets(
+      pluginDir,
+      this.manifest.version,
+      (current, total) => {
+        new Notice(`Petrify: Downloading Tesseract OCR (${current}/${total})...`);
+      },
+    );
+    if (downloadResult === 'downloaded') {
+      new Notice('Petrify: Tesseract OCR assets downloaded');
+    }
 
-    const tesseract = new TesseractOcr({ lang: 'kor+eng', workerPath });
+    const workerPath = `file://${path.join(pluginDir, 'worker.min.js')}`;
+    const corePath = `file://${path.join(pluginDir, 'tesseract-core')}/`;
+
+    const tesseract = new TesseractOcr({ lang: 'kor+eng', workerPath, corePath });
     await tesseract.initialize();
     this.ocr = tesseract;
   }
