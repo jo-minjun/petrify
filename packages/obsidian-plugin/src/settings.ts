@@ -54,7 +54,6 @@ export interface OcrSettings {
 
 export interface PetrifySettings {
   outputFormat: OutputFormat;
-  autoSync: boolean;
   localWatch: LocalWatchSettings;
   googleDrive: GoogleDriveSettings;
   ocr: OcrSettings;
@@ -62,7 +61,6 @@ export interface PetrifySettings {
 
 export const DEFAULT_SETTINGS: PetrifySettings = {
   outputFormat: 'excalidraw',
-  autoSync: false,
   localWatch: {
     enabled: false,
     mappings: [],

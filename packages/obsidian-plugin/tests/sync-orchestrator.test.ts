@@ -156,7 +156,7 @@ describe('SyncOrchestrator', () => {
       metadata: { source: '/watch/file.note', mtime: 1000 },
     });
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], false);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 1, failed: 0, deleted: 0 });
     expect(mockService.handleFileChange).toHaveBeenCalledOnce();
@@ -166,7 +166,7 @@ describe('SyncOrchestrator', () => {
   it('디렉토리 읽기 실패 시 failed 증가', async () => {
     mockFs.readdir.mockRejectedValue(new Error('ENOENT'));
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], false);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
     expect(syncLog.error).toHaveBeenCalledWith('Directory unreadable: /watch', expect.any(Error));
@@ -176,7 +176,7 @@ describe('SyncOrchestrator', () => {
     mockFs.readdir.mockResolvedValue(entries('file.note'));
     mockFs.stat.mockRejectedValue(new Error('EACCES'));
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], false);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
     expect(syncLog.error).toHaveBeenCalledWith('File stat failed: file.note', expect.any(Error));
@@ -190,7 +190,7 @@ describe('SyncOrchestrator', () => {
       new ConversionError('parse', new Error('invalid format')),
     );
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], false);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
     expect(convertLog.error).toHaveBeenCalledWith(
@@ -205,7 +205,7 @@ describe('SyncOrchestrator', () => {
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue(null);
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], false);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
   });
@@ -223,7 +223,7 @@ describe('SyncOrchestrator', () => {
     mockVault.trash.mockResolvedValue(undefined);
     mockFs.rm.mockResolvedValue(undefined);
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], true);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 1 });
     expect(mockVault.trash).toHaveBeenCalledWith('output/file.excalidraw.md');
@@ -236,7 +236,7 @@ describe('SyncOrchestrator', () => {
       .mockResolvedValueOnce(entries('file.excalidraw.md'));
     mockService.handleFileDelete.mockResolvedValue(false);
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], true);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
     expect(mockVault.trash).not.toHaveBeenCalled();
@@ -245,7 +245,7 @@ describe('SyncOrchestrator', () => {
   it('지원하지 않는 확장자 파일은 무시', async () => {
     mockFs.readdir.mockResolvedValue(entries('file.txt', 'readme.md'));
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], false);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
     expect(mockService.handleFileChange).not.toHaveBeenCalled();
@@ -254,7 +254,7 @@ describe('SyncOrchestrator', () => {
   it('비활성화된 매핑은 건너뜀', async () => {
     const mapping = createDefaultMapping({ enabled: false });
 
-    const result = await orchestrator.syncAll([mapping], false);
+    const result = await orchestrator.syncAll([mapping]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
     expect(mockFs.readdir).not.toHaveBeenCalled();
@@ -263,7 +263,7 @@ describe('SyncOrchestrator', () => {
   it('watchDir가 빈 문자열이면 건너뜀', async () => {
     const mapping = createDefaultMapping({ watchDir: '' });
 
-    const result = await orchestrator.syncAll([mapping], false);
+    const result = await orchestrator.syncAll([mapping]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
     expect(mockFs.readdir).not.toHaveBeenCalled();
@@ -280,7 +280,7 @@ describe('SyncOrchestrator', () => {
     });
 
     const mapping = createDefaultMapping({ outputDir: '' });
-    const result = await orchestrator.syncAll([mapping], false);
+    const result = await orchestrator.syncAll([mapping]);
 
     expect(result).toEqual({ synced: 1, failed: 0, deleted: 0 });
     expect(mockService.handleFileChange).toHaveBeenCalledOnce();
@@ -289,7 +289,7 @@ describe('SyncOrchestrator', () => {
   it('알 수 없는 parserId일 때 failed 증가', async () => {
     const mapping = createDefaultMapping({ parserId: 'unknown' });
 
-    const result = await orchestrator.syncAll([mapping], false);
+    const result = await orchestrator.syncAll([mapping]);
 
     expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
     expect(syncLog.error).toHaveBeenCalledWith('Unknown parser: unknown');
@@ -308,7 +308,7 @@ describe('SyncOrchestrator', () => {
       metadata: { source: '/watch/file.note', mtime: 1000 },
     });
 
-    const result = await orchestrator.syncAll([mapping1, mapping2], false);
+    const result = await orchestrator.syncAll([mapping1, mapping2]);
 
     expect(result).toEqual({ synced: 2, failed: 0, deleted: 0 });
   });
@@ -326,7 +326,7 @@ describe('SyncOrchestrator', () => {
     mockVault.trash.mockResolvedValue(undefined);
     mockFs.rm.mockRejectedValue(new Error('ENOENT'));
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], true);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 1 });
   });
@@ -334,7 +334,7 @@ describe('SyncOrchestrator', () => {
   it('orphan 정리: 출력 디렉토리 읽기 실패 시 continue', async () => {
     mockFs.readdir.mockResolvedValueOnce(entries()).mockRejectedValueOnce(new Error('ENOENT'));
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], true);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
     expect(mockVault.trash).not.toHaveBeenCalled();
@@ -350,7 +350,7 @@ describe('SyncOrchestrator', () => {
       mtime: null,
     });
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], true);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
     expect(mockVault.trash).not.toHaveBeenCalled();
@@ -367,19 +367,10 @@ describe('SyncOrchestrator', () => {
     });
     mockFs.access.mockResolvedValue(undefined);
 
-    const result = await orchestrator.syncAll([createDefaultMapping()], true);
+    const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
     expect(mockVault.trash).not.toHaveBeenCalled();
-  });
-
-  it('deleteOnSourceDelete가 false면 orphan 정리를 건너뜀', async () => {
-    mockFs.readdir.mockResolvedValue(entries());
-
-    const result = await orchestrator.syncAll([createDefaultMapping()], false);
-
-    expect(result).toEqual({ synced: 0, failed: 0, deleted: 0 });
-    expect(mockFs.readdir).toHaveBeenCalledOnce();
   });
 
   it('readData는 SyncFileSystem.readFile을 호출', async () => {
@@ -399,7 +390,7 @@ describe('SyncOrchestrator', () => {
       },
     );
 
-    await orchestrator.syncAll([createDefaultMapping()], false);
+    await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(mockFs.readFile).toHaveBeenCalledWith('/watch/file.note');
   });

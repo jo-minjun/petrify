@@ -44,7 +44,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
   private hasPendingOcrEdits = false;
 
   private pendingOutputFormat: OutputFormat = DEFAULT_SETTINGS.outputFormat;
-  private pendingAutoSync: boolean = DEFAULT_SETTINGS.autoSync;
   private hasPendingGeneralEdits = false;
   private generalSaveButton: HTMLButtonElement | null = null;
 
@@ -74,7 +73,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     if (!this.hasPendingGeneralEdits) {
       this.pendingOutputFormat = settings.outputFormat;
-      this.pendingAutoSync = settings.autoSync;
       this.hasPendingGeneralEdits = true;
     }
 
@@ -92,19 +90,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
           }),
       );
 
-    new Setting(containerEl)
-      .setName('Auto-sync converted files')
-      .setDesc(
-        'Automatically update or delete converted files when the source changes or is removed. ' +
-          "Files with 'keep: true' in frontmatter are excluded from both updates and deletions.",
-      )
-      .addToggle((toggle) =>
-        toggle.setValue(this.pendingAutoSync).onChange((value) => {
-          this.pendingAutoSync = value;
-          this.updateGeneralSaveButton();
-        }),
-      );
-
     new Setting(containerEl).addButton((btn) => {
       this.generalSaveButton = btn.buttonEl;
       btn
@@ -112,7 +97,6 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .setCta()
         .onClick(async () => {
           settings.outputFormat = this.pendingOutputFormat;
-          settings.autoSync = this.pendingAutoSync;
           await this.callbacks.saveSettings(settings);
           this.hasPendingGeneralEdits = false;
           this.display();
@@ -125,9 +109,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
   private updateGeneralSaveButton(): void {
     if (!this.generalSaveButton) return;
     const settings = this.callbacks.getSettings();
-    const hasChanges =
-      this.pendingOutputFormat !== settings.outputFormat ||
-      this.pendingAutoSync !== settings.autoSync;
+    const hasChanges = this.pendingOutputFormat !== settings.outputFormat;
     this.generalSaveButton.disabled = !hasChanges;
     this.generalSaveButton.toggleClass('is-disabled', !hasChanges);
   }
