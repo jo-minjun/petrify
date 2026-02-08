@@ -268,7 +268,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     new Setting(driveContainer)
       .setName('Client ID')
-      .setDesc('OAuth2 client ID from Google cloud console')
+      .setDesc('OAuth2 client ID from Google Cloud Console')
       .addText((text) =>
         text
           .setPlaceholder('Enter client ID')
@@ -281,7 +281,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     new Setting(driveContainer)
       .setName('Client secret')
-      .setDesc('OAuth2 client secret from Google cloud console')
+      .setDesc('OAuth2 client secret from Google Cloud Console')
       .addText((text) => {
         text.inputEl.type = 'password';
         text
@@ -529,7 +529,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
       .addDropdown((dropdown) => {
         dropdown
           .addOption('tesseract', 'Tesseract (local)')
-          .addOption('google-vision', 'Google vision API')
+          .addOption('google-vision', 'Google Vision API')
           .setValue(this.pendingProvider)
           .onChange((value) => {
             this.pendingProvider = value as OcrProvider;
@@ -540,8 +540,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     if (this.pendingProvider === 'google-vision') {
       new Setting(containerEl)
-        .setName('Google vision API key')
-        .setDesc('Google cloud vision API key')
+        .setName('Google Vision API key')
+        .setDesc('Google Cloud Vision API key')
         .addText((text) => {
           text.inputEl.type = 'password';
           text

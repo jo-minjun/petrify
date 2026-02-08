@@ -235,7 +235,7 @@ export default class PetrifyPlugin extends Plugin {
       },
     );
     if (downloadResult === 'downloaded') {
-      new Notice('Petrify: tesseract ocr assets downloaded');
+      new Notice('Petrify: Tesseract OCR assets downloaded');
     }
 
     const workerPath = `file://${path.join(pluginDir, 'worker.min.js')}`;

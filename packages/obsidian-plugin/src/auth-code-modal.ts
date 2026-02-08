@@ -15,7 +15,7 @@ export class AuthCodeModal extends Modal {
 
     contentEl.createEl('h3', { text: 'Google Drive authentication' });
     contentEl.createEl('p', {
-      text: 'Sign in with google in the browser. After approval, the page will redirect to localhost — this is expected.',
+      text: 'Sign in with Google in the browser. After approval, the page will redirect to localhost — this is expected.',
     });
     contentEl.createEl('p', {
       text: 'Copy the entire URL from the browser address bar and paste it below.',
