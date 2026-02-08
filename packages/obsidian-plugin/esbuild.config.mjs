@@ -67,11 +67,11 @@ const tesseractObsidianPlugin = {
   },
 };
 
-// 메인 빌드 — Tesseract를 external로 마킹하여 main.js에서 제외
+// 메인 빌드 — Tesseract JS 코드 포함
 const context = await esbuild.context({
   entryPoints: ['src/main.ts'],
   bundle: true,
-  external: ['obsidian', 'electron', '@petrify/ocr-tesseract'],
+  external: ['obsidian', 'electron'],
   format: 'cjs',
   platform: 'node',
   target: 'es2020',
@@ -81,29 +81,11 @@ const context = await esbuild.context({
   plugins: [tesseractObsidianPlugin],
 });
 
-// Tesseract OCR 별도 CJS 번들 빌드
-async function buildTesseractBundle() {
-  await esbuild.build({
-    entryPoints: ['src/tesseract-loader.ts'],
-    bundle: true,
-    external: ['obsidian', 'electron'],
-    format: 'cjs',
-    platform: 'node',
-    target: 'es2020',
-    outfile: 'tesseract-ocr.cjs',
-    treeShaking: true,
-    plugins: [tesseractObsidianPlugin],
-  });
-  console.log('Built tesseract-ocr.cjs');
-}
-
 if (prod) {
   await context.rebuild();
-  await buildTesseractBundle();
   await copyTesseractFiles();
   process.exit(0);
 } else {
-  await buildTesseractBundle();
   await copyTesseractFiles();
   await context.watch();
   console.log('Watching for changes...');
