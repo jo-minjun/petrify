@@ -24,7 +24,7 @@ export class MarkdownFileGenerator implements FileGeneratorPort {
       imageSection += `![[assets/${outputName}/${filename}]]\n`;
     }
 
-    const content = `${ocrSection}---\n\n${imageSection}`;
+    const content = `${imageSection}\n---\n\n${ocrSection}`;
 
     return {
       content: `${content.trim()}\n`,
