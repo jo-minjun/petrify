@@ -176,6 +176,8 @@ packages/
   5. Add aliases to root vitest.config.ts
   6. Update root AGENTS.md package structure/table
 
+- Use CSS classes in `styles.css` instead of inline styles. Prefix all classes with `petrify-`
+
 - obsidian-plugin is the sole Composition Root. Register new adapters only in this package
 
 ## DON'T
@@ -198,3 +200,5 @@ packages/
 - Do not test interface contracts (shape) -- the TypeScript compiler guarantees this
 - Do not write meaningless assertions like `expect(true).toBe(true)`
 - Do not redefine types in adapter packages that are already defined in core
+- Do not use `console.log` in runtime source (`src/`) — use `console.debug`, `console.warn`, or `console.error` instead (Obsidian community plugin guideline)
+- Do not use inline styles (`.style.` assignment) in TypeScript — use CSS classes instead (Obsidian community plugin guideline)
