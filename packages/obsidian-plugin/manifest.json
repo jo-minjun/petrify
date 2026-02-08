@@ -1,7 +1,7 @@
 {
   "id": "petrify",
   "name": "Petrify",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "minAppVersion": "1.11.4",
   "description": "Convert handwriting notes to Excalidraw or Markdown with OCR support to unify your knowledge base.",
   "author": "minjun.jo",
