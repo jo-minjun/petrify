@@ -17,6 +17,8 @@ Petrify converts handwriting note files into [Excalidraw](https://github.com/zsv
 **Planned:**
 - Additional parsers for other handwriting note apps
 
+![Handwriting note converted to Excalidraw in Obsidian](docs/assets/conversion-result.png)
+
 ## Why Petrify
 
 Sometimes a pen is the most natural way to capture your thoughts — sketching diagrams, jotting quick notes in a meeting, or writing freely without the constraints of a keyboard. Other times, typing is faster and more structured. If you use both, your knowledge inevitably splits in two: handwritten notes on your e-ink tablet, and typed notes in Obsidian.
@@ -70,11 +72,14 @@ Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
 - **Drag & drop**: Drop handwriting files into the file explorer to convert them at the drop location
 - **Sync command**: Manually trigger a full sync via the ribbon icon or command palette (`Petrify: Sync`)
 - **OCR**: Extract handwritten text so your notes become searchable in Obsidian
+  ![OCR text extracted from handwriting, searchable in Obsidian](docs/assets/ocr-text.png)
 - **Duplicate prevention**: Skips already-converted files by comparing modification time
 - **Source delete sync**: Optionally remove converted files when the source file is deleted
 - **Keep protection**: Mark converted files as protected via frontmatter (`keep: true`) to prevent deletion or re-conversion — toggle via command palette or file context menu
 
 ### Settings
+
+![Petrify settings — watch sources and folder mapping](docs/assets/settings-watch.png)
 
 #### General
 
@@ -117,6 +122,8 @@ Multiple mappings can be added, each with its own watch/output directory and par
 | Confidence Threshold | Minimum OCR confidence (0–100, default: 50) |
 
 ### Drag & Drop
+
+![Drag and drop a .note file into Obsidian to convert](docs/assets/drag-and-drop.gif)
 
 Drag and drop handwriting files (.note) into the file explorer to create converted files at the drop location.
 
