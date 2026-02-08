@@ -181,11 +181,11 @@ This plugin reads files from directories **outside your Obsidian vault**. Specif
 - **Local file watch**: Reads handwriting files from external directories you configure in settings. Only the configured watch directories are accessed.
 - **Google Drive**: Downloads files from your Google Drive folders via API.
 
-All configured directory paths and OAuth credentials are stored in the plugin's local data file within your vault.
+All configured directory paths are stored in the plugin's local data file within your vault. Sensitive data (OAuth tokens, API keys, client secrets) are stored via Obsidian's SecretStorage API, which provides OS-level encryption.
 
 ### Requirements
 
-- Obsidian 1.11.0+
+- Obsidian 1.11.4+
 - [Excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin) (when using Excalidraw output format)
 - Desktop only (requires Node.js filesystem access)
 
