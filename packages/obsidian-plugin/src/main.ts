@@ -442,6 +442,9 @@ export default class PetrifyPlugin extends Plugin {
   private async restart(): Promise<void> {
     await Promise.all(this.watchers.map((w) => w.stop()));
     this.watchers = [];
+    await this.ocr?.terminate?.();
+    this.assetServer?.stop();
+    await this.initializeOcr();
     this.initializeService();
     this.dropHandler.updateService(this.petrifyService, this.parserMap);
     await this.startWatchers();
