@@ -26,7 +26,8 @@ Adapters → Core ← Adapters
 packages/
 ├── core/                 # @petrify/core
 ├── parser/
-│   └── viwoods/          # @petrify/parser-viwoods
+│   ├── viwoods/          # @petrify/parser-viwoods
+│   └── supernote-x/      # @petrify/parser-supernote-x
 ├── ocr/
 │   ├── tesseract/        # @petrify/ocr-tesseract
 │   └── google-vision/    # @petrify/ocr-google-vision
@@ -43,6 +44,7 @@ packages/
 |--------|------|
 | `@petrify/core` | Intermediate representation models, PetrifyService, port interfaces |
 | `@petrify/parser-viwoods` | viwoods .note file parser (ParserPort implementation) |
+| `@petrify/parser-supernote-x` | Supernote X-series .note file parser (ParserPort implementation) |
 | `@petrify/ocr-tesseract` | Tesseract.js wrapper OCR (OcrPort implementation) |
 | `@petrify/ocr-google-vision` | Google Cloud Vision OCR (OcrPort implementation) |
 | `@petrify/generator-excalidraw` | Excalidraw file generation (FileGeneratorPort implementation) |
@@ -77,6 +79,7 @@ packages/
     "paths": {
       "@petrify/core": ["packages/core/src/index.ts"],
       "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
+      "@petrify/parser-supernote-x": ["packages/parser/supernote-x/src/index.ts"],
       "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
       "@petrify/ocr-google-vision": ["packages/ocr/google-vision/src/index.ts"],
       "@petrify/generator-excalidraw": ["packages/generator/excalidraw/src/index.ts"],

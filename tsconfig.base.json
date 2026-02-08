@@ -13,6 +13,7 @@
     "paths": {
       "@petrify/core": ["packages/core/src/index.ts"],
       "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
+      "@petrify/parser-supernote-x": ["packages/parser/supernote-x/src/index.ts"],
       "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
       "@petrify/ocr-google-vision": ["packages/ocr/google-vision/src/index.ts"],
       "@petrify/watcher-chokidar": ["packages/watcher/chokidar/src/index.ts"],

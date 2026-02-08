@@ -42,6 +42,7 @@ Adapters → Core ← Adapters
 | Port | Adapter | Package |
 |------|---------|---------|
 | ParserPort | Viwoods (.note) | @petrify/parser-viwoods |
+| ParserPort | Supernote X-series (.note) | @petrify/parser-supernote-x |
 | OcrPort | Tesseract.js | @petrify/ocr-tesseract |
 | OcrPort | Google Cloud Vision | @petrify/ocr-google-vision |
 | FileGeneratorPort | Excalidraw (.excalidraw.md) | @petrify/generator-excalidraw |
@@ -88,7 +89,8 @@ Adapters → Core ← Adapters
 packages/
 ├── core/                 # @petrify/core (port interfaces + PetrifyService)
 ├── parser/
-│   └── viwoods/          # @petrify/parser-viwoods (ParserPort impl)
+│   ├── viwoods/          # @petrify/parser-viwoods (ParserPort impl)
+│   └── supernote-x/      # @petrify/parser-supernote-x (ParserPort impl)
 ├── ocr/
 │   ├── tesseract/        # @petrify/ocr-tesseract (OcrPort impl)
 │   └── google-vision/    # @petrify/ocr-google-vision (OcrPort impl)
