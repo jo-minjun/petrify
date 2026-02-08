@@ -19,8 +19,19 @@ describe('TesseractAssetDownloader', () => {
   const pluginDir = '/vault/.obsidian/plugins/petrify';
   const version = '0.1.0';
 
-  it('자산이 이미 존재하면 다운로드를 스킵한다', async () => {
-    const fs = createMockFs(new Set([`${pluginDir}/worker.min.js`, `${pluginDir}/tesseract-core`]));
+  const allFiles = [
+    'worker.min.js',
+    'tesseract-core/index.js',
+    'tesseract-core/tesseract-core-lstm.js',
+    'tesseract-core/tesseract-core-lstm.wasm',
+    'tesseract-core/tesseract-core-lstm.wasm.js',
+    'tesseract-core/tesseract-core-simd-lstm.js',
+    'tesseract-core/tesseract-core-simd-lstm.wasm',
+    'tesseract-core/tesseract-core-simd-lstm.wasm.js',
+  ].map((f) => `${pluginDir}/${f}`);
+
+  it('모든 자산이 존재하면 다운로드를 스킵한다', async () => {
+    const fs = createMockFs(new Set(allFiles));
     const http = createMockHttp();
 
     const downloader = new TesseractAssetDownloader(fs, http);
@@ -28,6 +39,18 @@ describe('TesseractAssetDownloader', () => {
 
     expect(result).toBe('skipped');
     expect(http.download).not.toHaveBeenCalled();
+  });
+
+  it('일부 자산만 존재하면 다운로드를 실행한다', async () => {
+    const partialFiles = new Set([`${pluginDir}/worker.min.js`]);
+    const fs = createMockFs(partialFiles);
+    const http = createMockHttp();
+
+    const downloader = new TesseractAssetDownloader(fs, http);
+    const result = await downloader.ensureAssets(pluginDir, version);
+
+    expect(result).toBe('downloaded');
+    expect(http.download).toHaveBeenCalledTimes(8);
   });
 
   it('자산이 없으면 모든 파일을 다운로드한다', async () => {

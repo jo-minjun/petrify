@@ -34,10 +34,10 @@ export class TesseractAssetDownloader {
     version: string,
     onProgress?: (current: number, total: number) => void,
   ): Promise<'skipped' | 'downloaded'> {
-    const workerExists = await this.fs.exists(path.join(pluginDir, 'worker.min.js'));
-    const coreExists = await this.fs.exists(path.join(pluginDir, 'tesseract-core'));
+    const fileChecks = TESSERACT_FILES.map((file) => this.fs.exists(path.join(pluginDir, file)));
+    const allFilesPresent = (await Promise.all(fileChecks)).every(Boolean);
 
-    if (workerExists && coreExists) {
+    if (allFilesPresent) {
       return 'skipped';
     }
 
