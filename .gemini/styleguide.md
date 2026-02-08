@@ -1,34 +1,34 @@
 # Petrify Code Review Style Guide
 
-이 프로젝트의 코딩 규칙은 리포지토리 곳곳에 배치된 `AGENTS.md` 파일들에 정의되어 있습니다.
-리뷰 대상 파일이 속한 디렉터리에서 루트까지 경로 상의 모든 `AGENTS.md`를 찾아 DO/DON'T 규칙을 기준으로 검토하세요.
+The coding rules for this project are defined in `AGENTS.md` files located throughout the repository.
+Find all `AGENTS.md` files from the directory of the file under review up to the root, and review based on the DO/DON'T rules.
 
-- 루트 `AGENTS.md`는 프로젝트 전체에 적용되는 공통 규칙입니다.
-- 하위 디렉터리의 `AGENTS.md`는 해당 패키지/디렉터리에 특화된 규칙입니다.
-- 하위 규칙이 더 구체적이므로 우선 적용하되, 루트 규칙과 함께 검토하세요.
+- The root `AGENTS.md` contains common rules that apply to the entire project.
+- `AGENTS.md` files in subdirectories contain rules specific to that package/directory.
+- Subdirectory rules are more specific and take precedence, but should be reviewed alongside root rules.
 
-## 리뷰 중점 사항
+## Review Focus Areas
 
-코드 변경을 리뷰할 때 다음 관점에 집중하세요:
+When reviewing code changes, focus on the following:
 
-### 1. 헥사고날 아키텍처 의존성 방향 위반
-- core 패키지에서 어댑터 패키지를 직접 import하는지 확인
-- 포트 인터페이스를 우회하는 구현이 있는지 확인
+### 1. Hexagonal Architecture Dependency Direction Violations
+- Check if the core package directly imports adapter packages
+- Check for implementations that bypass port interfaces
 
-### 2. 에러 처리
-- 필수 데이터 실패를 silent fail로 처리하고 있는지 확인
-- 적절한 예외 클래스를 사용하는지 확인
+### 2. Error Handling
+- Check if required data failures are handled with silent fails
+- Check if appropriate exception classes are used
 
-### 3. 모노레포 패키지 경계
-- 공통 devDependencies가 개별 패키지에 중복 추가되지 않았는지 확인
-- 공통 타입이 어댑터 패키지에서 재정의되지 않았는지 확인
+### 3. Monorepo Package Boundaries
+- Check if shared devDependencies are duplicated in individual packages
+- Check if shared types are redefined in adapter packages
 
-### 4. 테스트 품질
-- 행동(behavior)을 테스트하는지, 구조(structure)를 테스트하는지 확인
-- public API를 통해 테스트하는지 확인
+### 4. Test Quality
+- Check if tests verify behavior, not structure
+- Check if tests go through the public API
 
-## 리뷰하지 않아도 되는 사항
+## What Not to Review
 
-- **코드 포매팅**: biome.json으로 자동 관리됩니다.
-- **단순 타입 안전성**: TypeScript 컴파일러가 보장합니다.
-- **CI에서 검증되는 항목**: 빌드, 타입체크, 린트는 CI 파이프라인에서 자동 검증됩니다.
+- **Code formatting**: Automatically managed by biome.json.
+- **Simple type safety**: Guaranteed by the TypeScript compiler.
+- **Items verified by CI**: Build, typecheck, and lint are automatically verified in the CI pipeline.
