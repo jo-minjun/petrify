@@ -21,10 +21,6 @@ import { InvalidFileFormatError, ParseError } from './exceptions.js';
 import { getMetadataValue, getMetadataValues, parseMetadata } from './metadata.js';
 import { compositeLayers, grayscaleToPng, type LayerBitmap } from './renderer.js';
 
-interface SignatureInfo {
-  readonly isX2: boolean;
-}
-
 interface LayerVisibility {
   readonly isBackgroundLayer: boolean;
   readonly layerId: number;
@@ -37,11 +33,14 @@ function parseLayerVisibility(raw: string): Map<string, boolean> {
     const json = raw.replace(/#/g, ':');
     const layers = JSON.parse(json) as LayerVisibility[];
     for (const layer of layers) {
-      const name = layer.isBackgroundLayer
-        ? 'BGLAYER'
-        : layer.layerId === 0
-          ? 'MAINLAYER'
-          : `LAYER${layer.layerId}`;
+      let name: string;
+      if (layer.isBackgroundLayer) {
+        name = 'BGLAYER';
+      } else if (layer.layerId === 0) {
+        name = 'MAINLAYER';
+      } else {
+        name = `LAYER${layer.layerId}`;
+      }
       visibility.set(name, layer.isVisible);
     }
   } catch {
@@ -59,7 +58,7 @@ export class NoteParser {
       throw new InvalidFileFormatError('File too small to be a valid Supernote note');
     }
 
-    const { isX2 } = this.validateSignature(reader);
+    const isX2 = this.validateSignature(reader);
 
     reader.seek(reader.length - FOOTER_ADDRESS_SIZE);
     const footerAddress = reader.readUint32LE();
@@ -102,7 +101,7 @@ export class NoteParser {
     };
   }
 
-  private validateSignature(reader: BinaryReader): SignatureInfo {
+  private validateSignature(reader: BinaryReader): boolean {
     const fileType = reader.readString(SN_FILE_TYPE_LENGTH);
     if (fileType !== SN_FILE_TYPE_NOTE) {
       throw new InvalidFileFormatError(`Unsupported file type: ${fileType}`);
@@ -114,7 +113,7 @@ export class NoteParser {
     }
 
     const firmwareVersion = Number.parseInt(signature.slice(-8), 10);
-    return { isX2: firmwareVersion >= X2_FIRMWARE_THRESHOLD };
+    return firmwareVersion >= X2_FIRMWARE_THRESHOLD;
   }
 
   private parsePage(

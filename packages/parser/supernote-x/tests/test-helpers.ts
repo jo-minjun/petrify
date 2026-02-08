@@ -1,7 +1,3 @@
-/**
- * 최소한의 유효한 Supernote X-series .note 바이너리를 생성하는 헬퍼.
- */
-
 function buildMetadataBlock(entries: Record<string, string>): Uint8Array {
   const content = Object.entries(entries)
     .map(([k, v]) => `<${k}:${v}>`)

@@ -79,7 +79,6 @@ export function decodeFlate(data: Uint8Array, width: number, height: number): Ui
   const decompressed = pako.inflate(data);
   const view = new DataView(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
 
-  const internalWidth = width;
   const rawPixels: number[] = [];
   for (let i = 0; i + 1 < decompressed.length; i += 2) {
     rawPixels.push(view.getUint16(i, true));
@@ -91,7 +90,7 @@ export function decodeFlate(data: Uint8Array, width: number, height: number): Ui
 
   let outIdx = 0;
   for (let i = 0; i < rawPixels.length && outIdx < width * height; i++) {
-    if (i % internalWidth < INTERNAL_PAGE_HEIGHT) {
+    if (i % width < INTERNAL_PAGE_HEIGHT) {
       const code = rawPixels[i];
       if (code === 0x0000) pixels[outIdx] = 0x00;
       else if (code === 0x2104) pixels[outIdx] = 0x9d;
