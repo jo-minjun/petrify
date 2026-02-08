@@ -1,4 +1,5 @@
 import pako from 'pako';
+import { PNG } from 'pngjs';
 import {
   createColorMap,
   INTERNAL_PAGE_HEIGHT,
@@ -8,7 +9,6 @@ import {
   RLE_SPECIAL_LENGTH_BLANK,
   RLE_SPECIAL_LENGTH_MARKER,
 } from './constants.js';
-import { ParseError } from './exceptions.js';
 
 export function decodeRattaRle(
   data: Uint8Array,
@@ -76,16 +76,28 @@ export function decodeRattaRle(
   return pixels;
 }
 
-const MAX_DECOMPRESSED_SIZE = 20 * 1024 * 1024;
+export function decodePng(data: Uint8Array, width: number, height: number): Uint8Array {
+  const png = PNG.sync.read(Buffer.from(data));
+  const pixels = new Uint8Array(width * height);
+  pixels.fill(PALETTE_TRANSPARENT);
+
+  const srcPixels = Math.min(png.width * png.height, width * height);
+  const channels = png.data.length / (png.width * png.height);
+
+  for (let i = 0; i < srcPixels; i++) {
+    const offset = i * channels;
+    const gray = png.data[offset];
+    const alpha = channels >= 4 ? png.data[offset + 3] : 255;
+    if (alpha > 0) {
+      pixels[i] = gray;
+    }
+  }
+
+  return pixels;
+}
 
 export function decodeFlate(data: Uint8Array, width: number, height: number): Uint8Array {
   const decompressed = pako.inflate(data);
-  if (decompressed.length > MAX_DECOMPRESSED_SIZE) {
-    throw new ParseError(
-      `Decompressed size ${decompressed.length} exceeds limit ${MAX_DECOMPRESSED_SIZE}`,
-    );
-  }
-
   const pixelCount = Math.floor(decompressed.length / 2);
   const view = new DataView(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
   const rawPixels = new Uint16Array(pixelCount);
