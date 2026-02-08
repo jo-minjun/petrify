@@ -21,6 +21,9 @@ const TESSERACT_FILES = [
   'tesseract-core/tesseract-core-simd-lstm.js',
   'tesseract-core/tesseract-core-simd-lstm.wasm',
   'tesseract-core/tesseract-core-simd-lstm.wasm.js',
+  'tesseract-core/tesseract-core-relaxedsimd-lstm.js',
+  'tesseract-core/tesseract-core-relaxedsimd-lstm.wasm',
+  'tesseract-core/tesseract-core-relaxedsimd-lstm.wasm.js',
 ];
 
 export class TesseractAssetDownloader {

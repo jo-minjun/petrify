@@ -28,7 +28,7 @@ async function copyTesseractFiles() {
   await fs.rm(coreTargetDir, { recursive: true, force: true });
   await fs.mkdir(coreTargetDir, { recursive: true });
 
-  const allowedPrefixes = ['tesseract-core-lstm', 'tesseract-core-simd-lstm'];
+  const allowedPrefixes = ['tesseract-core-lstm', 'tesseract-core-simd-lstm', 'tesseract-core-relaxedsimd-lstm'];
   const coreFiles = await fs.readdir(coreDir);
   for (const file of coreFiles) {
     if (file === 'index.js' || allowedPrefixes.some((p) => file.startsWith(p))) {
