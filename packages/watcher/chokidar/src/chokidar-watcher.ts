@@ -24,7 +24,7 @@ export class ChokidarWatcher implements WatcherPort {
     this.errorHandler = handler;
   }
 
-  async start(): Promise<void> {
+  start(): Promise<void> {
     this.watcher = watch(this.dir, {
       persistent: true,
       ignoreInitial: false,
@@ -32,13 +32,21 @@ export class ChokidarWatcher implements WatcherPort {
       depth: 0,
     });
 
-    this.watcher.on('add', (filePath, stats) => this.handleFileEvent(filePath, stats));
-    this.watcher.on('change', (filePath, stats) => this.handleFileEvent(filePath, stats));
-    this.watcher.on('unlink', (filePath) => this.handleDeleteEvent(filePath));
+    this.watcher.on('add', (filePath: string, stats?: { mtimeMs: number }) => {
+      void this.handleFileEvent(filePath, stats);
+    });
+    this.watcher.on('change', (filePath: string, stats?: { mtimeMs: number }) => {
+      void this.handleFileEvent(filePath, stats);
+    });
+    this.watcher.on('unlink', (filePath: string) => {
+      void this.handleDeleteEvent(filePath);
+    });
     this.watcher.on('error', (error: unknown) => {
       const err = error instanceof Error ? error : new Error(String(error));
       this.errorHandler?.(err);
     });
+
+    return Promise.resolve();
   }
 
   async stop(): Promise<void> {
@@ -57,7 +65,12 @@ export class ChokidarWatcher implements WatcherPort {
       name: path.basename(filePath),
       extension: path.extname(filePath).toLowerCase(),
       mtime,
-      readData: () => fs.readFile(filePath).then((buf) => buf.buffer as ArrayBuffer),
+      readData: () =>
+        fs.readFile(filePath).then((buf) => {
+          const ab = new ArrayBuffer(buf.byteLength);
+          new Uint8Array(ab).set(buf);
+          return ab;
+        }),
     };
 
     try {

@@ -60,7 +60,10 @@ describe('showNativeFolderDialog', () => {
   });
 
   it('returns null when remote.dialog is missing', async () => {
-    const result = await showNativeFolderDialog(undefined, { dialog: undefined });
+    const result = await showNativeFolderDialog(
+      undefined,
+      {} as Parameters<typeof showNativeFolderDialog>[1],
+    );
 
     expect(result).toBeNull();
   });

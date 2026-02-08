@@ -86,12 +86,12 @@ export default class PetrifyPlugin extends Plugin {
     await this.initializeOcr();
     this.initializeService();
 
-    this.ribbonIconEl = this.addRibbonIcon('refresh-cw', 'Petrify: Sync', async () => {
+    this.ribbonIconEl = this.addRibbonIcon('refresh-cw', 'Petrify: sync', async () => {
       await this.syncAll();
     });
 
     this.addCommand({
-      id: 'petrify-sync',
+      id: 'sync',
       name: 'Sync',
       callback: async () => {
         await this.syncAll();
@@ -105,7 +105,7 @@ export default class PetrifyPlugin extends Plugin {
         const file = this.app.workspace.getActiveFile();
         if (!file || !this.isPetrifyFile(file)) return false;
         if (!checking) {
-          this.toggleKeep(file);
+          void this.toggleKeep(file);
         }
         return true;
       },
@@ -117,9 +117,11 @@ export default class PetrifyPlugin extends Plugin {
 
         menu.addItem((item) => {
           item
-            .setTitle('Petrify: Toggle keep protection')
+            .setTitle('Petrify: toggle keep protection')
             .setIcon('shield')
-            .onClick(() => this.toggleKeep(file));
+            .onClick(() => {
+              void this.toggleKeep(file);
+            });
         });
       }),
     );
@@ -163,9 +165,9 @@ export default class PetrifyPlugin extends Plugin {
           });
           await auth.handleAuthCode(code);
         },
-        hasGoogleDriveTokens: async () => {
+        hasGoogleDriveTokens: () => {
           const raw = this.app.secretStorage.getSecret('petrify-drive-tokens');
-          return !!raw;
+          return Promise.resolve(!!raw);
         },
       }),
     );
@@ -181,10 +183,9 @@ export default class PetrifyPlugin extends Plugin {
     await this.startWatchers();
   }
 
-  async onunload(): Promise<void> {
-    await Promise.all(this.watchers.map((w) => w.stop()));
-    await this.ocr?.terminate?.();
+  onunload(): void {
     this.assetServer?.stop();
+    void Promise.all(this.watchers.map((w) => w.stop())).then(() => this.ocr?.terminate?.());
   }
 
   private async initializeOcr(): Promise<void> {
@@ -195,6 +196,10 @@ export default class PetrifyPlugin extends Plugin {
       this.ocr = new GoogleVisionOcr({
         apiKey,
         languageHints: googleVision.languageHints,
+        httpPost: async (url, { body, headers }) => {
+          const res = await requestUrl({ url, method: 'POST', headers, body, throw: false });
+          return { status: res.status, body: res.text };
+        },
       });
       return;
     }
@@ -202,7 +207,7 @@ export default class PetrifyPlugin extends Plugin {
     // Tesseract (default)
     const adapter = this.app.vault.adapter as FileSystemAdapter;
     const vaultPath = adapter.getBasePath();
-    const pluginDir = path.join(vaultPath, '.obsidian', 'plugins', 'petrify');
+    const pluginDir = path.join(vaultPath, this.app.vault.configDir, 'plugins', 'petrify');
 
     const assetFs = {
       exists: (p: string) =>
@@ -278,7 +283,12 @@ export default class PetrifyPlugin extends Plugin {
         return names.map((name) => ({ name }));
       },
       stat: (filePath) => fs.stat(filePath),
-      readFile: (filePath) => fs.readFile(filePath).then((buf) => buf.buffer as ArrayBuffer),
+      readFile: (filePath) =>
+        fs.readFile(filePath).then((buf) => {
+          const ab = new ArrayBuffer(buf.byteLength);
+          new Uint8Array(ab).set(buf);
+          return ab;
+        }),
       access: (filePath) => fs.access(filePath),
       rm: (filePath, options) => fs.rm(filePath, options),
     };
@@ -287,8 +297,8 @@ export default class PetrifyPlugin extends Plugin {
       getBasePath: () => (this.app.vault.adapter as FileSystemAdapter).getBasePath(),
       trash: async (outputPath) => {
         const file = this.app.vault.getAbstractFileByPath(outputPath);
-        if (file) {
-          await this.app.vault.trash(file, true);
+        if (file instanceof TFile) {
+          await this.app.fileManager.trashFile(file);
         }
       },
     };
@@ -404,8 +414,8 @@ export default class PetrifyPlugin extends Plugin {
     }
 
     const file = this.app.vault.getAbstractFileByPath(outputPath);
-    if (file) {
-      await this.app.vault.trash(file, true);
+    if (file instanceof TFile) {
+      await this.app.fileManager.trashFile(file);
       this.convertLog.info(`Deleted: ${outputPath}`);
     }
   }
@@ -576,23 +586,25 @@ export default class PetrifyPlugin extends Plugin {
     const secretId = 'petrify-drive-tokens';
 
     return {
-      loadTokens: async () => {
+      loadTokens: () => {
         const raw = this.app.secretStorage.getSecret(secretId);
-        if (!raw) return null;
+        if (!raw) return Promise.resolve(null);
 
         try {
           const tokens = JSON.parse(raw);
-          if (typeof tokens.refresh_token !== 'string') return null;
-          return tokens as OAuthTokens;
+          if (typeof tokens.refresh_token !== 'string') return Promise.resolve(null);
+          return Promise.resolve(tokens as OAuthTokens);
         } catch {
-          return null;
+          return Promise.resolve(null);
         }
       },
-      saveTokens: async (tokens) => {
+      saveTokens: (tokens) => {
         this.app.secretStorage.setSecret(secretId, JSON.stringify(tokens));
+        return Promise.resolve();
       },
-      clearTokens: async () => {
+      clearTokens: () => {
         this.app.secretStorage.setSecret(secretId, '');
+        return Promise.resolve();
       },
     };
   }

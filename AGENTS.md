@@ -180,6 +180,21 @@ packages/
 
 - obsidian-plugin is the sole Composition Root. Register new adapters only in this package
 
+- Convert `unknown` catch variables before using in template literals
+  ```typescript
+  // DO
+  const message = e instanceof Error ? e.message : String(e);
+  throw new ParseError(`Failed: ${message}`);
+
+  // DON'T
+  throw new ParseError(`Failed: ${e}`);
+  ```
+
+- Use `void` operator for fire-and-forget async calls in callbacks
+  ```typescript
+  button.onClick(() => { void this.asyncMethod(); });
+  ```
+
 ## DON'T
 
 - Do not directly import specific adapters from core (dependency inversion violation)
@@ -202,3 +217,6 @@ packages/
 - Do not redefine types in adapter packages that are already defined in core
 - Do not use `console.log` in runtime source (`src/`) — use `console.debug`, `console.warn`, or `console.error` instead (Obsidian community plugin guideline)
 - Do not use inline styles (`.style.` assignment) in TypeScript — use CSS classes instead (Obsidian community plugin guideline)
+- Do not use `async` on methods without `await` — return `Promise.resolve()` instead
+- Do not use removable type assertions (`as Type`) when the base type already suffices
+- Do not use `eslint-disable` comments — use `biome-ignore` directives with explanations

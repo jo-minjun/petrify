@@ -25,7 +25,7 @@ export class ParserSelectModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl('h2', { text: 'Select Parser' });
+    contentEl.createEl('h2', { text: 'Select parser' });
     contentEl.createEl('p', {
       text: `Choose a parser for "${this.fileName}":`,
     });
