@@ -318,7 +318,6 @@ export default class PetrifyPlugin extends Plugin {
     });
 
     watcher.onFileDelete(async (event) => {
-      if (!this.settings.autoSync) return;
       const outputPath = this.getOutputPath(event.name, outputDir);
       await this.handleDeletedSource(outputPath);
     });
@@ -441,10 +440,8 @@ export default class PetrifyPlugin extends Plugin {
       const syncMappings = driveFs
         ? allMappings
         : allMappings.filter((m) => m.source !== SyncSource.GoogleDrive);
-      const result = await this.syncOrchestrator.syncAll(
-        syncMappings,
-        this.settings.autoSync,
-        (mapping) => (mapping.source === SyncSource.GoogleDrive ? driveFs : null),
+      const result = await this.syncOrchestrator.syncAll(syncMappings, (mapping) =>
+        mapping.source === SyncSource.GoogleDrive ? driveFs : null,
       );
 
       const summary = `Sync complete: ${result.synced} converted, ${result.deleted} deleted, ${result.failed} failed`;

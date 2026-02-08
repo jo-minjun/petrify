@@ -63,7 +63,6 @@ export class SyncOrchestrator {
 
   async syncAll(
     watchMappings: SyncMapping[],
-    deleteOnSourceDelete: boolean,
     syncFsForMapping?: (mapping: SyncMapping) => SyncFileSystem | null,
   ): Promise<SyncResult> {
     let synced = 0;
@@ -87,9 +86,7 @@ export class SyncOrchestrator {
       synced += fileResult.synced;
       failed += fileResult.failed;
 
-      if (deleteOnSourceDelete) {
-        deleted += await this.cleanOrphans(mapping, mappingFs);
-      }
+      deleted += await this.cleanOrphans(mapping, mappingFs);
     }
 
     return { synced, failed, deleted };
