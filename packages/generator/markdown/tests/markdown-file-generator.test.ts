@@ -33,18 +33,18 @@ describe('MarkdownFileGenerator', () => {
     expect(output.assets.get('p1.png')).toEqual(imageData);
   });
 
-  it('OCR 텍스트가 상단에, 이미지가 하단에 배치됨', () => {
+  it('이미지가 상단에, OCR 텍스트가 하단에 배치됨', () => {
     const generator = new MarkdownFileGenerator();
     const note = createNote([createPage({ id: 'p1' })]);
     const ocrResults = [{ pageIndex: 0, texts: ['안녕하세요'] }];
     const output = generator.generate(note, 'test-note', ocrResults);
 
-    const ocrIndex = output.content.indexOf('안녕하세요');
-    const separatorIndex = output.content.indexOf('---');
     const imageIndex = output.content.indexOf('![[');
+    const separatorIndex = output.content.indexOf('---');
+    const ocrIndex = output.content.indexOf('안녕하세요');
 
-    expect(ocrIndex).toBeLessThan(separatorIndex);
-    expect(separatorIndex).toBeLessThan(imageIndex);
+    expect(imageIndex).toBeLessThan(separatorIndex);
+    expect(separatorIndex).toBeLessThan(ocrIndex);
   });
 
   it('이미지 참조가 assets 경로를 사용', () => {
