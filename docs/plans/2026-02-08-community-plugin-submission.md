@@ -133,15 +133,15 @@ References:
 
 ## Checklist
 
-- [ ] A1: LICENSE 파일 생성
-- [ ] A2: 루트에 manifest.json
-- [ ] A3: description 마침표 추가
-- [ ] A4: console.log → console.debug
-- [ ] A5: 인라인 스타일 → styles.css
+- [x] A1: LICENSE 파일 생성
+- [x] A2: 루트에 manifest.json
+- [x] A3: description 마침표 추가
+- [x] A4: console.log → console.debug
+- [x] A5: 인라인 스타일 → styles.css
 - [ ] B1: 네트워크 사용 공개
 - [ ] B2: vault 외부 파일 접근 공개
-- [ ] B3: authorUrl 추가
-- [ ] B5: release.yml에 styles.css 추가
+- [x] B3: authorUrl 추가
+- [x] B5: release.yml에 styles.css 추가
 - [ ] B6: minAppVersion 검증
 - [ ] C1: version 동기화
 - [ ] C2: data.json gitignore 확인
