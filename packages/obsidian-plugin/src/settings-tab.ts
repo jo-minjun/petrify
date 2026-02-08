@@ -36,7 +36,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
   private readonly callbacks: SettingsTabCallbacks;
 
   private pendingProvider: OcrProvider = DEFAULT_SETTINGS.ocr.provider;
-  private pendingApiKey: string = DEFAULT_SETTINGS.ocr.googleVision.apiKey;
+  private pendingApiKey = '';
   private pendingLanguageHints: LanguageHint[] = [
     ...DEFAULT_SETTINGS.ocr.googleVision.languageHints,
   ];
@@ -49,6 +49,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
   private pendingLocalWatch: LocalWatchSettings = structuredClone(DEFAULT_SETTINGS.localWatch);
   private pendingGoogleDrive: GoogleDriveSettings = structuredClone(DEFAULT_SETTINGS.googleDrive);
+  private pendingClientSecret = '';
   private hasPendingWatchEdits = false;
   private watchSaveButton: HTMLButtonElement | null = null;
 
@@ -122,6 +123,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
     if (!this.hasPendingWatchEdits) {
       this.pendingLocalWatch = structuredClone(settings.localWatch);
       this.pendingGoogleDrive = structuredClone(settings.googleDrive);
+      this.pendingClientSecret =
+        this.app.secretStorage.getSecret('petrify-drive-client-secret') ?? '';
       this.hasPendingWatchEdits = true;
     }
 
@@ -275,9 +278,9 @@ export class PetrifySettingsTab extends PluginSettingTab {
         text.inputEl.type = 'password';
         text
           .setPlaceholder('Enter Client Secret')
-          .setValue(this.pendingGoogleDrive.clientSecret)
+          .setValue(this.pendingClientSecret)
           .onChange((value) => {
-            this.pendingGoogleDrive.clientSecret = value;
+            this.pendingClientSecret = value;
             this.updateWatchSaveButton();
           });
       });
@@ -293,7 +296,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
       });
     authSetting.addButton((btn) =>
       btn.setButtonText('Authenticate').onClick(() => {
-        const { clientId, clientSecret } = this.pendingGoogleDrive;
+        const { clientId } = this.pendingGoogleDrive;
+        const clientSecret = this.pendingClientSecret;
         if (!clientId || !clientSecret) {
           new Notice('Enter Client ID and Client Secret first');
           return;
@@ -384,7 +388,8 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .setDesc(mapping.folderName || 'No folder selected')
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(async () => {
-            const { clientId, clientSecret } = this.pendingGoogleDrive;
+            const { clientId } = this.pendingGoogleDrive;
+            const clientSecret = this.pendingClientSecret;
             if (!clientId || !clientSecret) {
               new Notice('Enter Client ID and Client Secret first');
               return;
@@ -436,6 +441,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .onClick(async () => {
           settings.localWatch = structuredClone(this.pendingLocalWatch);
           settings.googleDrive = structuredClone(this.pendingGoogleDrive);
+          this.app.secretStorage.setSecret('petrify-drive-client-secret', this.pendingClientSecret);
           await this.callbacks.saveSettings(settings);
           this.hasPendingWatchEdits = false;
           this.display();
@@ -448,15 +454,17 @@ export class PetrifySettingsTab extends PluginSettingTab {
   private updateWatchSaveButton(): void {
     if (!this.watchSaveButton) return;
     const settings = this.callbacks.getSettings();
+    const currentClientSecret =
+      this.app.secretStorage.getSecret('petrify-drive-client-secret') ?? '';
     const hasChanges =
       JSON.stringify({
         localWatch: this.pendingLocalWatch,
         googleDrive: this.pendingGoogleDrive,
       }) !==
-      JSON.stringify({
-        localWatch: settings.localWatch,
-        googleDrive: settings.googleDrive,
-      });
+        JSON.stringify({
+          localWatch: settings.localWatch,
+          googleDrive: settings.googleDrive,
+        }) || this.pendingClientSecret !== currentClientSecret;
     const isValid = this.isWatchSourcesValid();
     const canSave = hasChanges && isValid;
     this.watchSaveButton.disabled = !canSave;
@@ -478,7 +486,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     if (!this.hasPendingOcrEdits) {
       this.pendingProvider = settings.ocr.provider;
-      this.pendingApiKey = settings.ocr.googleVision.apiKey;
+      this.pendingApiKey = this.app.secretStorage.getSecret('petrify-vision-api-key') ?? '';
       this.pendingLanguageHints = [...settings.ocr.googleVision.languageHints];
       this.pendingConfidenceThreshold = settings.ocr.confidenceThreshold;
       this.hasPendingOcrEdits = true;
@@ -492,9 +500,10 @@ export class PetrifySettingsTab extends PluginSettingTab {
       const hasApiKey = this.pendingApiKey.trim().length > 0;
       const isValid = !isGoogleVision || hasApiKey;
 
+      const currentApiKey = this.app.secretStorage.getSecret('petrify-vision-api-key') ?? '';
       const hasChanges =
         this.pendingProvider !== settings.ocr.provider ||
-        this.pendingApiKey !== settings.ocr.googleVision.apiKey ||
+        this.pendingApiKey !== currentApiKey ||
         JSON.stringify(this.pendingLanguageHints) !==
           JSON.stringify(settings.ocr.googleVision.languageHints) ||
         this.pendingConfidenceThreshold !== settings.ocr.confidenceThreshold;
@@ -607,7 +616,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         .setCta()
         .onClick(async () => {
           settings.ocr.provider = this.pendingProvider;
-          settings.ocr.googleVision.apiKey = this.pendingApiKey;
+          this.app.secretStorage.setSecret('petrify-vision-api-key', this.pendingApiKey);
           settings.ocr.googleVision.languageHints = this.pendingLanguageHints;
           settings.ocr.confidenceThreshold = this.pendingConfidenceThreshold;
           await this.callbacks.saveSettings(settings);

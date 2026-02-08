@@ -14,7 +14,12 @@ import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
-import type { OAuth2Client, PageTokenStore, TokenStore } from '@petrify/watcher-google-drive';
+import type {
+  OAuth2Client,
+  OAuthTokens,
+  PageTokenStore,
+  TokenStore,
+} from '@petrify/watcher-google-drive';
 import {
   GoogleDriveAuth,
   GoogleDriveClient,
@@ -159,8 +164,8 @@ export default class PetrifyPlugin extends Plugin {
           await auth.handleAuthCode(code);
         },
         hasGoogleDriveTokens: async () => {
-          const data = await this.loadData();
-          return !!data?.googleDriveTokens?.refresh_token;
+          const raw = this.app.secretStorage.getSecret('petrify-drive-tokens');
+          return !!raw;
         },
       }),
     );
@@ -186,8 +191,9 @@ export default class PetrifyPlugin extends Plugin {
     const { provider, googleVision } = this.settings.ocr;
 
     if (provider === 'google-vision') {
+      const apiKey = this.app.secretStorage.getSecret('petrify-vision-api-key') ?? '';
       this.ocr = new GoogleVisionOcr({
-        apiKey: googleVision.apiKey,
+        apiKey,
         languageHints: googleVision.languageHints,
       });
       return;
@@ -442,9 +448,6 @@ export default class PetrifyPlugin extends Plugin {
   private async restart(): Promise<void> {
     await Promise.all(this.watchers.map((w) => w.stop()));
     this.watchers = [];
-    await this.ocr?.terminate?.();
-    this.assetServer?.stop();
-    await this.initializeOcr();
     this.initializeService();
     this.dropHandler.updateService(this.petrifyService, this.parserMap);
     await this.startWatchers();
@@ -552,7 +555,8 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async getGoogleDriveAuthClient(): Promise<OAuth2Client | null> {
-    const { clientId, clientSecret } = this.settings.googleDrive;
+    const { clientId } = this.settings.googleDrive;
+    const clientSecret = this.app.secretStorage.getSecret('petrify-drive-client-secret') ?? '';
     if (!clientId || !clientSecret) return null;
 
     if (!this.googleDriveAuth) {
@@ -567,20 +571,26 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private createTokenStore(): TokenStore {
+    const secretId = 'petrify-drive-tokens';
+
     return {
       loadTokens: async () => {
-        const data = await this.loadData();
-        return data?.googleDriveTokens ?? null;
+        const raw = this.app.secretStorage.getSecret(secretId);
+        if (!raw) return null;
+
+        try {
+          const tokens = JSON.parse(raw);
+          if (typeof tokens.refresh_token !== 'string') return null;
+          return tokens as OAuthTokens;
+        } catch {
+          return null;
+        }
       },
       saveTokens: async (tokens) => {
-        const data = (await this.loadData()) ?? {};
-        data.googleDriveTokens = tokens;
-        await this.saveData(data);
+        this.app.secretStorage.setSecret(secretId, JSON.stringify(tokens));
       },
       clearTokens: async () => {
-        const data = (await this.loadData()) ?? {};
-        delete data.googleDriveTokens;
-        await this.saveData(data);
+        this.app.secretStorage.setSecret(secretId, '');
       },
     };
   }
