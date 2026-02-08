@@ -17,7 +17,7 @@ export type HttpPostFn = (
 export interface GoogleVisionOcrConfig {
   readonly apiKey: string;
   readonly languageHints?: string[];
-  readonly httpPost?: HttpPostFn;
+  readonly httpPost: HttpPostFn;
 }
 
 interface VisionVertex {
@@ -60,18 +60,13 @@ interface VisionResponse {
 
 const VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate';
 
-const defaultHttpPost: HttpPostFn = async (url, { body, headers }) => {
-  const res = await fetch(url, { method: 'POST', headers, body });
-  return { status: res.status, body: await res.text() };
-};
-
 export class GoogleVisionOcr implements OcrPort {
   private readonly config: GoogleVisionOcrConfig;
   private readonly httpPost: HttpPostFn;
 
   constructor(config: GoogleVisionOcrConfig) {
     this.config = config;
-    this.httpPost = config.httpPost ?? defaultHttpPost;
+    this.httpPost = config.httpPost;
   }
 
   async recognize(image: ArrayBuffer, options?: OcrOptions): Promise<OcrResult> {

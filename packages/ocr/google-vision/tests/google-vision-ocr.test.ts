@@ -1,5 +1,6 @@
 import type { OcrPort } from '@petrify/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { HttpPostFn } from '../src/google-vision-ocr.js';
 import { GoogleVisionOcr } from '../src/google-vision-ocr.js';
 
 const MOCK_VISION_RESPONSE = {
@@ -72,10 +73,11 @@ const MOCK_VISION_RESPONSE = {
   ],
 };
 
-function mockFetchSuccess(body: unknown) {
-  return vi
-    .spyOn(globalThis, 'fetch')
-    .mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
+function createMockHttpPost(status: number, body: unknown) {
+  return vi.fn<HttpPostFn>().mockResolvedValue({
+    status,
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+  });
 }
 
 describe('GoogleVisionOcr', () => {
@@ -84,13 +86,14 @@ describe('GoogleVisionOcr', () => {
   });
 
   it('implements the OcrPort interface', () => {
-    const ocr: OcrPort = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const httpPost = createMockHttpPost(200, MOCK_VISION_RESPONSE);
+    const ocr: OcrPort = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
     expect(ocr.recognize).toBeDefined();
   });
 
   it('correctly maps Vision API response to OcrResult', async () => {
-    mockFetchSuccess(MOCK_VISION_RESPONSE);
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const httpPost = createMockHttpPost(200, MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
 
     const result = await ocr.recognize(new ArrayBuffer(100));
 
@@ -100,8 +103,8 @@ describe('GoogleVisionOcr', () => {
   });
 
   it('converts bounding box coordinates per block', async () => {
-    mockFetchSuccess(MOCK_VISION_RESPONSE);
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const httpPost = createMockHttpPost(200, MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
 
     const result = await ocr.recognize(new ArrayBuffer(100));
 
@@ -124,52 +127,59 @@ describe('GoogleVisionOcr', () => {
   });
 
   it('passes API key as query parameter', async () => {
-    const spy = mockFetchSuccess(MOCK_VISION_RESPONSE);
-    const ocr = new GoogleVisionOcr({ apiKey: 'my-api-key' });
+    const httpPost = createMockHttpPost(200, MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'my-api-key', httpPost });
 
     await ocr.recognize(new ArrayBuffer(100));
 
-    expect(spy).toHaveBeenCalledWith(
+    expect(httpPost).toHaveBeenCalledWith(
       'https://vision.googleapis.com/v1/images:annotate?key=my-api-key',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({ headers: { 'Content-Type': 'application/json' } }),
     );
   });
 
   it('passes languageHints to imageContext', async () => {
-    const spy = mockFetchSuccess(MOCK_VISION_RESPONSE);
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', languageHints: ['ko', 'en'] });
+    const httpPost = createMockHttpPost(200, MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({
+      apiKey: 'test-key',
+      languageHints: ['ko', 'en'],
+      httpPost,
+    });
 
     await ocr.recognize(new ArrayBuffer(100));
 
-    const body = JSON.parse(spy.mock.calls[0][1]?.body as string);
+    const body = JSON.parse(httpPost.mock.calls[0][1].body);
     expect(body.requests[0].imageContext).toEqual({ languageHints: ['ko', 'en'] });
   });
 
   it('OcrOptions.language overrides config.languageHints', async () => {
-    const spy = mockFetchSuccess(MOCK_VISION_RESPONSE);
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', languageHints: ['ko', 'en'] });
+    const httpPost = createMockHttpPost(200, MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({
+      apiKey: 'test-key',
+      languageHints: ['ko', 'en'],
+      httpPost,
+    });
 
     await ocr.recognize(new ArrayBuffer(100), { language: 'ja' });
 
-    const body = JSON.parse(spy.mock.calls[0][1]?.body as string);
+    const body = JSON.parse(httpPost.mock.calls[0][1].body);
     expect(body.requests[0].imageContext).toEqual({ languageHints: ['ja'] });
   });
 
   it('does not include imageContext when languageHints is not specified', async () => {
-    const spy = mockFetchSuccess(MOCK_VISION_RESPONSE);
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const httpPost = createMockHttpPost(200, MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
 
     await ocr.recognize(new ArrayBuffer(100));
 
-    const body = JSON.parse(spy.mock.calls[0][1]?.body as string);
+    const body = JSON.parse(httpPost.mock.calls[0][1].body);
     expect(body.requests[0].imageContext).toBeUndefined();
   });
 
   it('filters out regions below confidenceThreshold', async () => {
-    mockFetchSuccess(MOCK_VISION_RESPONSE);
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const httpPost = createMockHttpPost(200, MOCK_VISION_RESPONSE);
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
 
-    // Second block confidence in MOCK_VISION_RESPONSE is 0.93 -> 93
     const result = await ocr.recognize(new ArrayBuffer(100), { confidenceThreshold: 95 });
 
     expect(result.regions).toHaveLength(1);
@@ -178,8 +188,8 @@ describe('GoogleVisionOcr', () => {
   });
 
   it('returns empty result for image with no text', async () => {
-    mockFetchSuccess({ responses: [{}] });
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const httpPost = createMockHttpPost(200, { responses: [{}] });
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
 
     const result = await ocr.recognize(new ArrayBuffer(100));
 
@@ -189,8 +199,8 @@ describe('GoogleVisionOcr', () => {
   });
 
   it('throws OcrInitializationError on API authentication failure (403)', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('Forbidden', { status: 403 }));
-    const ocr = new GoogleVisionOcr({ apiKey: 'invalid-key' });
+    const httpPost = createMockHttpPost(403, 'Forbidden');
+    const ocr = new GoogleVisionOcr({ apiKey: 'invalid-key', httpPost });
 
     await expect(ocr.recognize(new ArrayBuffer(100))).rejects.toThrow(
       'Vision API authentication failed (403)',
@@ -198,17 +208,15 @@ describe('GoogleVisionOcr', () => {
   });
 
   it('throws OcrRecognitionError on API error response (500)', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('Internal Server Error', { status: 500 }),
-    );
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const httpPost = createMockHttpPost(500, 'Internal Server Error');
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
 
     await expect(ocr.recognize(new ArrayBuffer(100))).rejects.toThrow('Vision API error (500)');
   });
 
   it('throws OcrRecognitionError on network failure', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const httpPost = vi.fn<HttpPostFn>().mockRejectedValue(new Error('Network error'));
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
 
     await expect(ocr.recognize(new ArrayBuffer(100))).rejects.toThrow(
       'Vision API request failed: Network error',
@@ -216,10 +224,10 @@ describe('GoogleVisionOcr', () => {
   });
 
   it('throws OcrRecognitionError when response body contains error field', async () => {
-    mockFetchSuccess({
+    const httpPost = createMockHttpPost(200, {
       responses: [{ error: { message: 'Bad image', code: 400 } }],
     });
-    const ocr = new GoogleVisionOcr({ apiKey: 'test-key' });
+    const ocr = new GoogleVisionOcr({ apiKey: 'test-key', httpPost });
 
     await expect(ocr.recognize(new ArrayBuffer(100))).rejects.toThrow(
       'Vision API error: Bad image',

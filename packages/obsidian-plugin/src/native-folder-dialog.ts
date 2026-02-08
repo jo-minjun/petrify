@@ -7,9 +7,10 @@ interface ElectronRemote {
   };
 }
 
-function getElectronRemote(): ElectronRemote | undefined {
+async function getElectronRemote(): Promise<ElectronRemote | undefined> {
   try {
-    const electronModule = require('electron');
+    // @ts-expect-error electron is provided by Obsidian's Electron runtime, not installed as a dependency
+    const electronModule: Record<string, unknown> = await import('electron');
     return electronModule?.remote as ElectronRemote | undefined;
   } catch {
     return undefined;
@@ -22,14 +23,15 @@ function getElectronRemote(): ElectronRemote | undefined {
  */
 export async function showNativeFolderDialog(
   defaultPath?: string,
-  remote: ElectronRemote | undefined = getElectronRemote(),
+  remote?: ElectronRemote,
 ): Promise<string | null> {
   try {
-    if (!remote?.dialog?.showOpenDialog) {
+    const resolvedRemote = remote ?? (await getElectronRemote());
+    if (!resolvedRemote?.dialog?.showOpenDialog) {
       return null;
     }
 
-    const result = await remote.dialog.showOpenDialog({
+    const result = await resolvedRemote.dialog.showOpenDialog({
       properties: ['openDirectory'],
       defaultPath,
     });
