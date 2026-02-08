@@ -5,11 +5,12 @@ export interface PetrifyFrontmatter {
 }
 
 export function createFrontmatter(meta: PetrifyFrontmatter): string {
-  const keepLine = meta.keep ? '\n  keep: true' : '';
+  const keep = meta.keep ?? false;
   return `---
 petrify:
   source: ${meta.source}
-  mtime: ${meta.mtime}${keepLine}
+  mtime: ${meta.mtime}
+  keep: ${keep}
 excalidraw-plugin: parsed
 ---
 
@@ -48,6 +49,6 @@ export function updateKeepInContent(content: string, keep: boolean): string {
   const meta = parseFrontmatter(content);
   if (!meta) return content;
 
-  const newFrontmatter = createFrontmatter({ ...meta, keep: keep || undefined });
+  const newFrontmatter = createFrontmatter({ ...meta, keep });
   return content.replace(/^---\n[\s\S]*?\n---\n\n/, newFrontmatter);
 }

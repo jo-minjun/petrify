@@ -28,10 +28,10 @@ describe('frontmatter', () => {
       expect(result).toContain('excalidraw-plugin: parsed');
     });
 
-    it('keep이 없으면 keep 필드를 생략한다', () => {
+    it('keep이 없으면 keep: false를 출력한다', () => {
       const result = createFrontmatter({ source: '/path/to/file', mtime: 123 });
 
-      expect(result).not.toContain('keep');
+      expect(result).toContain('keep: false');
     });
   });
 
@@ -138,7 +138,7 @@ excalidraw-plugin: parsed
       expect(result).toContain('source: /path/to/file.note');
     });
 
-    it('keep: true를 제거한다', () => {
+    it('keep: true를 keep: false로 변경한다', () => {
       const content = `---
 petrify:
   source: /path/to/file.note
@@ -151,7 +151,8 @@ excalidraw-plugin: parsed
 
       const result = updateKeepInContent(content, false);
 
-      expect(result).not.toContain('keep');
+      expect(result).toContain('keep: false');
+      expect(result).not.toContain('keep: true');
       expect(result).toContain('# Content');
       expect(result).toContain('source: /path/to/file.note');
     });

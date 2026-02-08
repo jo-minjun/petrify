@@ -49,6 +49,7 @@ export class PetrifyService {
     const metadata: ConversionMetadata = {
       source: event.id,
       mtime: event.mtime,
+      keep: false,
     };
 
     return {
