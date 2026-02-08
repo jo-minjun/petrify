@@ -21,7 +21,16 @@ Petrify converts handwriting note files into [Excalidraw](https://github.com/zsv
 
 ### Installation
 
-This plugin is not yet published in the Obsidian Community Plugin directory. To use it, build from source:
+This plugin is not yet published in the Obsidian Community Plugin directory.
+
+#### Option 1: BRAT (Recommended)
+
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin
+2. Open BRAT settings → "Add Beta plugin"
+3. Enter repository URL: `jo-minjun/petrify`
+4. Click "Add Plugin"
+
+#### Option 2: Build from Source
 
 ```bash
 git clone https://github.com/jo-minjun/petrify.git
@@ -36,8 +45,8 @@ Then copy the build output to your vault:
 mkdir -p <vault>/.obsidian/plugins/petrify/
 cp packages/obsidian-plugin/main.js <vault>/.obsidian/plugins/petrify/
 cp packages/obsidian-plugin/manifest.json <vault>/.obsidian/plugins/petrify/
-cp packages/obsidian-plugin/tesseract-ocr.cjs <vault>/.obsidian/plugins/petrify/
 cp packages/obsidian-plugin/worker.min.js <vault>/.obsidian/plugins/petrify/
+cp -r packages/obsidian-plugin/tesseract-core/ <vault>/.obsidian/plugins/petrify/tesseract-core/
 ```
 
 Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
@@ -60,16 +69,17 @@ Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
 | Setting | Description |
 |---------|-------------|
 | Output Format | Output file format (Excalidraw / Markdown) |
-| Auto-sync | Automatically update or delete converted files when the source changes or is removed. Files with `keep: true` frontmatter are excluded |
 
 #### Watch Sources — Local File Watch
 
 | Setting | Description |
 |---------|-------------|
 | Local File Watch | Enable/disable local directory watching |
-| Watch Directory | External folder path to watch |
-| Output Directory | Vault path for converted files |
+| Watch Directory | External folder path to watch (with Browse button) |
+| Output Directory | Vault path for converted files (with Browse button) |
 | Parser | Parser to use (currently Viwoods only) |
+
+Multiple mappings can be added, each with its own watch/output directory and parser.
 
 #### Watch Sources — Google Drive API
 
