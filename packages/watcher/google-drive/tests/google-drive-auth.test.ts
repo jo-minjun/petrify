@@ -44,12 +44,12 @@ describe('GoogleDriveAuth', () => {
     });
   });
 
-  it('저장된 토큰이 없으면 restoreSession은 null을 반환한다', async () => {
+  it('restoreSession returns null when no saved token exists', async () => {
     const client = await auth.restoreSession();
     expect(client).toBeNull();
   });
 
-  it('저장된 refresh token이 있으면 restoreSession은 OAuth2Client를 반환한다', async () => {
+  it('restoreSession returns an OAuth2Client when a saved refresh token exists', async () => {
     tokenStore.tokens = {
       access_token: 'test-access',
       refresh_token: 'test-refresh',
@@ -60,11 +60,11 @@ describe('GoogleDriveAuth', () => {
     expect(client).not.toBeNull();
   });
 
-  it('초기 상태에서 isAuthenticated는 false를 반환한다', () => {
+  it('isAuthenticated returns false in initial state', () => {
     expect(auth.isAuthenticated()).toBe(false);
   });
 
-  it('restoreSession 성공 후 isAuthenticated는 true를 반환한다', async () => {
+  it('isAuthenticated returns true after successful restoreSession', async () => {
     tokenStore.tokens = {
       access_token: 'test-access',
       refresh_token: 'test-refresh',
@@ -75,7 +75,7 @@ describe('GoogleDriveAuth', () => {
     expect(auth.isAuthenticated()).toBe(true);
   });
 
-  it('revokeToken은 토큰 저장소를 클리어하고 인증 상태를 해제한다', async () => {
+  it('revokeToken clears the token store and resets authentication state', async () => {
     tokenStore.tokens = {
       access_token: 'test',
       refresh_token: 'test',
@@ -90,7 +90,7 @@ describe('GoogleDriveAuth', () => {
     expect(auth.isAuthenticated()).toBe(false);
   });
 
-  it('getAuthUrl은 Google OAuth2 인증 URL을 반환한다', () => {
+  it('getAuthUrl returns a Google OAuth2 authentication URL', () => {
     const url = auth.getAuthUrl();
     expect(url).toContain('accounts.google.com');
     expect(url).toContain('drive.readonly');

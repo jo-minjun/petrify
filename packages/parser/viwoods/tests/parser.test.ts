@@ -29,14 +29,14 @@ function createMockZip(options: {
 
 describe('NoteParser', () => {
   describe('parse', () => {
-    it('유효하지 않은 ZIP 파일이면 InvalidFileFormatError', async () => {
+    it('throws InvalidFileFormatError for invalid ZIP file', async () => {
       const parser = new NoteParser();
       const invalidData = new ArrayBuffer(10);
 
       await expect(parser.parse(invalidData)).rejects.toThrow(InvalidFileFormatError);
     });
 
-    it('NoteFileInfo에서 제목과 날짜를 파싱', async () => {
+    it('parses title and dates from NoteFileInfo', async () => {
       const data = await createMockZip({
         noteInfo: {
           fileName: 'My Note',
@@ -57,7 +57,7 @@ describe('NoteParser', () => {
       expect(note.modifiedAt).toEqual(new Date(1700001000000));
     });
 
-    it('NoteFileInfo가 없으면 기본값 사용', async () => {
+    it('uses default values when NoteFileInfo is absent', async () => {
       const data = await createMockZip({
         pageList: [{ id: 'page-1', order: 0 }],
         screenshots: {
@@ -72,8 +72,8 @@ describe('NoteParser', () => {
     });
   });
 
-  describe('PageListFileInfo 파싱', () => {
-    it('PageListFileInfo가 없으면 ParseError', async () => {
+  describe('PageListFileInfo parsing', () => {
+    it('throws ParseError when PageListFileInfo is absent', async () => {
       const data = await createMockZip({
         noteInfo: { fileName: 'Test' },
       });
@@ -83,7 +83,7 @@ describe('NoteParser', () => {
       await expect(parser.parse(data)).rejects.toThrow('PageListFileInfo.json not found');
     });
 
-    it('order 필드 기준으로 페이지 정렬', async () => {
+    it('sorts pages by order field', async () => {
       const data = await createMockZip({
         pageList: [
           { id: 'page-b', order: 2 },
@@ -110,8 +110,8 @@ describe('NoteParser', () => {
     });
   });
 
-  describe('screenshotBmp 추출', () => {
-    it('pageId로 screenshotBmp 파일 매핑', async () => {
+  describe('screenshotBmp extraction', () => {
+    it('maps screenshotBmp files by pageId', async () => {
       const imageBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
       const data = await createMockZip({
         pageList: [{ id: 'abc-123', order: 0 }],
@@ -131,7 +131,7 @@ describe('NoteParser', () => {
       expect(note.pages[0].order).toBe(0);
     });
 
-    it('screenshotBmp가 없는 페이지는 스킵', async () => {
+    it('skips pages without screenshotBmp', async () => {
       const img = new Uint8Array([1, 2, 3]);
       const data = await createMockZip({
         pageList: [
@@ -150,7 +150,7 @@ describe('NoteParser', () => {
       expect(note.pages[0].id).toBe('valid-page');
     });
 
-    it('다중 페이지에서 각각의 screenshotBmp 추출', async () => {
+    it('extracts individual screenshotBmp from multiple pages', async () => {
       const img1 = new Uint8Array([1, 1, 1]);
       const img2 = new Uint8Array([2, 2, 2]);
 

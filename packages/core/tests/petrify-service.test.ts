@@ -42,7 +42,7 @@ function createMockMetadataPort(): ConversionMetadataPort {
 
 describe('PetrifyService', () => {
   describe('handleFileChange', () => {
-    it('지원하지 않는 확장자는 null 반환', async () => {
+    it('returns null for unsupported extensions', async () => {
       const parsers = new Map<string, ParserPort>();
       const service = new PetrifyService(
         parsers,
@@ -64,7 +64,7 @@ describe('PetrifyService', () => {
       expect(result).toBeNull();
     });
 
-    it('keep이 true면 원본이 변경되어도 null 반환', async () => {
+    it('returns null when keep is true even if the source has changed', async () => {
       const mockParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
 
@@ -93,7 +93,7 @@ describe('PetrifyService', () => {
       expect(readData).not.toHaveBeenCalled();
     });
 
-    it('mtime이 같거나 이전이면 null 반환', async () => {
+    it('returns null when mtime is equal or older', async () => {
       const mockParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
 
@@ -121,7 +121,7 @@ describe('PetrifyService', () => {
   });
 
   describe('handleFileDelete', () => {
-    it('메타데이터가 없으면 false 반환', async () => {
+    it('returns false when metadata does not exist', async () => {
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
 
@@ -133,7 +133,7 @@ describe('PetrifyService', () => {
       expect(result).toBe(false);
     });
 
-    it('keep이 true면 false 반환', async () => {
+    it('returns false when keep is true', async () => {
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
         source: null,
@@ -149,7 +149,7 @@ describe('PetrifyService', () => {
       expect(result).toBe(false);
     });
 
-    it('삭제 가능하면 true 반환', async () => {
+    it('returns true when deletion is allowed', async () => {
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
         source: '/path/to/file.note',
@@ -166,7 +166,7 @@ describe('PetrifyService', () => {
   });
 
   describe('getParsersForExtension', () => {
-    it('등록된 확장자에 대해 파서 반환', () => {
+    it('returns parser for a registered extension', () => {
       const mockParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
       const service = new PetrifyService(
@@ -182,7 +182,7 @@ describe('PetrifyService', () => {
       expect(result[0]).toBe(mockParser);
     });
 
-    it('미등록 확장자에 대해 빈 배열 반환', () => {
+    it('returns an empty array for an unregistered extension', () => {
       const service = new PetrifyService(
         new Map(),
         createMockGeneratorPort(),
@@ -195,7 +195,7 @@ describe('PetrifyService', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('대소문자 무시하여 파서 반환', () => {
+    it('returns parser case-insensitively', () => {
       const mockParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
       const service = new PetrifyService(
@@ -212,7 +212,7 @@ describe('PetrifyService', () => {
     });
   });
 
-  describe('변환 플로우', () => {
+  describe('conversion flow', () => {
     function createTestPage(overrides?: Partial<Page>): Page {
       return {
         id: 'page-1',
@@ -240,7 +240,7 @@ describe('PetrifyService', () => {
       };
     }
 
-    it('OCR 없이 변환', async () => {
+    it('converts without OCR', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
@@ -277,7 +277,7 @@ describe('PetrifyService', () => {
       });
     });
 
-    it('OCR 포함 변환', async () => {
+    it('converts with OCR', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
@@ -319,7 +319,7 @@ describe('PetrifyService', () => {
       expect(ocrResults?.[0].texts).toContain('hello');
     });
 
-    it('OCR confidence 필터링', async () => {
+    it('filters OCR results by confidence', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
@@ -365,7 +365,7 @@ describe('PetrifyService', () => {
       expect(ocrResults?.[0].texts).not.toContain('low');
     });
 
-    it('에셋 포함 변환', async () => {
+    it('converts with assets', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
@@ -400,7 +400,7 @@ describe('PetrifyService', () => {
       expect(result?.assets.get('img.png')).toEqual(new Uint8Array([1, 2, 3]));
     });
 
-    it('다중 페이지 OCR — 페이지별 OCR 수행', async () => {
+    it('performs OCR per page for multi-page notes', async () => {
       const page1 = createTestPage({ id: 'page-1', order: 0 });
       const page2 = createTestPage({
         id: 'page-2',
@@ -456,7 +456,7 @@ describe('PetrifyService', () => {
       expect(ocrResults?.[1].texts).toContain('page2-text');
     });
 
-    it('빈 imageData 페이지는 OCR 건너뜀', async () => {
+    it('skips OCR for pages with empty imageData', async () => {
       const emptyPage = createTestPage({
         id: 'empty-page',
         order: 0,
@@ -501,7 +501,7 @@ describe('PetrifyService', () => {
       expect(mockOcr.recognize).toHaveBeenCalledTimes(1);
     });
 
-    it('convertDroppedFile 플로우', async () => {
+    it('convertDroppedFile flow', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
@@ -530,7 +530,7 @@ describe('PetrifyService', () => {
     });
   });
 
-  describe('에러 전파', () => {
+  describe('error propagation', () => {
     function createTestPage(): Page {
       return {
         id: 'page-1',
@@ -550,7 +550,7 @@ describe('PetrifyService', () => {
       };
     }
 
-    it('parse 실패 시 ConversionError (phase=parse)', async () => {
+    it('wraps parse failure as ConversionError (phase=parse)', async () => {
       const mockParser = createMockParserPort();
       vi.mocked(mockParser.parse).mockRejectedValue(new ParseError('test'));
 
@@ -576,7 +576,7 @@ describe('PetrifyService', () => {
       });
     });
 
-    it('OCR 실패 시 ConversionError (phase=ocr)', async () => {
+    it('wraps OCR failure as ConversionError (phase=ocr)', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
@@ -611,7 +611,7 @@ describe('PetrifyService', () => {
       });
     });
 
-    it('generate 실패 시 ConversionError (phase=generate)', async () => {
+    it('wraps generate failure as ConversionError (phase=generate)', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);

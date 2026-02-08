@@ -28,7 +28,7 @@ describe('GoogleDriveClient', () => {
     client = new GoogleDriveClient({} as unknown as import('google-auth-library').OAuth2Client);
   });
 
-  it('listFiles는 지정 폴더의 파일 목록을 반환한다', async () => {
+  it('listFiles returns the file list of the specified folder', async () => {
     mockFiles.list.mockResolvedValue({
       data: {
         files: [
@@ -49,7 +49,7 @@ describe('GoogleDriveClient', () => {
     expect(files[0].name).toBe('test.note');
   });
 
-  it('listFiles는 페이지네이션을 처리한다', async () => {
+  it('listFiles handles pagination', async () => {
     mockFiles.list
       .mockResolvedValueOnce({
         data: {
@@ -84,7 +84,7 @@ describe('GoogleDriveClient', () => {
     expect(mockFiles.list).toHaveBeenCalledTimes(2);
   });
 
-  it('getStartPageToken은 초기 토큰을 반환한다', async () => {
+  it('getStartPageToken returns the initial token', async () => {
     mockChanges.getStartPageToken.mockResolvedValue({
       data: { startPageToken: '12345' },
     });
@@ -94,7 +94,7 @@ describe('GoogleDriveClient', () => {
     expect(token).toBe('12345');
   });
 
-  it('getStartPageToken은 토큰이 없으면 에러를 던진다', async () => {
+  it('getStartPageToken throws an error when no token is available', async () => {
     mockChanges.getStartPageToken.mockResolvedValue({
       data: { startPageToken: null },
     });
@@ -102,7 +102,7 @@ describe('GoogleDriveClient', () => {
     await expect(client.getStartPageToken()).rejects.toThrow('startPageToken');
   });
 
-  it('getChanges는 변경사항 목록을 반환한다', async () => {
+  it('getChanges returns the list of changes', async () => {
     mockChanges.list.mockResolvedValue({
       data: {
         changes: [
@@ -130,7 +130,7 @@ describe('GoogleDriveClient', () => {
     expect(result.newStartPageToken).toBe('12346');
   });
 
-  it('downloadFile은 스트림을 읽어 ArrayBuffer를 반환한다', async () => {
+  it('downloadFile reads the stream and returns an ArrayBuffer', async () => {
     const stream = Readable.from([Buffer.from('test-binary-data')]);
     mockFiles.get.mockResolvedValue({ data: stream });
 
@@ -141,7 +141,7 @@ describe('GoogleDriveClient', () => {
     expect(text).toBe('test-binary-data');
   });
 
-  it('getFile은 단일 파일 메타데이터를 반환한다', async () => {
+  it('getFile returns a single file metadata', async () => {
     mockFiles.get.mockResolvedValue({
       data: {
         id: 'f1',

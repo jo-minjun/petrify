@@ -218,7 +218,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         })
         .addButton((btn) =>
           btn.setButtonText('Browse').onClick(async () => {
-            // biome-ignore lint/suspicious/noExplicitAny: FileSystemAdapter.basePath는 런타임에 존재하지만 Obsidian 타입 선언에 미포함
+            // biome-ignore lint/suspicious/noExplicitAny: FileSystemAdapter.basePath exists at runtime but is not included in Obsidian type declarations
             const vaultPath = (this.app.vault.adapter as any).basePath as string;
             const selected = await showNativeFolderDialog(vaultPath);
             if (!selected) return;

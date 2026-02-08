@@ -6,7 +6,7 @@ import { createNote, createPage } from './helpers.js';
 const SHA1_HEX_RE = /^[0-9a-f]{40}$/;
 
 describe('ExcalidrawFileGenerator', () => {
-  it('assets에 페이지 이미지가 SHA-1 해시 파일명으로 포함됨', async () => {
+  it('includes page images in assets with SHA-1 hash filenames', async () => {
     const generator = new ExcalidrawFileGenerator();
     const imageData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
     const note = createNote([createPage({ id: 'p1', imageData })]);
@@ -17,7 +17,7 @@ describe('ExcalidrawFileGenerator', () => {
     expect(output.assets.get(`${hash}.png`)).toEqual(imageData);
   });
 
-  it('content에 SHA-1 해시 기반 embedded files 참조가 포함됨', async () => {
+  it('includes SHA-1 hash based embedded files references in content', async () => {
     const generator = new ExcalidrawFileGenerator();
     const imageData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
     const note = createNote([createPage({ id: 'p1', imageData })]);
@@ -27,7 +27,7 @@ describe('ExcalidrawFileGenerator', () => {
     expect(output.content).toContain(`${hash}: [[assets/test-note/${hash}.png]]`);
   });
 
-  it('다중 페이지 시 모든 assets 포함', async () => {
+  it('includes all assets for multiple pages', async () => {
     const generator = new ExcalidrawFileGenerator();
     const img1 = new Uint8Array([1]);
     const img2 = new Uint8Array([2]);
@@ -47,7 +47,7 @@ describe('ExcalidrawFileGenerator', () => {
     expect(output.content).toContain(`${hash2}: [[assets/my-note/${hash2}.png]]`);
   });
 
-  it('OCR 결과가 content에 포함됨', async () => {
+  it('includes OCR results in content', async () => {
     const generator = new ExcalidrawFileGenerator();
     const note = createNote([createPage()]);
     const ocrResults = [{ pageIndex: 0, texts: ['안녕하세요', '테스트'] }];
@@ -58,7 +58,7 @@ describe('ExcalidrawFileGenerator', () => {
     expect(output.content).toContain('테스트');
   });
 
-  it('content에 base64 dataURL이 없음 (외부 에셋 방식)', async () => {
+  it('does not contain base64 dataURL in content (external asset approach)', async () => {
     const generator = new ExcalidrawFileGenerator();
     const note = createNote([createPage()]);
     const output = await generator.generate(note, 'test');
@@ -66,7 +66,7 @@ describe('ExcalidrawFileGenerator', () => {
     expect(output.content).not.toContain('data:image/png;base64,');
   });
 
-  it('embedded files의 fileId가 Excalidraw 플러그인 호환 형식 (영숫자만)', async () => {
+  it('uses Excalidraw plugin compatible fileId format (alphanumeric only) for embedded files', async () => {
     const generator = new ExcalidrawFileGenerator();
     const note = createNote([createPage()]);
     const output = await generator.generate(note, 'test');

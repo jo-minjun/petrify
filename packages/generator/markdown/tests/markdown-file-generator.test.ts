@@ -23,7 +23,7 @@ function createNote(pages: Page[]): Note {
 }
 
 describe('MarkdownFileGenerator', () => {
-  it('assets에 페이지 이미지가 포함됨', () => {
+  it('includes page images in assets', () => {
     const generator = new MarkdownFileGenerator();
     const imageData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
     const note = createNote([createPage({ id: 'p1', imageData })]);
@@ -33,7 +33,7 @@ describe('MarkdownFileGenerator', () => {
     expect(output.assets.get('p1.png')).toEqual(imageData);
   });
 
-  it('이미지가 상단에, OCR 텍스트가 하단에 배치됨', () => {
+  it('places image at the top and OCR text at the bottom', () => {
     const generator = new MarkdownFileGenerator();
     const note = createNote([createPage({ id: 'p1' })]);
     const ocrResults = [{ pageIndex: 0, texts: ['안녕하세요'] }];
@@ -47,7 +47,7 @@ describe('MarkdownFileGenerator', () => {
     expect(separatorIndex).toBeLessThan(ocrIndex);
   });
 
-  it('이미지 참조가 assets 경로를 사용', () => {
+  it('uses assets path for image references', () => {
     const generator = new MarkdownFileGenerator();
     const note = createNote([createPage({ id: 'p1' })]);
     const output = generator.generate(note, 'my-note');
@@ -55,7 +55,7 @@ describe('MarkdownFileGenerator', () => {
     expect(output.content).toContain('![[assets/my-note/p1.png]]');
   });
 
-  it('다중 페이지 시 order 순서대로 배치', () => {
+  it('arranges multiple pages in order', () => {
     const generator = new MarkdownFileGenerator();
     const note = createNote([
       createPage({ id: 'p2', order: 1 }),
@@ -68,7 +68,7 @@ describe('MarkdownFileGenerator', () => {
     expect(p1Index).toBeLessThan(p2Index);
   });
 
-  it('OCR 결과가 없으면 이미지만 출력', () => {
+  it('outputs only images when there are no OCR results', () => {
     const generator = new MarkdownFileGenerator();
     const note = createNote([createPage({ id: 'p1' })]);
     const output = generator.generate(note, 'test');
@@ -77,7 +77,7 @@ describe('MarkdownFileGenerator', () => {
     expect(output.content).toContain('![[assets/test/p1.png]]');
   });
 
-  it('다중 페이지 OCR이 페이지별로 출력됨', () => {
+  it('outputs multi-page OCR results per page', () => {
     const generator = new MarkdownFileGenerator();
     const note = createNote([
       createPage({ id: 'p1', order: 0 }),

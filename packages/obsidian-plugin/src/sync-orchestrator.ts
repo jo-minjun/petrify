@@ -187,7 +187,7 @@ export class SyncOrchestrator {
           await this.fs.rm(assetsFullPath, { recursive: true });
           this.convertLog.info(`Cleaned orphan assets: ${assetsDir}`);
         } catch {
-          // assets 폴더가 없는 경우 무시
+          // Ignore if assets folder does not exist
         }
       }
     }

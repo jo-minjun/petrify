@@ -7,7 +7,7 @@ const SHA1_HEX_RE = /^[0-9a-f]{40}$/;
 
 describe('ExcalidrawGenerator', () => {
   describe('generate', () => {
-    it('전체 문서 메타데이터 생성', async () => {
+    it('generates full document metadata', async () => {
       const note = createNote([createPage()]);
       const generator = new ExcalidrawGenerator();
       const doc = await generator.generate(note);
@@ -18,7 +18,7 @@ describe('ExcalidrawGenerator', () => {
       expect(doc.appState).toBeDefined();
     });
 
-    it('단일 페이지 → image element 1개 생성', async () => {
+    it('creates one image element for a single page', async () => {
       const page = createPage({ id: 'p1', order: 0 });
       const note = createNote([page]);
       const generator = new ExcalidrawGenerator();
@@ -43,7 +43,7 @@ describe('ExcalidrawGenerator', () => {
       expect(el.scale).toEqual([1, 1]);
     });
 
-    it('다중 페이지 세로 배치 - y 좌표 계산', async () => {
+    it('lays out multiple pages vertically with correct y coordinates', async () => {
       const pages = [
         createPage({ id: 'p0', order: 0, height: 1920 }),
         createPage({ id: 'p1', order: 1, height: 1920 }),
@@ -61,7 +61,7 @@ describe('ExcalidrawGenerator', () => {
       expect(doc.elements[2].y).toBe(2 * (1920 + gap));
     });
 
-    it('페이지가 order 기준으로 정렬되어 배치', async () => {
+    it('places pages sorted by order', async () => {
       const img0 = new Uint8Array([0]);
       const img1 = new Uint8Array([1]);
       const img2 = new Uint8Array([2]);
@@ -79,7 +79,7 @@ describe('ExcalidrawGenerator', () => {
       expect(doc.elements[2].id).toBe('element-p2');
     });
 
-    it('빈 페이지 배열이면 elements와 files 모두 빈 상태', async () => {
+    it('returns empty elements and files when pages array is empty', async () => {
       const note = createNote([]);
       const generator = new ExcalidrawGenerator();
       const doc = await generator.generate(note);
@@ -89,8 +89,8 @@ describe('ExcalidrawGenerator', () => {
     });
   });
 
-  describe('files 객체', () => {
-    it('files 객체에 base64 인코딩된 dataURL 포함', async () => {
+  describe('files object', () => {
+    it('includes base64-encoded dataURL in files object', async () => {
       const imageData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
       const page = createPage({ id: 'file-1', imageData });
       const note = createNote([page]);
@@ -106,7 +106,7 @@ describe('ExcalidrawGenerator', () => {
       expect(typeof fileEntry.created).toBe('number');
     });
 
-    it('dataURL의 base64 디코딩 시 원본 imageData 복원', async () => {
+    it('restores original imageData when decoding base64 from dataURL', async () => {
       const imageData = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
       const page = createPage({ id: 'p1', imageData });
       const note = createNote([page]);
@@ -121,7 +121,7 @@ describe('ExcalidrawGenerator', () => {
       expect(decoded).toEqual(imageData);
     });
 
-    it('다중 페이지 시 files에 모든 페이지 엔트리 생성', async () => {
+    it('creates file entries for all pages when there are multiple pages', async () => {
       const pages = [
         createPage({ id: 'p0', order: 0, imageData: new Uint8Array([0]) }),
         createPage({ id: 'p1', order: 1, imageData: new Uint8Array([1]) }),
@@ -135,7 +135,7 @@ describe('ExcalidrawGenerator', () => {
       expect(doc.files[doc.elements[1].fileId]).toBeDefined();
     });
 
-    it('element의 fileId와 files 객체의 키가 일치', async () => {
+    it('matches element fileId with files object key', async () => {
       const page = createPage({ id: 'test-id' });
       const note = createNote([page]);
       const generator = new ExcalidrawGenerator();

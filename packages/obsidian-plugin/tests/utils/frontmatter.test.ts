@@ -7,7 +7,7 @@ import {
 
 describe('frontmatter', () => {
   describe('createFrontmatter', () => {
-    it('source와 mtime을 포함한 frontmatter 문자열을 생성한다', () => {
+    it('generates a frontmatter string containing source and mtime', () => {
       const result = createFrontmatter({
         source: '/path/to/file.note',
         mtime: 1705315800000,
@@ -19,7 +19,7 @@ describe('frontmatter', () => {
       expect(result).toContain('excalidraw-plugin: parsed');
     });
 
-    it('keep: true 프론트매터를 생성한다', () => {
+    it('generates frontmatter with keep: true', () => {
       const result = createFrontmatter({ source: null, mtime: null, keep: true });
 
       expect(result).toContain('source: null');
@@ -28,7 +28,7 @@ describe('frontmatter', () => {
       expect(result).toContain('excalidraw-plugin: parsed');
     });
 
-    it('keep이 없으면 keep: false를 출력한다', () => {
+    it('outputs keep: false when keep is not provided', () => {
       const result = createFrontmatter({ source: '/path/to/file', mtime: 123 });
 
       expect(result).toContain('keep: false');
@@ -36,7 +36,7 @@ describe('frontmatter', () => {
   });
 
   describe('parseFrontmatter', () => {
-    it('frontmatter에서 petrify 메타데이터를 파싱한다', () => {
+    it('parses petrify metadata from frontmatter', () => {
       const content = `---
 petrify:
   source: /path/to/file.note
@@ -54,7 +54,7 @@ excalidraw-plugin: parsed
       });
     });
 
-    it('keep: true 플래그를 파싱한다', () => {
+    it('parses the keep: true flag', () => {
       const content = `---
 petrify:
   source: /path/to/file.note
@@ -74,7 +74,7 @@ excalidraw-plugin: parsed
       });
     });
 
-    it('keep 필드가 없으면 keep은 undefined이다', () => {
+    it('keep is undefined when the keep field is absent', () => {
       const content = `---
 petrify:
   source: /path/to/file.note
@@ -89,7 +89,7 @@ excalidraw-plugin: parsed
       expect(result?.keep).toBeUndefined();
     });
 
-    it('petrify 메타데이터가 없으면 null을 반환한다', () => {
+    it('returns null when petrify metadata is missing', () => {
       const content = `---
 excalidraw-plugin: parsed
 ---
@@ -101,7 +101,7 @@ excalidraw-plugin: parsed
       expect(result).toBeNull();
     });
 
-    it('source: null과 mtime: null을 파싱한다', () => {
+    it('parses source: null and mtime: null', () => {
       const content = `---
 petrify:
   source: null
@@ -121,7 +121,7 @@ content`;
   });
 
   describe('updateKeepInContent', () => {
-    it('keep이 없는 frontmatter에 keep: true를 추가한다', () => {
+    it('adds keep: true to frontmatter that has no keep field', () => {
       const content = `---
 petrify:
   source: /path/to/file.note
@@ -138,7 +138,7 @@ excalidraw-plugin: parsed
       expect(result).toContain('source: /path/to/file.note');
     });
 
-    it('keep: true를 keep: false로 변경한다', () => {
+    it('changes keep: true to keep: false', () => {
       const content = `---
 petrify:
   source: /path/to/file.note
@@ -157,7 +157,7 @@ excalidraw-plugin: parsed
       expect(result).toContain('source: /path/to/file.note');
     });
 
-    it('keep: false를 keep: true로 변경한다', () => {
+    it('changes keep: false to keep: true', () => {
       const content = `---
 petrify:
   source: null
@@ -174,7 +174,7 @@ content`;
       expect(result).not.toContain('keep: false');
     });
 
-    it('이미 keep: true인 상태에서 true를 설정하면 변경 없음', () => {
+    it('no change when setting true on already keep: true', () => {
       const content = `---
 petrify:
   source: null
@@ -190,7 +190,7 @@ content`;
       expect(result).toBe(content);
     });
 
-    it('frontmatter가 없는 파일은 변경 없이 그대로 반환한다', () => {
+    it('returns a file without frontmatter unchanged', () => {
       const content = '# Just a markdown file';
 
       const result = updateKeepInContent(content, true);
@@ -198,7 +198,7 @@ content`;
       expect(result).toBe(content);
     });
 
-    it('프론트매터 뒤 개행이 하나여도 정상 교체한다', () => {
+    it('replaces correctly even with only one newline after frontmatter', () => {
       const content = `---
 petrify:
   source: /path/to/file.note
@@ -214,7 +214,7 @@ excalidraw-plugin: parsed
       expect(result).toContain('# Content');
     });
 
-    it('petrify 메타데이터가 없는 frontmatter는 변경 없이 반환한다', () => {
+    it('returns frontmatter without petrify metadata unchanged', () => {
       const content = `---
 excalidraw-plugin: parsed
 ---

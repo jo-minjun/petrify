@@ -1,26 +1,26 @@
 # AGENTS.md
 
-## 아키텍처
+## Architecture
 
-### 헥사고날 아키텍처
+### Hexagonal Architecture
 
-이 프로젝트는 헥사고날 아키텍처를 따른다.
+This project follows the hexagonal architecture pattern.
 
-- **Core**: 핵심 도메인 모델(Note, Page)과 PetrifyService, 포트 인터페이스
-- **Ports**: 외부 의존성을 위한 인터페이스 정의(ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort, WatcherPort)
-- **Adapters**: 포트 인터페이스의 구체적 구현(ViwoodsParser 등)
+- **Core**: Core domain models (Note, Page), PetrifyService, and port interfaces
+- **Ports**: Interface definitions for external dependencies (ParserPort, OcrPort, FileGeneratorPort, ConversionMetadataPort, WatcherPort)
+- **Adapters**: Concrete implementations of port interfaces (ViwoodsParser, etc.)
 
-### 의존성 방향
+### Dependency Direction
 
 ```
 Adapters → Core ← Adapters
 ```
 
-- 어댑터는 core에 의존한다
-- core는 어댑터를 알지 못한다
-- core는 포트 인터페이스만 정의하고, 어댑터가 이를 구현한다
+- Adapters depend on core
+- Core does not know about adapters
+- Core only defines port interfaces; adapters implement them
 
-### 패키지 구조
+### Package Structure
 
 ```
 packages/
@@ -39,27 +39,27 @@ packages/
 └── obsidian-plugin/      # @petrify/obsidian-plugin
 ```
 
-| 패키지 | 역할 |
+| Package | Role |
 |--------|------|
-| `@petrify/core` | 중간 표현 모델, PetrifyService, 포트 인터페이스 |
-| `@petrify/parser-viwoods` | viwoods .note 파일 파서 (ParserPort 구현) |
-| `@petrify/ocr-tesseract` | Tesseract.js 래핑 OCR (OcrPort 구현) |
-| `@petrify/ocr-google-vision` | Google Cloud Vision OCR (OcrPort 구현) |
-| `@petrify/generator-excalidraw` | Excalidraw 파일 생성 (FileGeneratorPort 구현) |
-| `@petrify/generator-markdown` | Markdown 파일 생성 (FileGeneratorPort 구현) |
-| `@petrify/watcher-chokidar` | chokidar 래핑 파일 감시 (WatcherPort 구현) |
-| `@petrify/watcher-google-drive` | Google Drive API 변경 감지 (WatcherPort 구현) |
-| `@petrify/obsidian-plugin` | Composition Root: Obsidian 플러그인, 어댑터 조립 |
+| `@petrify/core` | Intermediate representation models, PetrifyService, port interfaces |
+| `@petrify/parser-viwoods` | viwoods .note file parser (ParserPort implementation) |
+| `@petrify/ocr-tesseract` | Tesseract.js wrapper OCR (OcrPort implementation) |
+| `@petrify/ocr-google-vision` | Google Cloud Vision OCR (OcrPort implementation) |
+| `@petrify/generator-excalidraw` | Excalidraw file generation (FileGeneratorPort implementation) |
+| `@petrify/generator-markdown` | Markdown file generation (FileGeneratorPort implementation) |
+| `@petrify/watcher-chokidar` | chokidar wrapper file watcher (WatcherPort implementation) |
+| `@petrify/watcher-google-drive` | Google Drive API change detection (WatcherPort implementation) |
+| `@petrify/obsidian-plugin` | Composition Root: Obsidian plugin, adapter assembly |
 
 ## DO
 
-- 소스 파일 수정 후 `pnpm biome check --write`로 포매팅 적용. 커밋 전 `pnpm biome check`로 최종 확인
+- After modifying source files, apply formatting with `pnpm biome check --write`. Before committing, run `pnpm biome check` for final verification
 
-- 테스트 통과 후 커밋
+- Commit only after tests pass
 
-- 공통 devDependencies(typescript, vitest, tsup)는 루트 package.json에서만 관리
+- Manage shared devDependencies (typescript, vitest, tsup) only in the root package.json
   ```json
-  // 루트 package.json
+  // Root package.json
   {
     "devDependencies": {
       "typescript": "^5.3.0",
@@ -69,9 +69,9 @@ packages/
   }
   ```
 
-- vitest 설정은 루트 vitest.config.ts에서 관리. 외부 모듈 alias 등 패키지 고유 설정이 필요한 경우에만 개별 패키지에 vitest.config.ts 추가 허용
+- Manage vitest configuration in the root vitest.config.ts. Only add a per-package vitest.config.ts when package-specific settings are needed (e.g., external module aliases)
 
-- 루트 tsconfig.json paths에 모든 워크스페이스 패키지 경로 명시
+- Specify all workspace package paths in root tsconfig.json paths
   ```json
   {
     "paths": {
@@ -87,114 +87,114 @@ packages/
   }
   ```
 
-- 통합 테스트는 플러그인 패키지(obsidian-plugin) 레벨에서 수행
+- Run integration tests at the plugin package (obsidian-plugin) level
 
-- 에러는 명시적 예외 클래스로 처리하기
+- Handle errors with explicit exception classes
   ```typescript
   throw new InvalidFileFormatError('Invalid file format');
   throw new ParseError('Failed to parse stroke data');
   ```
 
-- public API는 index.ts에서 명시적으로 export하기
+- Explicitly export public API from index.ts
   ```typescript
   export { PetrifyService } from './petrify-service.js';
   export type { ParserPort } from './ports/parser.js';
   ```
 
-- import 경로에 `.js` 확장자 명시
+- Include `.js` extension in import paths
   ```typescript
   import { Note } from './models/index.js';
   ```
 
-- 타입은 `import type` 사용
+- Use `import type` for types
   ```typescript
   import type { ParserPort } from './ports/parser.js';
   import { ExcalidrawGenerator } from './excalidraw/generator.js';
   ```
 
-- 변경되지 않는 필드는 readonly 사용
+- Use readonly for immutable fields
   ```typescript
   readonly extensions = ['.note'];
   private readonly parser = new NoteParser();
   ```
 
-- Promise는 async/await 패턴 사용
+- Use async/await pattern for Promises
   ```typescript
   async parse(data: ArrayBuffer): Promise<Note> {
     return this.parser.parse(data);
   }
   ```
 
-- 필수 데이터 파싱 실패 시 명시적 예외 throw
+- Throw explicit exceptions when required data parsing fails
   ```typescript
   throw new ParseError('Failed to parse stroke data');
   ```
 
-- 선택적 데이터 파싱 실패 시 기본값 반환 + 로깅
+- Return default values + log when optional data parsing fails
   ```typescript
-  // 선택적 메타데이터 - 없어도 기본 동작 가능
+  // Optional metadata - default behavior is possible without it
   } catch {
     return {};
   }
   ```
 
-- vitest에서 describe, it, expect 등 명시적으로 import
+- Explicitly import describe, it, expect, etc. from vitest
   ```typescript
   import { describe, it, expect } from 'vitest';
   ```
 
-- 행동(behavior)을 테스트하라, 구조(structure)를 테스트하지 마라
+- Test behavior, not structure
   ```typescript
-  // DO: public 메서드의 출력 검증
+  // DO: Verify output of public methods
   const result = generator.generate(note, 'test');
   expect(result.content).toContain('expected-text');
 
-  // DON'T: 객체 구조나 타입 확인
+  // DON'T: Check object structure or types
   const note: Note = { title: 'Test', pages: [] };
-  expect(note.title).toBe('Test');  // TypeScript가 이미 보장
+  expect(note.title).toBe('Test');  // TypeScript already guarantees this
   ```
 
-- public API를 통해 테스트하라, private 멤버에 접근하지 마라
+- Test through the public API; do not access private members
   ```typescript
-  // DO: public generate() 호출 후 결과 검증
+  // DO: Call public generate() and verify the result
   const md = generator.generate(data, undefined, ocrResults);
   expect(md).toContain('## OCR Text');
 
-  // DON'T: private 메서드 직접 호출
+  // DON'T: Directly call private methods
   const result = (generator as any).formatOcrSection(ocrResults);
   ```
 
-- 공통 타입/인터페이스는 @petrify/core에서만 정의하고, 어댑터 패키지에서는 import하여 사용
+- Define shared types/interfaces only in @petrify/core; adapter packages should import and use them
 
-- README.md와 AGENTS.md 동기화: 패키지 추가/제거, 클래스 이름 변경 시 README.md와 AGENTS.md도 함께 업데이트
+- Keep README.md and AGENTS.md in sync: update both when adding/removing packages or renaming classes
 
-- 새 어댑터 패키지 추가 시 체크리스트:
-  1. 포트 인터페이스 구현
-  2. index.ts에서 public API export
-  3. pnpm-workspace.yaml 패턴 확인
-  4. 루트 tsconfig.json paths 추가
-  5. 루트 vitest.config.ts alias 추가
-  6. 루트 AGENTS.md 패키지 구조/테이블 업데이트
+- Checklist when adding a new adapter package:
+  1. Implement the port interface
+  2. Export the public API from index.ts
+  3. Verify pnpm-workspace.yaml patterns
+  4. Add paths to root tsconfig.json
+  5. Add aliases to root vitest.config.ts
+  6. Update root AGENTS.md package structure/table
 
-- obsidian-plugin은 유일한 Composition Root. 새 어댑터 등록은 이 패키지에서만 수행
+- obsidian-plugin is the sole Composition Root. Register new adapters only in this package
 
 ## DON'T
 
-- core에서 특정 어댑터 직접 import하지 않기 (의존성 역전 위반)
-- 포트 인터페이스를 우회하는 구현 추가하지 않기
-- 컴파일 에러 있는 상태로 커밋하지 않기
-- 사용하지 않는 import/변수 남기지 않기
-- CommonJS 문법(require, module.exports) 사용하지 않기
-- any 타입 남용하지 않기
-- 필수 데이터 실패를 silent fail로 처리하지 않기
-- vitest globals: true 사용하지 않기
-- 개별 패키지에 공통 devDependencies(typescript, vitest, tsup) 추가하지 않기
-- 개별 패키지에 vitest.config.ts 불필요하게 생성하지 않기 (루트 설정으로 충분한 경우)
-- pnpm 사용 시 package-lock.json 남겨두지 않기
-- core 패키지에서 어댑터 의존성 추가하지 않기 (devDependencies 포함)
-- 테스트에서 `as any`로 private 멤버 접근하지 않기
-- 데이터 모델(interface) 생성 테스트 금지 — TypeScript 타입 시스템이 보장
-- 설정 기본값(default constant) 테스트 금지
-- 인터페이스 계약(shape) 테스트 금지 — TypeScript 컴파일러가 보장
-- `expect(true).toBe(true)` 같은 무의미한 assertion 금지
-- 어댑터 패키지에서 core에 이미 정의된 타입을 재정의하지 않기
+- Do not directly import specific adapters from core (dependency inversion violation)
+- Do not add implementations that bypass port interfaces
+- Do not commit with compilation errors
+- Do not leave unused imports/variables
+- Do not use CommonJS syntax (require, module.exports)
+- Do not overuse the any type
+- Do not silently fail on required data errors
+- Do not use vitest globals: true
+- Do not add shared devDependencies (typescript, vitest, tsup) in individual packages
+- Do not unnecessarily create vitest.config.ts in individual packages (when root configuration suffices)
+- Do not leave package-lock.json when using pnpm
+- Do not add adapter dependencies in the core package (including devDependencies)
+- Do not access private members with `as any` in tests
+- Do not test data model (interface) creation -- the TypeScript type system guarantees this
+- Do not test configuration defaults (default constants)
+- Do not test interface contracts (shape) -- the TypeScript compiler guarantees this
+- Do not write meaningless assertions like `expect(true).toBe(true)`
+- Do not redefine types in adapter packages that are already defined in core

@@ -44,7 +44,7 @@ describe('ChokidarWatcher', () => {
     await watcher.stop();
   });
 
-  it('start 시 chokidar.watch를 올바른 옵션으로 호출한다', async () => {
+  it('calls chokidar.watch with the correct options on start', async () => {
     const { watch } = await import('chokidar');
 
     await watcher.start();
@@ -57,7 +57,7 @@ describe('ChokidarWatcher', () => {
     });
   });
 
-  it('add 이벤트 시 FileChangeEvent를 올바른 필드로 발행한다', async () => {
+  it('emits a FileChangeEvent with the correct fields on add event', async () => {
     const events: FileChangeEvent[] = [];
     watcher.onFileChange(async (event) => {
       events.push(event);
@@ -73,7 +73,7 @@ describe('ChokidarWatcher', () => {
     expect(events[0].mtime).toBe(1700000000000);
   });
 
-  it('change 이벤트 시 FileChangeEvent를 발행한다', async () => {
+  it('emits a FileChangeEvent on change event', async () => {
     const events: FileChangeEvent[] = [];
     watcher.onFileChange(async (event) => {
       events.push(event);
@@ -87,7 +87,7 @@ describe('ChokidarWatcher', () => {
     expect(events[0].mtime).toBe(1700000001000);
   });
 
-  it('unlink 이벤트 시 FileDeleteEvent를 발행한다', async () => {
+  it('emits a FileDeleteEvent on unlink event', async () => {
     const deleteEvents: FileDeleteEvent[] = [];
     watcher.onFileDelete(async (event) => {
       deleteEvents.push(event);
@@ -102,7 +102,7 @@ describe('ChokidarWatcher', () => {
     expect(deleteEvents[0].extension).toBe('.note');
   });
 
-  it('readData()가 fs.readFile을 호출하고 ArrayBuffer를 반환한다', async () => {
+  it('readData() calls fs.readFile and returns an ArrayBuffer', async () => {
     const { readFile } = await import('node:fs/promises');
     const mockBuffer = Buffer.from('test-data');
     vi.mocked(readFile).mockResolvedValue(mockBuffer);
@@ -120,7 +120,7 @@ describe('ChokidarWatcher', () => {
     expect(data).toBeInstanceOf(ArrayBuffer);
   });
 
-  it('stats가 undefined일 때 Date.now()를 fallback으로 사용한다', async () => {
+  it('uses Date.now() as fallback when stats is undefined', async () => {
     const dateNowSpy = vi.spyOn(Date, 'now').mockReturnValue(9999999999999);
 
     const events: FileChangeEvent[] = [];
@@ -136,7 +136,7 @@ describe('ChokidarWatcher', () => {
     dateNowSpy.mockRestore();
   });
 
-  it('확장자가 대문자일 때 소문자로 변환한다', async () => {
+  it('converts uppercase file extensions to lowercase', async () => {
     const events: FileChangeEvent[] = [];
     watcher.onFileChange(async (event) => {
       events.push(event);
@@ -148,7 +148,7 @@ describe('ChokidarWatcher', () => {
     expect(events[0].extension).toBe('.note');
   });
 
-  it('fileHandler에서 예외 발생 시 errorHandler를 호출한다', async () => {
+  it('calls errorHandler when fileHandler throws an exception', async () => {
     const handlerError = new Error('handler failed');
     const errors: Error[] = [];
 
@@ -166,7 +166,7 @@ describe('ChokidarWatcher', () => {
     expect(errors[0]).toBe(handlerError);
   });
 
-  it('deleteHandler에서 예외 발생 시 errorHandler를 호출한다', async () => {
+  it('calls errorHandler when deleteHandler throws an exception', async () => {
     const handlerError = new Error('delete handler failed');
     const errors: Error[] = [];
 
@@ -184,7 +184,7 @@ describe('ChokidarWatcher', () => {
     expect(errors[0]).toBe(handlerError);
   });
 
-  it('chokidar error 이벤트 시 errorHandler를 호출한다', async () => {
+  it('calls errorHandler on chokidar error event', async () => {
     const errors: Error[] = [];
     watcher.onError((error) => {
       errors.push(error);
@@ -197,7 +197,7 @@ describe('ChokidarWatcher', () => {
     expect(errors[0].message).toBe('watch error');
   });
 
-  it('chokidar error에 non-Error 객체가 올 때 Error로 래핑한다', async () => {
+  it('wraps non-Error objects as Error on chokidar error', async () => {
     const errors: Error[] = [];
     watcher.onError((error) => {
       errors.push(error);
@@ -211,14 +211,14 @@ describe('ChokidarWatcher', () => {
     expect(errors[0].message).toBe('string error');
   });
 
-  it('stop 시 watcher를 close한다', async () => {
+  it('closes the watcher on stop', async () => {
     await watcher.start();
     await watcher.stop();
 
     expect(mockWatcher.close).toHaveBeenCalledOnce();
   });
 
-  it('핸들러 미등록 상태에서 이벤트 발생 시 크래시하지 않는다', async () => {
+  it('does not crash when events fire with no handlers registered', async () => {
     await watcher.start();
 
     await expect(
@@ -227,11 +227,11 @@ describe('ChokidarWatcher', () => {
     await expect(emit('unlink', '/test/dir/note.note')).resolves.toBeUndefined();
   });
 
-  it('start 전에 stop 호출해도 안전하다', async () => {
+  it('is safe to call stop before start', async () => {
     await expect(watcher.stop()).resolves.toBeUndefined();
   });
 
-  it('확장자 없는 파일도 처리한다', async () => {
+  it('handles files without an extension', async () => {
     const events: FileChangeEvent[] = [];
     watcher.onFileChange(async (event) => {
       events.push(event);

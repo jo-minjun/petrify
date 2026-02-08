@@ -33,7 +33,7 @@ describe('TesseractAssetDownloader', () => {
     'tesseract-core/tesseract-core-relaxedsimd-lstm.wasm.js',
   ].map((f) => `${pluginDir}/${f}`);
 
-  it('모든 자산이 존재하면 다운로드를 스킵한다', async () => {
+  it('skips download when all assets already exist', async () => {
     const fs = createMockFs(new Set(allFiles));
     const http = createMockHttp();
 
@@ -44,7 +44,7 @@ describe('TesseractAssetDownloader', () => {
     expect(http.download).not.toHaveBeenCalled();
   });
 
-  it('일부 자산만 존재하면 다운로드를 실행한다', async () => {
+  it('downloads when only some assets exist', async () => {
     const partialFiles = new Set([`${pluginDir}/worker.min.js`]);
     const fs = createMockFs(partialFiles);
     const http = createMockHttp();
@@ -56,7 +56,7 @@ describe('TesseractAssetDownloader', () => {
     expect(http.download).toHaveBeenCalledTimes(11);
   });
 
-  it('자산이 없으면 모든 파일을 다운로드한다', async () => {
+  it('downloads all files when no assets exist', async () => {
     const fs = createMockFs();
     const http = createMockHttp();
 
@@ -69,7 +69,7 @@ describe('TesseractAssetDownloader', () => {
     expect(fs.mkdir).toHaveBeenCalledWith(`${pluginDir}/tesseract-core`);
   });
 
-  it('진행 콜백을 호출한다', async () => {
+  it('invokes the progress callback', async () => {
     const fs = createMockFs();
     const http = createMockHttp();
     const onProgress = vi.fn();
@@ -81,7 +81,7 @@ describe('TesseractAssetDownloader', () => {
     expect(onProgress).toHaveBeenLastCalledWith(11, 11);
   });
 
-  it('다운로드 실패 시 에러를 throw한다', async () => {
+  it('throws an error when download fails', async () => {
     const fs = createMockFs();
     const http = createMockHttp();
     http.download.mockRejectedValue(new Error('Network error'));
