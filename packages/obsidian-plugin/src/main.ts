@@ -412,6 +412,7 @@ export default class PetrifyPlugin extends Plugin {
     await Promise.all(this.watchers.map((w) => w.stop()));
     this.watchers = [];
     this.initializeService();
+    this.dropHandler.updateService(this.petrifyService, this.parserMap);
     await this.startWatchers();
   }
 
