@@ -23,12 +23,12 @@ describe('formatConversionError', () => {
     expect(formatConversionError('test.note', error)).toBe('Save failed: test.note');
   });
 
-  it('일반 Error → "Conversion failed: {fileName}"', () => {
+  it('generic Error → "Conversion failed: {fileName}"', () => {
     const error = new Error('unexpected');
     expect(formatConversionError('test.note', error)).toBe('Conversion failed: test.note');
   });
 
-  it('문자열 에러 → "Conversion failed: {fileName}"', () => {
+  it('string error → "Conversion failed: {fileName}"', () => {
     expect(formatConversionError('test.note', 'string error')).toBe('Conversion failed: test.note');
   });
 });

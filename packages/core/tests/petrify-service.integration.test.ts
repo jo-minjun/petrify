@@ -15,7 +15,7 @@ import type { OcrPort, OcrResult } from '../src/ports/ocr.js';
 import type { ParserPort } from '../src/ports/parser.js';
 import type { FileChangeEvent } from '../src/ports/watcher.js';
 
-// --- Lightweight Fake 구현 ---
+// --- Lightweight Fake implementations ---
 
 class FakeMetadata implements ConversionMetadataPort {
   readonly store = new Map<string, ConversionMetadata>();
@@ -91,7 +91,7 @@ class FakeOcr implements OcrPort {
   }
 }
 
-// --- 헬퍼 ---
+// --- Helpers ---
 
 function createPage(overrides?: Partial<Page>): Page {
   return {
@@ -125,10 +125,10 @@ function createFileChangeEvent(overrides?: Partial<FileChangeEvent>): FileChange
   };
 }
 
-// --- 테스트 ---
+// --- Tests ---
 
-describe('PetrifyService 통합 테스트', () => {
-  it('전체 파이프라인: parse → OCR → generate', async () => {
+describe('PetrifyService integration tests', () => {
+  it('full pipeline: parse → OCR → generate', async () => {
     const note = createNote({ title: 'My Note' });
     const fakeParser = new FakeParser(note);
     const fakeOcr = new FakeOcr();
@@ -149,7 +149,7 @@ describe('PetrifyService 통합 테스트', () => {
     expect(result?.content).toContain('Pages: 1');
   });
 
-  it('OCR confidence 필터링이 최종 출력에 반영', async () => {
+  it('OCR confidence filtering is reflected in final output', async () => {
     const page = createPage({ imageData: new Uint8Array([10, 20, 30]) });
     const note = createNote({ pages: [page] });
     const fakeParser = new FakeParser(note);
@@ -181,7 +181,7 @@ describe('PetrifyService 통합 테스트', () => {
     expect(result?.content).not.toContain('low');
   });
 
-  it('메타데이터 라운드트립: mtime 변경 없으면 스킵', async () => {
+  it('metadata round-trip: skips when mtime has not changed', async () => {
     const note = createNote();
     const fakeParser = new FakeParser(note);
     const fakeGenerator = new FakeGenerator();
@@ -203,7 +203,7 @@ describe('PetrifyService 통합 테스트', () => {
     expect(secondResult).toBeNull();
   });
 
-  it('에셋이 올바른 경로에 저장', async () => {
+  it('stores assets at the correct path', async () => {
     const page = createPage({ id: 'page-abc' });
     const note = createNote({ pages: [page] });
     const fakeParser = new FakeParser(note);
@@ -223,7 +223,7 @@ describe('PetrifyService 통합 테스트', () => {
     expect(result?.assets.get('page-abc.png')).toEqual(page.imageData);
   });
 
-  it('convertDroppedFile: metadata에 keep=true', async () => {
+  it('convertDroppedFile: metadata has keep=true', async () => {
     const note = createNote();
     const fakeParser = new FakeParser(note);
     const fakeGenerator = new FakeGenerator();
@@ -241,7 +241,7 @@ describe('PetrifyService 통합 테스트', () => {
     expect(result.metadata.source).toBeNull();
   });
 
-  it('handleFileDelete: 메타데이터 있으면 삭제 허용', async () => {
+  it('handleFileDelete: allows deletion when metadata exists', async () => {
     const fakeMetadata = new FakeMetadata();
     fakeMetadata.store.set('output/file.fake.md', {
       source: '/path/to/file.note',
@@ -256,7 +256,7 @@ describe('PetrifyService 통합 테스트', () => {
     expect(result).toBe(true);
   });
 
-  it('에러 전파 체인: parse 에러 → ConversionError 래핑', async () => {
+  it('error propagation chain: parse error is wrapped in ConversionError', async () => {
     const note = createNote();
     const fakeParser = new FakeParser(note);
     fakeParser.setError(new ParseError('invalid format'));

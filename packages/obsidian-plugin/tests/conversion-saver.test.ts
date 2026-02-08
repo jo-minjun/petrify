@@ -41,7 +41,7 @@ describe('saveConversionResult', () => {
     formatter = createMockMetadataFormatter();
   });
 
-  it('frontmatter + content를 결합하여 올바른 경로에 저장', async () => {
+  it('combines frontmatter + content and saves to the correct path', async () => {
     const result = createResult();
 
     const outputPath = await saveConversionResult(
@@ -60,7 +60,7 @@ describe('saveConversionResult', () => {
     );
   });
 
-  it('assets가 있으면 assets 디렉토리에 저장', async () => {
+  it('saves to the assets directory when assets are present', async () => {
     const assetData = new Uint8Array([1, 2, 3]);
     const result = createResult({
       assets: new Map([['image.png', assetData]]),
@@ -71,7 +71,7 @@ describe('saveConversionResult', () => {
     expect(writer.writeAsset).toHaveBeenCalledWith('output/assets/file', 'image.png', assetData);
   });
 
-  it('여러 assets를 모두 저장', async () => {
+  it('saves all multiple assets', async () => {
     const result = createResult({
       assets: new Map([
         ['img1.png', new Uint8Array([1])],
@@ -84,7 +84,7 @@ describe('saveConversionResult', () => {
     expect(writer.writeAsset).toHaveBeenCalledTimes(2);
   });
 
-  it('assets가 비어있으면 writeAsset 호출 안 함', async () => {
+  it('does not call writeAsset when assets are empty', async () => {
     const result = createResult({ assets: new Map() });
 
     await saveConversionResult(result, 'output', 'file', '.excalidraw.md', writer, formatter);
@@ -92,7 +92,7 @@ describe('saveConversionResult', () => {
     expect(writer.writeAsset).not.toHaveBeenCalled();
   });
 
-  it('writeFile 실패 시 ConversionError(save)를 throw', async () => {
+  it('throws ConversionError(save) when writeFile fails', async () => {
     writer.writeFile.mockRejectedValue(new Error('ENOSPC'));
     const result = createResult();
 
@@ -109,7 +109,7 @@ describe('saveConversionResult', () => {
     expect((error as ConversionError).phase).toBe('save');
   });
 
-  it('이미 ConversionError이면 그대로 rethrow', async () => {
+  it('rethrows as-is when it is already a ConversionError', async () => {
     const original = new ConversionError('generate', new Error('template'));
     writer.writeFile.mockRejectedValue(original);
     const result = createResult();
@@ -119,7 +119,7 @@ describe('saveConversionResult', () => {
     ).rejects.toBe(original);
   });
 
-  it('outputDir가 빈 문자열(vault 루트)이면 파일명만으로 경로 생성', async () => {
+  it('generates path with filename only when outputDir is empty string (vault root)', async () => {
     const result = createResult();
 
     const outputPath = await saveConversionResult(
@@ -138,7 +138,7 @@ describe('saveConversionResult', () => {
     );
   });
 
-  it('outputDir가 빈 문자열일 때 assets 경로도 올바르게 생성', async () => {
+  it('generates correct assets path when outputDir is empty string', async () => {
     const assetData = new Uint8Array([1, 2, 3]);
     const result = createResult({
       assets: new Map([['image.png', assetData]]),
@@ -149,7 +149,7 @@ describe('saveConversionResult', () => {
     expect(writer.writeAsset).toHaveBeenCalledWith('assets/file', 'image.png', assetData);
   });
 
-  it('markdown 확장자로도 올바른 경로 생성', async () => {
+  it('generates correct path with markdown extension', async () => {
     const result = createResult();
 
     const outputPath = await saveConversionResult(result, 'notes', 'doc', '.md', writer, formatter);

@@ -1,7 +1,7 @@
 /**
- * Uint8Array를 base64 문자열로 변환.
- * 브라우저(Obsidian)와 Node.js 모두에서 동작하도록
- * Buffer 대신 직접 변환 로직 사용.
+ * Converts a Uint8Array to a base64 string.
+ * Uses manual conversion logic instead of Buffer
+ * to work in both browser (Obsidian) and Node.js environments.
  */
 export function uint8ArrayToBase64(bytes: Uint8Array): string {
   const CHUNK_SIZE = 0x8000;

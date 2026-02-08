@@ -8,8 +8,8 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 /**
- * tesseract-core 파일을 로컬 HTTP로 서빙한다.
- * Blob URL Worker에서 file:// 접근이 차단되므로, localhost로 우회.
+ * Serves tesseract-core files via local HTTP.
+ * Blob URL Workers block file:// access, so this bypasses the restriction via localhost.
  */
 export class TesseractAssetServer {
   private server: http.Server | null = null;

@@ -54,7 +54,7 @@ describe('GoogleDriveWatcher', () => {
     vi.useRealTimers();
   });
 
-  it('WatcherPort 인터페이스를 구현한다', () => {
+  it('implements the WatcherPort interface', () => {
     expect(typeof watcher.onFileChange).toBe('function');
     expect(typeof watcher.onFileDelete).toBe('function');
     expect(typeof watcher.onError).toBe('function');
@@ -62,7 +62,7 @@ describe('GoogleDriveWatcher', () => {
     expect(typeof watcher.stop).toBe('function');
   });
 
-  it('start 시 초기 스캔으로 FileChangeEvent를 발행한다', async () => {
+  it('emits FileChangeEvent via initial scan on start', async () => {
     mockClient.listFiles.mockResolvedValue([
       {
         id: 'f1',
@@ -86,7 +86,7 @@ describe('GoogleDriveWatcher', () => {
     expect(events[0].extension).toBe('.note');
   });
 
-  it('초기 스캔에서 readData는 파일 다운로드를 수행한다', async () => {
+  it('readData downloads the file during initial scan', async () => {
     mockClient.listFiles.mockResolvedValue([
       {
         id: 'f1',
@@ -110,7 +110,7 @@ describe('GoogleDriveWatcher', () => {
     expect(mockClient.downloadFile).toHaveBeenCalledWith('f1');
   });
 
-  it('저장된 pageToken이 있으면 초기 스캔을 생략한다', async () => {
+  it('skips initial scan when a saved pageToken exists', async () => {
     await pageTokenStore.savePageToken('existing-token');
 
     watcher = new GoogleDriveWatcher({
@@ -132,7 +132,7 @@ describe('GoogleDriveWatcher', () => {
     expect(events).toHaveLength(0);
   });
 
-  it('폴링으로 파일 추가를 감지하면 FileChangeEvent를 발행한다', async () => {
+  it('emits FileChangeEvent when polling detects a file addition', async () => {
     mockClient.getChanges.mockResolvedValue({
       changes: [
         {
@@ -162,7 +162,7 @@ describe('GoogleDriveWatcher', () => {
     expect(events.some((e) => e.name === 'new.note')).toBe(true);
   });
 
-  it('폴링으로 파일 삭제를 감지하면 FileDeleteEvent를 발행한다', async () => {
+  it('emits FileDeleteEvent when polling detects a file deletion', async () => {
     mockClient.listFiles.mockResolvedValue([
       {
         id: 'f1',
@@ -192,7 +192,7 @@ describe('GoogleDriveWatcher', () => {
     expect(deleteEvents[0].id).toBe('gdrive://f1');
   });
 
-  it('대상 폴더 외 변경은 무시한다', async () => {
+  it('ignores changes outside the target folder', async () => {
     mockClient.getChanges.mockResolvedValue({
       changes: [
         {
@@ -222,7 +222,7 @@ describe('GoogleDriveWatcher', () => {
     expect(events.filter((e) => e.name === 'other.note')).toHaveLength(0);
   });
 
-  it('API 에러 시 onError 핸들러를 호출하고 폴링을 지속한다', async () => {
+  it('calls onError handler on API error and continues polling', async () => {
     mockClient.getChanges
       .mockRejectedValueOnce(new Error('API Error'))
       .mockResolvedValueOnce({ changes: [], newStartPageToken: 'token-3' });
@@ -243,7 +243,7 @@ describe('GoogleDriveWatcher', () => {
     expect(mockClient.getChanges).toHaveBeenCalledTimes(2);
   });
 
-  it('stop 후 폴링이 중단된다', async () => {
+  it('stops polling after stop is called', async () => {
     await watcher.start();
     await watcher.stop();
 
@@ -253,7 +253,7 @@ describe('GoogleDriveWatcher', () => {
     expect(mockClient.getChanges.mock.calls.length).toBe(callCount);
   });
 
-  it('캐시에 없는 파일의 삭제 이벤트는 무시한다', async () => {
+  it('ignores delete events for files not in cache', async () => {
     mockClient.getChanges.mockResolvedValue({
       changes: [{ fileId: 'unknown-file', removed: true, time: '2026-01-02T00:00:00.000Z' }],
       newStartPageToken: 'token-3',
@@ -271,7 +271,7 @@ describe('GoogleDriveWatcher', () => {
     expect(deleteEvents).toHaveLength(0);
   });
 
-  it('폴링 시 newStartPageToken을 저장한다', async () => {
+  it('saves newStartPageToken during polling', async () => {
     mockClient.getChanges.mockResolvedValue({
       changes: [],
       newStartPageToken: 'saved-token',

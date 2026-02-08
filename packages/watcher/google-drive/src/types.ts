@@ -1,6 +1,6 @@
 import type { OAuth2Client } from 'google-auth-library';
 
-// --- OAuth2 인증 ---
+// --- OAuth2 Authentication ---
 
 export interface OAuthTokens {
   readonly access_token: string;

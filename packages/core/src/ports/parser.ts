@@ -1,9 +1,9 @@
 import type { Note } from '../models/index.js';
 
 export interface ParserPort {
-  /** 지원하는 파일 확장자 */
+  /** Supported file extensions */
   readonly extensions: string[];
 
-  /** 파일 데이터를 Note 모델로 파싱 */
+  /** Parse file data into a Note model */
   parse(data: ArrayBuffer): Promise<Note>;
 }

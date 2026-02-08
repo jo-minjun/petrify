@@ -28,12 +28,12 @@ describe('TesseractOcr', () => {
     });
   });
 
-  it('OcrPort 인터페이스 구현', () => {
+  it('implements the OcrPort interface', () => {
     const ocr: OcrPort = new TesseractOcr();
     expect(ocr.recognize).toBeDefined();
   });
 
-  it('recognize: OcrResult에 올바른 text, confidence, regions 반환', async () => {
+  it('recognize: returns correct text, confidence, and regions in OcrResult', async () => {
     const ocr = new TesseractOcr();
     const image = new ArrayBuffer(100);
 
@@ -60,7 +60,7 @@ describe('TesseractOcr', () => {
     expect(result.confidence).toBe(61);
   });
 
-  it('confidenceThreshold로 낮은 신뢰도 영역 필터링', async () => {
+  it('filters out low-confidence regions using confidenceThreshold', async () => {
     const ocr = new TesseractOcr();
     const image = new ArrayBuffer(100);
 
@@ -71,7 +71,7 @@ describe('TesseractOcr', () => {
     expect(result.confidence).toBe(61);
   });
 
-  it('terminate: worker 정리', async () => {
+  it('terminate: cleans up worker', async () => {
     const ocr = new TesseractOcr();
     const image = new ArrayBuffer(100);
 
@@ -81,7 +81,7 @@ describe('TesseractOcr', () => {
     expect(mockTerminate).toHaveBeenCalledOnce();
   });
 
-  it('기본 lang kor+eng로 createWorker 호출', async () => {
+  it('calls createWorker with default lang kor+eng', async () => {
     const { createWorker } = await import('tesseract.js');
     const ocr = new TesseractOcr();
     const image = new ArrayBuffer(100);
@@ -91,7 +91,7 @@ describe('TesseractOcr', () => {
     expect(createWorker).toHaveBeenCalledWith('kor+eng', expect.anything(), expect.anything());
   });
 
-  it('사용자 지정 lang으로 createWorker 호출', async () => {
+  it('calls createWorker with user-specified lang', async () => {
     const { createWorker } = await import('tesseract.js');
     const ocr = new TesseractOcr({ lang: 'eng' });
     const image = new ArrayBuffer(100);

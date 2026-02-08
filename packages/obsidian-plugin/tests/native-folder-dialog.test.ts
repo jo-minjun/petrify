@@ -16,7 +16,7 @@ describe('showNativeFolderDialog', () => {
     vi.clearAllMocks();
   });
 
-  it('선택된 폴더 경로를 반환한다', async () => {
+  it('returns the selected folder path', async () => {
     mockShowOpenDialog.mockResolvedValue({
       canceled: false,
       filePaths: ['/Users/test/Documents'],
@@ -31,7 +31,7 @@ describe('showNativeFolderDialog', () => {
     });
   });
 
-  it('사용자가 취소하면 null을 반환한다', async () => {
+  it('returns null when the user cancels', async () => {
     mockShowOpenDialog.mockResolvedValue({
       canceled: true,
       filePaths: [],
@@ -42,7 +42,7 @@ describe('showNativeFolderDialog', () => {
     expect(result).toBeNull();
   });
 
-  it('filePaths가 빈 배열이면 null을 반환한다', async () => {
+  it('returns null when filePaths is an empty array', async () => {
     mockShowOpenDialog.mockResolvedValue({
       canceled: false,
       filePaths: [],
@@ -53,19 +53,19 @@ describe('showNativeFolderDialog', () => {
     expect(result).toBeNull();
   });
 
-  it('remote가 undefined이면 null을 반환한다', async () => {
+  it('returns null when remote is undefined', async () => {
     const result = await showNativeFolderDialog(undefined, undefined);
 
     expect(result).toBeNull();
   });
 
-  it('remote.dialog가 없으면 null을 반환한다', async () => {
+  it('returns null when remote.dialog is missing', async () => {
     const result = await showNativeFolderDialog(undefined, { dialog: undefined });
 
     expect(result).toBeNull();
   });
 
-  it('showOpenDialog가 예외를 던지면 null을 반환한다', async () => {
+  it('returns null when showOpenDialog throws an exception', async () => {
     mockShowOpenDialog.mockRejectedValue(new Error('dialog failed'));
 
     const result = await showNativeFolderDialog(undefined, createMockRemote());

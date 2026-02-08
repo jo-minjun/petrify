@@ -4,27 +4,27 @@ export interface OcrRegion {
   y: number;
   width: number;
   height: number;
-  /** OCR 신뢰도 (0-100). 일부 OCR 엔진은 미제공 */
+  /** OCR confidence (0-100). Some OCR engines may not provide this */
   confidence?: number;
 }
 
 export interface OcrResult {
   text: string;
-  /** 전체 신뢰도 평균 (0-100). confidence 제공하는 region이 없으면 undefined */
+  /** Overall average confidence (0-100). Undefined if no regions provide confidence */
   confidence?: number;
   regions: OcrRegion[];
 }
 
 export interface OcrOptions {
-  /** confidence 임계값 (0-100). 이 값 미만인 영역은 무시 */
+  /** Confidence threshold (0-100). Regions below this value are ignored */
   confidenceThreshold?: number;
-  /** 언어 코드 (예: 'korean', 'english') */
+  /** Language code (e.g., 'korean', 'english') */
   language?: string;
 }
 
 export interface OcrPort {
-  /** 이미지에서 텍스트 추출 */
+  /** Extract text from an image */
   recognize(image: ArrayBuffer, options?: OcrOptions): Promise<OcrResult>;
-  /** OCR 엔진 종료 (리소스 정리) */
+  /** Terminate OCR engine (resource cleanup) */
   terminate?(): Promise<void>;
 }

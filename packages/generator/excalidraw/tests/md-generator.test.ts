@@ -9,7 +9,7 @@ import type {
 import { ExcalidrawMdGenerator } from '../src/md-generator.js';
 
 describe('ExcalidrawMdGenerator', () => {
-  it('올바른 마크다운 구조 생성', () => {
+  it('generates correct markdown structure', () => {
     const generator = new ExcalidrawMdGenerator();
     const data: ExcalidrawData = {
       type: 'excalidraw',
@@ -30,7 +30,7 @@ describe('ExcalidrawMdGenerator', () => {
     expect(md).toContain('```compressed-json');
   });
 
-  it('데이터가 압축됨', () => {
+  it('compresses data', () => {
     const generator = new ExcalidrawMdGenerator();
     const data: ExcalidrawData = {
       type: 'excalidraw',
@@ -47,7 +47,7 @@ describe('ExcalidrawMdGenerator', () => {
     expect(md).toContain('```compressed-json');
   });
 
-  it('압축 후 해제하면 원본 복원', () => {
+  it('restores original data after decompression', () => {
     const generator = new ExcalidrawMdGenerator();
     const originalData: ExcalidrawData = {
       type: 'excalidraw',
@@ -69,7 +69,7 @@ describe('ExcalidrawMdGenerator', () => {
     expect(JSON.parse(decompressed)).toEqual(originalData);
   });
 
-  it('files 객체가 압축 데이터에 포함됨', () => {
+  it('includes files object in compressed data', () => {
     const generator = new ExcalidrawMdGenerator();
     const fileEntry: ExcalidrawFileEntry = {
       mimeType: 'image/png',
@@ -99,7 +99,7 @@ describe('ExcalidrawMdGenerator', () => {
 });
 
 describe('OCR Text Section', () => {
-  it('generate()에 OCR 결과 전달하면 ## OCR Text 섹션 포함', () => {
+  it('includes ## OCR Text section when OCR results are provided to generate()', () => {
     const generator = new ExcalidrawMdGenerator();
     const data: ExcalidrawData = {
       type: 'excalidraw',
@@ -121,7 +121,7 @@ describe('OCR Text Section', () => {
     expect(ocrIndex).toBeLessThan(excalidrawIndex);
   });
 
-  it('generate()에 OCR 결과 없으면 빈 ## OCR Text 섹션', () => {
+  it('includes empty ## OCR Text section when no OCR results are provided to generate()', () => {
     const generator = new ExcalidrawMdGenerator();
     const data: ExcalidrawData = {
       type: 'excalidraw',
@@ -138,7 +138,7 @@ describe('OCR Text Section', () => {
     expect(md).not.toContain('<!-- Page');
   });
 
-  it('generate()에 빈 OCR 배열이면 빈 ## OCR Text 섹션', () => {
+  it('includes empty ## OCR Text section when OCR results array is empty', () => {
     const generator = new ExcalidrawMdGenerator();
     const data: ExcalidrawData = {
       type: 'excalidraw',
@@ -155,7 +155,7 @@ describe('OCR Text Section', () => {
     expect(md).not.toContain('<!-- Page');
   });
 
-  it('단일 페이지 OCR 결과가 generate() 출력에 포함', () => {
+  it('includes single page OCR results in generate() output', () => {
     const generator = new ExcalidrawMdGenerator();
     const data: ExcalidrawData = {
       type: 'excalidraw',
@@ -176,7 +176,7 @@ describe('OCR Text Section', () => {
     expect(md).toContain('두 번째 텍스트');
   });
 
-  it('여러 페이지 OCR 결과가 generate() 출력에 포함', () => {
+  it('includes multi-page OCR results in generate() output', () => {
     const generator = new ExcalidrawMdGenerator();
     const data: ExcalidrawData = {
       type: 'excalidraw',

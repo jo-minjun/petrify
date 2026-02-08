@@ -33,7 +33,7 @@ describe('processFile', () => {
     log = createMockLogger();
   });
 
-  it('handleFileChange가 null 반환 시 false (스킵)', async () => {
+  it('returns false (skip) when handleFileChange returns null', async () => {
     mockService.handleFileChange.mockResolvedValue(null);
 
     const result = await processFile(
@@ -48,7 +48,7 @@ describe('processFile', () => {
     expect(save).not.toHaveBeenCalled();
   });
 
-  it('변환 결과가 있으면 save 호출 후 true 반환', async () => {
+  it('calls save and returns true when a conversion result exists', async () => {
     const conversionResult: ConversionResult = {
       content: '# test',
       assets: new Map(),
@@ -69,7 +69,7 @@ describe('processFile', () => {
     expect(log.info).toHaveBeenCalledWith('Converted: file.note -> output/file.excalidraw.md');
   });
 
-  it('파일명에서 확장자를 제거한 baseName으로 save 호출', async () => {
+  it('calls save with baseName derived by removing the extension from the filename', async () => {
     mockService.handleFileChange.mockResolvedValue({
       content: '',
       assets: new Map(),

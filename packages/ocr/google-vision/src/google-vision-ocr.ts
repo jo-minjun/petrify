@@ -92,18 +92,20 @@ export class GoogleVisionOcr implements OcrPort {
       });
     } catch (error) {
       throw new OcrRecognitionError(
-        `Vision API 요청 실패: ${error instanceof Error ? error.message : String(error)}`,
+        `Vision API request failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
 
     if (res.status === 401 || res.status === 403) {
       const errorBody = await res.text();
-      throw new OcrInitializationError(`Vision API 인증 실패 (${res.status}): ${errorBody}`);
+      throw new OcrInitializationError(
+        `Vision API authentication failed (${res.status}): ${errorBody}`,
+      );
     }
 
     if (!res.ok) {
       const errorBody = await res.text();
-      throw new OcrRecognitionError(`Vision API 에러 (${res.status}): ${errorBody}`);
+      throw new OcrRecognitionError(`Vision API error (${res.status}): ${errorBody}`);
     }
 
     return (await res.json()) as VisionResponse;
@@ -114,7 +116,7 @@ export class GoogleVisionOcr implements OcrPort {
     const apiError = response.responses?.[0]?.error;
 
     if (apiError) {
-      throw new OcrRecognitionError(`Vision API 에러: ${apiError.message ?? 'Unknown error'}`);
+      throw new OcrRecognitionError(`Vision API error: ${apiError.message ?? 'Unknown error'}`);
     }
 
     if (!annotation) {

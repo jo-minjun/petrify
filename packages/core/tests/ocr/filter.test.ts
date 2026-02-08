@@ -3,7 +3,7 @@ import { filterOcrByConfidence } from '../../src/ocr/filter.js';
 import type { OcrRegion } from '../../src/ports/ocr.js';
 
 describe('filterOcrByConfidence', () => {
-  it('임계값 이상인 region만 반환', () => {
+  it('returns only regions at or above the confidence threshold', () => {
     const regions: OcrRegion[] = [
       { text: '높음', x: 0, y: 0, width: 10, height: 10, confidence: 80 },
       { text: '낮음', x: 0, y: 0, width: 10, height: 10, confidence: 30 },
@@ -15,7 +15,7 @@ describe('filterOcrByConfidence', () => {
     expect(result).toEqual(['높음', '경계']);
   });
 
-  it('confidence가 없으면 포함 (100으로 간주)', () => {
+  it('includes regions without confidence (treated as 100)', () => {
     const regions: OcrRegion[] = [
       { text: '없음', x: 0, y: 0, width: 10, height: 10 },
       { text: '낮음', x: 0, y: 0, width: 10, height: 10, confidence: 30 },
@@ -26,12 +26,12 @@ describe('filterOcrByConfidence', () => {
     expect(result).toEqual(['없음']);
   });
 
-  it('빈 배열이면 빈 배열 반환', () => {
+  it('returns an empty array when given an empty array', () => {
     const result = filterOcrByConfidence([], 50);
     expect(result).toEqual([]);
   });
 
-  it('빈 문자열이나 공백만 있는 텍스트 제외', () => {
+  it('excludes empty strings and whitespace-only text', () => {
     const regions: OcrRegion[] = [
       { text: '유효', x: 0, y: 0, width: 10, height: 10, confidence: 80 },
       { text: '', x: 0, y: 0, width: 10, height: 10, confidence: 80 },

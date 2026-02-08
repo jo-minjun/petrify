@@ -103,7 +103,7 @@ describe('DropHandler', () => {
     );
   });
 
-  it('파일 탐색기 외부 드롭은 무시', async () => {
+  it('ignores drops outside the file explorer', async () => {
     const files = createMockFileList([createMockFile('test.note')]);
     const evt = createDragEvent({
       target: createNonFileExplorerTarget(),
@@ -116,7 +116,7 @@ describe('DropHandler', () => {
     expect(mockService.convertDroppedFile).not.toHaveBeenCalled();
   });
 
-  it('dataTransfer가 없으면 무시', async () => {
+  it('ignores when dataTransfer is absent', async () => {
     const evt = createDragEvent({
       target: createFileExplorerTarget('folder'),
     });
@@ -126,7 +126,7 @@ describe('DropHandler', () => {
     expect(mockService.convertDroppedFile).not.toHaveBeenCalled();
   });
 
-  it('빈 파일 목록은 무시', async () => {
+  it('ignores an empty file list', async () => {
     const evt = createDragEvent({
       target: createFileExplorerTarget('folder'),
       files: createMockFileList([]),
@@ -137,7 +137,7 @@ describe('DropHandler', () => {
     expect(evt.preventDefault).not.toHaveBeenCalled();
   });
 
-  it('지원하지 않는 확장자 파일만 있으면 무시', async () => {
+  it('ignores when only unsupported file extensions are present', async () => {
     mockService.getParsersForExtension.mockReturnValue([]);
     const files = createMockFileList([createMockFile('readme.txt')]);
     const evt = createDragEvent({
@@ -151,7 +151,7 @@ describe('DropHandler', () => {
     expect(mockService.convertDroppedFile).not.toHaveBeenCalled();
   });
 
-  it('지원되는 파일 → 변환 성공', async () => {
+  it('supported file → conversion succeeds', async () => {
     const mockResult = createMockConversionResult();
     mockService.convertDroppedFile.mockResolvedValue(mockResult);
 
@@ -173,7 +173,7 @@ describe('DropHandler', () => {
     expect(saveResult).toHaveBeenCalledWith(mockResult, 'notes', 'test');
   });
 
-  it('변환 실패 시 에러 카운트 증가 (다른 파일은 계속 처리)', async () => {
+  it('increments error count on conversion failure (other files continue processing)', async () => {
     mockService.convertDroppedFile
       .mockRejectedValueOnce(new Error('parse failed'))
       .mockResolvedValueOnce(createMockConversionResult());
@@ -190,7 +190,7 @@ describe('DropHandler', () => {
     expect(saveResult).toHaveBeenCalledTimes(1);
   });
 
-  it('드롭 폴더 경로를 data-path에서 추출', async () => {
+  it('extracts drop folder path from data-path', async () => {
     mockService.convertDroppedFile.mockResolvedValue(createMockConversionResult());
     const files = createMockFileList([createMockFile('test.note')]);
     const evt = createDragEvent({
@@ -203,7 +203,7 @@ describe('DropHandler', () => {
     expect(saveResult).toHaveBeenCalledWith(expect.anything(), 'deep/nested/folder', 'test');
   });
 
-  it('updateService 후 새 서비스로 변환 수행', async () => {
+  it('uses the new service for conversion after updateService', async () => {
     const newParser = createMockParser(['.note']);
     const newService = createMockPetrifyService([newParser]);
     const newResult: ConversionResult = {
@@ -235,7 +235,7 @@ describe('DropHandler', () => {
     expect(saveResult).toHaveBeenCalledWith(newResult, 'notes', 'test');
   });
 
-  it('data-path 없으면 루트 폴더("")로 저장', async () => {
+  it('saves to root folder ("") when data-path is absent', async () => {
     const target: Partial<HTMLElement> = {
       closest: vi.fn().mockImplementation((selector: string) => {
         if (selector === '.nav-files-container') return {};

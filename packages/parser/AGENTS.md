@@ -1,13 +1,13 @@
 # AGENTS.md
 
-## 패키지 역할
+## Package Role
 
-- 각 노트 포맷별 파서 구현 (viwoods, supernote, remarkable 등)
-- ParserPort 인터페이스 구현
+- Implement parsers for each note format (viwoods, supernote, remarkable, etc.)
+- Implement the ParserPort interface
 
-## 파서 구현 규칙
+## Parser Implementation Rules
 
-모든 파서는 ParserPort 인터페이스를 구현해야 한다.
+All parsers must implement the ParserPort interface.
 
 ```typescript
 import type { Note, ParserPort } from '@petrify/core';
@@ -16,34 +16,34 @@ export class ViwoodsParser implements ParserPort {
   readonly extensions = ['.note'];
 
   async parse(data: ArrayBuffer): Promise<Note> {
-    // 구현
+    // implementation
   }
 }
 ```
 
-- `extensions`: 지원하는 파일 확장자 배열
-- `parse()`: ArrayBuffer를 받아 Note 모델로 변환
+- `extensions`: Array of supported file extensions
+- `parse()`: Receives an ArrayBuffer and converts it to a Note model
 
 ## DO
 
-- 새 파서 추가 시 ParserPort 구현
+- Implement ParserPort when adding a new parser
   ```typescript
   export class SupernoteParser implements ParserPort {
     readonly extensions = ['.note'];
 
     async parse(data: ArrayBuffer): Promise<Note> {
-      // 구현
+      // implementation
     }
   }
   ```
 
-- 새 파서는 index.ts에서 export
+- Export new parsers from index.ts
   ```typescript
   export { SupernoteParser } from './parser.js';
   export { NoteParser } from './note-parser.js';
   ```
 
-- core의 공통 예외 클래스 사용
+- Use shared exception classes from core
   ```typescript
   import { InvalidFileFormatError, ParseError } from '@petrify/core';
 
@@ -52,5 +52,5 @@ export class ViwoodsParser implements ParserPort {
 
 ## DON'T
 
-- 파서 간 직접 의존하지 않기 (viwoods가 supernote import 등)
-- 파서별 자체 예외 클래스 정의하지 않기 (core의 공통 예외 사용)
+- Do not create direct dependencies between parsers (e.g., viwoods importing supernote)
+- Do not define per-parser exception classes (use shared exceptions from core)

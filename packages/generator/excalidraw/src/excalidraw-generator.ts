@@ -59,7 +59,7 @@ export interface ExcalidrawDataWithoutFiles {
 }
 
 export class ExcalidrawGenerator {
-  /** 페이지 간 세로 간격 (px) */
+  /** Vertical gap between pages (px) */
   static readonly PAGE_GAP = 100;
 
   async generate(note: Note): Promise<ExcalidrawData> {

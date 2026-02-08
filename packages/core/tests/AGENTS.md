@@ -1,39 +1,39 @@
 # AGENTS.md
 
-## 테스트 프레임워크
+## Test Framework
 
-- **Vitest** 사용
-- 테스트 파일: `*.test.ts`
+- Uses **Vitest**
+- Test files: `*.test.ts`
 
-## 명령어
+## Commands
 
 ```bash
-# 전체 테스트
+# Run all tests
 pnpm test
 
-# 특정 패키지 테스트
+# Run tests for a specific package
 pnpm --filter @petrify/core test
 
-# watch 모드
+# Watch mode
 pnpm test -- --watch
 ```
 
-## 테스트 유형
+## Test Types
 
-### 유닛 테스트
-- 각 어댑터의 public API 메서드 검증
-- 에러 케이스 필수 포함 (정상 + 에러 쌍)
-- mock은 외부 의존성(파일 시스템, OCR API)에만 사용
+### Unit Tests
+- Verify each adapter's public API methods
+- Must include error cases (success + error pairs)
+- Use mocks only for external dependencies (file system, OCR API)
 
-### 통합 테스트
-- PetrifyService 진입점(handleFileChange, convertDroppedFile, handleFileDelete) 레벨
-- lightweight fake(in-memory 구현) 사용, vi.mock 지양
-- 전체 파이프라인 흐름 검증 (parse → OCR → generate → save)
+### Integration Tests
+- At the PetrifyService entry point level (handleFileChange, convertDroppedFile, handleFileDelete)
+- Use lightweight fakes (in-memory implementations); avoid vi.mock
+- Verify the full pipeline flow (parse -> OCR -> generate -> save)
 
 ## DO
 
-- 새 기능 추가 시 테스트 작성
-- 테스트 파일은 `tests/` 디렉터리에 배치
+- Write tests when adding new features
+- Place test files in the `tests/` directory
   ```
   packages/core/
   ├── src/
@@ -46,6 +46,6 @@ pnpm test -- --watch
 
 ## DON'T
 
-- 테스트 비활성화하지 않기 (skip, only 남기지 않기)
-- `expect(true).toBe(true)` 같은 무의미한 assertion 금지
-- 내부 구현을 spy로 감시하지 않기
+- Do not disable tests (do not leave skip or only)
+- Do not write meaningless assertions like `expect(true).toBe(true)`
+- Do not spy on internal implementation details
