@@ -46,7 +46,7 @@ mkdir -p <vault>/.obsidian/plugins/petrify/
 cp packages/obsidian-plugin/main.js <vault>/.obsidian/plugins/petrify/
 cp packages/obsidian-plugin/manifest.json <vault>/.obsidian/plugins/petrify/
 cp packages/obsidian-plugin/worker.min.js <vault>/.obsidian/plugins/petrify/
-cp -r packages/obsidian-plugin/tesseract-core/ <vault>/.obsidian/plugins/petrify/tesseract-core/
+cp -r packages/obsidian-plugin/tesseract-core <vault>/.obsidian/plugins/petrify/
 ```
 
 Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
