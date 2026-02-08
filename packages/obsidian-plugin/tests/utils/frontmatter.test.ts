@@ -198,6 +198,22 @@ content`;
       expect(result).toBe(content);
     });
 
+    it('프론트매터 뒤 개행이 하나여도 정상 교체한다', () => {
+      const content = `---
+petrify:
+  source: /path/to/file.note
+  mtime: 1705315800000
+  keep: false
+excalidraw-plugin: parsed
+---
+# Content`;
+
+      const result = updateKeepInContent(content, true);
+
+      expect(result).toContain('keep: true');
+      expect(result).toContain('# Content');
+    });
+
     it('petrify 메타데이터가 없는 frontmatter는 변경 없이 반환한다', () => {
       const content = `---
 excalidraw-plugin: parsed

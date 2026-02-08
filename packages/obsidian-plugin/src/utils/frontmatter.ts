@@ -50,5 +50,5 @@ export function updateKeepInContent(content: string, keep: boolean): string {
   if (!meta) return content;
 
   const newFrontmatter = createFrontmatter({ ...meta, keep });
-  return content.replace(/^---\n[\s\S]*?\n---\n\n/, newFrontmatter);
+  return content.replace(/^---\n[\s\S]*?\n---\n+/, newFrontmatter);
 }
