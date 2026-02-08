@@ -68,7 +68,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
   }
 
   private displayGeneralSettings(containerEl: HTMLElement): void {
-    containerEl.createEl('h2', { text: 'General' });
+    new Setting(containerEl).setName('General').setHeading();
 
     const settings = this.callbacks.getSettings();
 
@@ -116,7 +116,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
   }
 
   private displayWatchSourcesSettings(containerEl: HTMLElement): void {
-    containerEl.createEl('h2', { text: 'Watch Sources' });
+    new Setting(containerEl).setName('Watch sources').setHeading();
 
     const settings = this.callbacks.getSettings();
 
@@ -480,7 +480,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
   }
 
   private displayOcrSettings(containerEl: HTMLElement): void {
-    containerEl.createEl('h2', { text: 'OCR settings' });
+    new Setting(containerEl).setName('OCR').setHeading();
 
     const settings = this.callbacks.getSettings();
 

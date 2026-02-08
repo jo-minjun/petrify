@@ -419,8 +419,7 @@ export default class PetrifyPlugin extends Plugin {
     }
 
     const newKeep = !meta.keep;
-    const updated = updateKeepInContent(content, newKeep);
-    await this.app.vault.modify(file, updated);
+    await this.app.vault.process(file, (data) => updateKeepInContent(data, newKeep));
 
     const status = newKeep ? 'protected' : 'unprotected';
     new Notice(`Petrify: File ${status}`);
