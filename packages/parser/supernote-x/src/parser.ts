@@ -55,7 +55,8 @@ function parseLayerVisibility(raw: string): Map<string, boolean> {
       visibility.set(name, layer.isVisible);
     }
   } catch (e) {
-    console.warn(`[Petrify:Parser] Failed to parse LAYERINFO, applying default: ${e}`);
+    const message = e instanceof Error ? e.message : String(e);
+    console.warn(`[Petrify:Parser] Failed to parse LAYERINFO, applying default: ${message}`);
     visibility.set('MAINLAYER', true);
   }
   return visibility;
@@ -199,7 +200,8 @@ export class NoteParser {
 
         layerBitmaps.push({ pixels, width, height });
       } catch (e) {
-        console.warn(`[Petrify:Parser] Failed to decode layer ${layerName}: ${e}`);
+        const message = e instanceof Error ? e.message : String(e);
+        console.warn(`[Petrify:Parser] Failed to decode layer ${layerName}: ${message}`);
       }
     }
 
