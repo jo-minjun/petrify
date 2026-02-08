@@ -17,6 +17,18 @@ Petrify converts handwriting note files into [Excalidraw](https://github.com/zsv
 **Planned:**
 - Additional parsers for other handwriting note apps
 
+## Why Petrify
+
+Sometimes a pen is the most natural way to capture your thoughts — sketching diagrams, jotting quick notes in a meeting, or writing freely without the constraints of a keyboard. Other times, typing is faster and more structured. If you use both, your knowledge inevitably splits in two: handwritten notes on your e-ink tablet, and typed notes in Obsidian.
+
+The usual workaround — syncing handwriting files to Google Drive and opening them as PDFs — keeps your notes accessible but isolated. Handwriting exported as PDF is just a flat image — it can't be searched, linked, or tagged alongside your Obsidian notes. Your handwriting becomes dead data, locked away from search, graph view, and backlinks.
+
+Petrify bridges this gap. It converts handwriting files into Excalidraw or Markdown inside your vault, with OCR that makes the content searchable. The result is one vault, one knowledge base — regardless of whether you picked up a pen or a keyboard.
+
+This matters even more as personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw) become mainstream. A unified knowledge base means your AI can draw from everything you've written — handwritten or typed — to give more personalized answers.
+
+Petrify currently supports Viwoods (.note) files, and its plugin architecture makes it straightforward to add support for other handwriting apps in the future.
+
 ## Obsidian Plugin
 
 ### Installation
