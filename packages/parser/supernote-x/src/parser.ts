@@ -7,6 +7,7 @@ import {
   PAGE_HEIGHT,
   PAGE_WIDTH,
   PROTOCOL_FLATE,
+  PROTOCOL_RLE,
   SN_FILE_TYPE_LENGTH,
   SN_FILE_TYPE_NOTE,
   SN_SIGNATURE_LENGTH,
@@ -43,7 +44,8 @@ function parseLayerVisibility(raw: string): Map<string, boolean> {
       }
       visibility.set(name, layer.isVisible);
     }
-  } catch {
+  } catch (e) {
+    console.warn(`[Petrify:Parser] Failed to parse LAYERINFO, applying default: ${e}`);
     visibility.set('MAINLAYER', true);
   }
   return visibility;
@@ -170,10 +172,17 @@ export class NoteParser {
           pageStyle === STYLE_WHITE &&
           bitmapData.length === BLANK_CONTENT_LENGTH;
 
-        const pixels =
-          protocol === PROTOCOL_FLATE
-            ? decodeFlate(bitmapData, width, height)
-            : decodeRattaRle(bitmapData, width, height, isX2, isBlank);
+        let pixels: Uint8Array;
+        if (protocol === PROTOCOL_FLATE) {
+          pixels = decodeFlate(bitmapData, width, height);
+        } else if (protocol === PROTOCOL_RLE || protocol === '') {
+          pixels = decodeRattaRle(bitmapData, width, height, isX2, isBlank);
+        } else {
+          console.warn(
+            `[Petrify:Parser] Unsupported protocol "${protocol}" for layer ${layerName}. Skipping.`,
+          );
+          continue;
+        }
 
         layerBitmaps.push({ pixels, width, height });
       } catch (e) {

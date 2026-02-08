@@ -8,6 +8,7 @@ import {
   RLE_SPECIAL_LENGTH_BLANK,
   RLE_SPECIAL_LENGTH_MARKER,
 } from './constants.js';
+import { ParseError } from './exceptions.js';
 
 export function decodeRattaRle(
   data: Uint8Array,
@@ -75,13 +76,21 @@ export function decodeRattaRle(
   return pixels;
 }
 
+const MAX_DECOMPRESSED_SIZE = 20 * 1024 * 1024;
+
 export function decodeFlate(data: Uint8Array, width: number, height: number): Uint8Array {
   const decompressed = pako.inflate(data);
-  const view = new DataView(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
+  if (decompressed.length > MAX_DECOMPRESSED_SIZE) {
+    throw new ParseError(
+      `Decompressed size ${decompressed.length} exceeds limit ${MAX_DECOMPRESSED_SIZE}`,
+    );
+  }
 
-  const rawPixels: number[] = [];
-  for (let i = 0; i + 1 < decompressed.length; i += 2) {
-    rawPixels.push(view.getUint16(i, true));
+  const pixelCount = Math.floor(decompressed.length / 2);
+  const view = new DataView(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
+  const rawPixels = new Uint16Array(pixelCount);
+  for (let i = 0; i < pixelCount; i++) {
+    rawPixels[i] = view.getUint16(i * 2, true);
   }
   rawPixels.reverse();
 
