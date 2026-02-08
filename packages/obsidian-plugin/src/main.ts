@@ -425,7 +425,7 @@ export default class PetrifyPlugin extends Plugin {
     const content = await this.app.vault.read(file);
     const meta = parseFrontmatter(content);
     if (!meta) {
-      new Notice('Petrify: Not a petrify-generated file');
+      new Notice('Petrify: not a petrify-generated file');
       return;
     }
 
