@@ -26,6 +26,20 @@ export class OcrRecognitionError extends Error {
   }
 }
 
+export class WatcherAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WatcherAuthError';
+  }
+}
+
+export class WatcherSourceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WatcherSourceError';
+  }
+}
+
 export type ConversionPhase = 'parse' | 'ocr' | 'generate' | 'save';
 
 export class ConversionError extends Error {

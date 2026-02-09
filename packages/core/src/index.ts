@@ -6,6 +6,8 @@ export {
   OcrInitializationError,
   OcrRecognitionError,
   ParseError,
+  WatcherAuthError,
+  WatcherSourceError,
 } from './exceptions.js';
 export * from './models/index.js';
 export { filterOcrByConfidence } from './ocr/filter.js';

@@ -18,7 +18,7 @@ excalidraw-plugin: parsed
 }
 
 export function parseFrontmatter(content: string): PetrifyFrontmatter | null {
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!frontmatterMatch) {
     return null;
   }
@@ -43,12 +43,12 @@ export function parseFrontmatter(content: string): PetrifyFrontmatter | null {
 }
 
 export function updateKeepInContent(content: string, keep: boolean): string {
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!frontmatterMatch) return content;
 
   const meta = parseFrontmatter(content);
   if (!meta) return content;
 
   const newFrontmatter = createFrontmatter({ ...meta, keep });
-  return content.replace(/^---\n[\s\S]*?\n---\n+/, newFrontmatter);
+  return content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n+/, newFrontmatter);
 }

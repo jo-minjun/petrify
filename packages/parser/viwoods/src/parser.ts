@@ -33,8 +33,8 @@ export class NoteParser {
     return {
       title: noteInfo.fileName ?? 'Untitled',
       pages,
-      createdAt: this.timestampToDate(noteInfo.creationTime ?? 0),
-      modifiedAt: this.timestampToDate(noteInfo.lastModifiedTime ?? 0),
+      createdAt: new Date(noteInfo.creationTime ?? 0),
+      modifiedAt: new Date(noteInfo.lastModifiedTime ?? 0),
     };
   }
 
@@ -83,7 +83,7 @@ export class NoteParser {
       const file = zip.file(screenshotFile);
 
       if (!file) {
-        console.warn(
+        console.debug(
           `[Petrify:Parser] Screenshot not found, skipping page ${entry.id}: ${screenshotFile}`,
         );
         continue;
@@ -101,10 +101,5 @@ export class NoteParser {
     }
 
     return pages;
-  }
-
-  private timestampToDate(timestamp: number): Date {
-    if (timestamp === 0) return new Date(0);
-    return new Date(timestamp);
   }
 }

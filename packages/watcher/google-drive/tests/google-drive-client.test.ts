@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+import { WatcherSourceError } from '@petrify/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GoogleDriveClient } from '../src/google-drive-client.js';
 
@@ -99,7 +100,7 @@ describe('GoogleDriveClient', () => {
       data: { startPageToken: null },
     });
 
-    await expect(client.getStartPageToken()).rejects.toThrow('startPageToken');
+    await expect(client.getStartPageToken()).rejects.toThrow(WatcherSourceError);
   });
 
   it('getChanges returns the list of changes', async () => {

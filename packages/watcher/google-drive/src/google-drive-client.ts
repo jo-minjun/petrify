@@ -1,4 +1,5 @@
 import { drive_v3 } from '@googleapis/drive';
+import { WatcherSourceError } from '@petrify/core';
 import type { OAuth2Client } from 'google-auth-library';
 import type { ChangesResult, DriveFile } from './types.js';
 import { validateDriveId } from './validate-drive-id.js';
@@ -14,7 +15,7 @@ function toDriveFile(data: Record<string, unknown>): DriveFile {
     typeof mimeType !== 'string' ||
     typeof modifiedTime !== 'string'
   ) {
-    throw new Error(
+    throw new WatcherSourceError(
       `Invalid Drive API response: missing required fields (id=${String(id)}, name=${String(name)})`,
     );
   }
@@ -29,6 +30,11 @@ function toDriveFile(data: Record<string, unknown>): DriveFile {
   };
 }
 
+interface PaginatedListParams {
+  readonly q: string;
+  readonly orderBy?: string;
+}
+
 export class GoogleDriveClient {
   private readonly drive;
 
@@ -38,60 +44,26 @@ export class GoogleDriveClient {
 
   async listFiles(folderId: string): Promise<DriveFile[]> {
     validateDriveId(folderId);
-    const allFiles: DriveFile[] = [];
-    let pageToken: string | undefined;
-
-    do {
-      const res = await this.drive.files.list({
-        q: `'${folderId}' in parents and trashed = false`,
-        fields: `nextPageToken, files(${FIELDS_FILE})`,
-        pageSize: 100,
-        pageToken,
-      });
-
-      for (const file of res.data.files ?? []) {
-        allFiles.push(toDriveFile(file as Record<string, unknown>));
-      }
-
-      pageToken = res.data.nextPageToken ?? undefined;
-    } while (pageToken);
-
-    return allFiles;
+    return this.paginateFiles({
+      q: `'${folderId}' in parents and trashed = false`,
+    });
   }
 
   async listFolders(parentFolderId?: string): Promise<DriveFile[]> {
-    const allFolders: DriveFile[] = [];
-    let pageToken: string | undefined;
-
     if (parentFolderId) {
       validateDriveId(parentFolderId);
     }
     const parent = parentFolderId ?? 'root';
-    const query = `'${parent}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-
-    do {
-      const res = await this.drive.files.list({
-        q: query,
-        fields: `nextPageToken, files(${FIELDS_FILE})`,
-        pageSize: 100,
-        pageToken,
-        orderBy: 'name',
-      });
-
-      for (const file of res.data.files ?? []) {
-        allFolders.push(toDriveFile(file as Record<string, unknown>));
-      }
-
-      pageToken = res.data.nextPageToken ?? undefined;
-    } while (pageToken);
-
-    return allFolders;
+    return this.paginateFiles({
+      q: `'${parent}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+      orderBy: 'name',
+    });
   }
 
   async getStartPageToken(): Promise<string> {
     const res = await this.drive.changes.getStartPageToken({});
     if (!res.data.startPageToken) {
-      throw new Error('Drive API did not return a startPageToken');
+      throw new WatcherSourceError('Drive API did not return a startPageToken');
     }
     return res.data.startPageToken;
   }
@@ -152,5 +124,28 @@ export class GoogleDriveClient {
       fields: FIELDS_FILE,
     });
     return toDriveFile(res.data as Record<string, unknown>);
+  }
+
+  private async paginateFiles(params: PaginatedListParams): Promise<DriveFile[]> {
+    const results: DriveFile[] = [];
+    let pageToken: string | undefined;
+
+    do {
+      const res = await this.drive.files.list({
+        q: params.q,
+        fields: `nextPageToken, files(${FIELDS_FILE})`,
+        pageSize: 100,
+        pageToken,
+        orderBy: params.orderBy,
+      });
+
+      for (const file of res.data.files ?? []) {
+        results.push(toDriveFile(file as Record<string, unknown>));
+      }
+
+      pageToken = res.data.nextPageToken ?? undefined;
+    } while (pageToken);
+
+    return results;
   }
 }

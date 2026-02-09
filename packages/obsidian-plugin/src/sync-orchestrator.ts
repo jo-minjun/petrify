@@ -6,6 +6,7 @@ import type {
   ParserPort,
   PetrifyService,
 } from '@petrify/core';
+import { normalizePath } from 'obsidian';
 import type { SaveConversionFn } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import type { Logger } from './logger.js';
@@ -166,7 +167,7 @@ export class SyncOrchestrator {
       if (!outputEntry.name.endsWith(this.generator.extension)) continue;
 
       const safeName = path.basename(outputEntry.name);
-      const outputPath = path.join(mapping.outputDir, safeName);
+      const outputPath = normalizePath(path.join(mapping.outputDir, safeName));
       const canDelete = await this.petrifyService.handleFileDelete(outputPath);
       if (!canDelete) continue;
 

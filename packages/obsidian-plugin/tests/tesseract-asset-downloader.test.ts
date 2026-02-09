@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TesseractAssetDownloader } from '../src/tesseract-asset-downloader.js';
+import { TesseractAssetDownloader } from '../src/tesseract-assets.js';
 
 function createMockFs(existingFiles: Set<string> = new Set()) {
   return {

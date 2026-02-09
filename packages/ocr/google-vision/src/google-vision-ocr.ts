@@ -2,11 +2,15 @@ import type { OcrOptions, OcrPort, OcrRegion, OcrResult } from '@petrify/core';
 import { OcrInitializationError, OcrRecognitionError } from '@petrify/core';
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  const CHUNK_SIZE = 0x8000;
+  const chunks: string[] = [];
+
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
+    chunks.push(String.fromCharCode(...chunk));
   }
-  return btoa(binary);
+
+  return btoa(chunks.join(''));
 }
 
 export type HttpPostFn = (
@@ -62,11 +66,9 @@ const VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate';
 
 export class GoogleVisionOcr implements OcrPort {
   private readonly config: GoogleVisionOcrConfig;
-  private readonly httpPost: HttpPostFn;
 
   constructor(config: GoogleVisionOcrConfig) {
     this.config = config;
-    this.httpPost = config.httpPost;
   }
 
   async recognize(image: ArrayBuffer, options?: OcrOptions): Promise<OcrResult> {
@@ -93,7 +95,7 @@ export class GoogleVisionOcr implements OcrPort {
 
     let res: { status: number; body: string };
     try {
-      res = await this.httpPost(`${VISION_API_URL}?key=${this.config.apiKey}`, {
+      res = await this.config.httpPost(`${VISION_API_URL}?key=${this.config.apiKey}`, {
         body: JSON.stringify(body),
         headers: { 'Content-Type': 'application/json' },
       });
