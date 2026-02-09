@@ -1,4 +1,4 @@
-interface ElectronRemote {
+export interface ElectronRemote {
   dialog: {
     showOpenDialog(options: {
       properties: string[];
@@ -11,16 +11,16 @@ async function getElectronRemote(): Promise<ElectronRemote | undefined> {
   try {
     // @ts-expect-error electron is provided by Obsidian's Electron runtime, not installed as a dependency
     const electronModule: Record<string, unknown> = await import('electron');
-    return electronModule?.remote as ElectronRemote | undefined;
+    const remote = electronModule?.remote;
+    if (remote && typeof remote === 'object' && 'dialog' in remote) {
+      return remote as ElectronRemote;
+    }
+    return undefined;
   } catch {
     return undefined;
   }
 }
 
-/**
- * Opens the Electron native folder selection dialog and returns the selected path.
- * Only works in Obsidian (Electron) environments; returns null on failure.
- */
 export async function showNativeFolderDialog(
   defaultPath?: string,
   remote?: ElectronRemote,

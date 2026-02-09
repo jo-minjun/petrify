@@ -40,14 +40,15 @@ ${compressed}
   }
 
   private formatOcrSection(ocrResults?: OcrTextResult[]): string {
-    let section = '## OCR Text\n';
-    if (!ocrResults || ocrResults.length === 0) {
-      return `${section}\n`;
+    const lines = ['## OCR Text'];
+
+    if (ocrResults && ocrResults.length > 0) {
+      for (const result of ocrResults) {
+        lines.push(`<!-- Page ${result.pageIndex + 1} -->`);
+        lines.push(result.texts.join('\n'));
+      }
     }
-    for (const result of ocrResults) {
-      section += `<!-- Page ${result.pageIndex + 1} -->\n`;
-      section += `${result.texts.join('\n')}\n`;
-    }
-    return `${section}\n`;
+
+    return `${lines.join('\n')}\n\n`;
   }
 }

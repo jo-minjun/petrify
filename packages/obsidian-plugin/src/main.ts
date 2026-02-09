@@ -14,23 +14,19 @@ import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { GoogleVisionOcr } from '@petrify/ocr-google-vision';
 import { TesseractOcr } from '@petrify/ocr-tesseract';
 import { ChokidarWatcher } from '@petrify/watcher-chokidar';
-import type {
-  OAuth2Client,
-  OAuthTokens,
-  PageTokenStore,
-  TokenStore,
-} from '@petrify/watcher-google-drive';
+import type { OAuth2Client } from '@petrify/watcher-google-drive';
 import {
   GoogleDriveAuth,
   GoogleDriveClient,
   GoogleDriveWatcher,
 } from '@petrify/watcher-google-drive';
 import type { DataAdapter } from 'obsidian';
-import { Notice, Plugin, requestUrl, setIcon, TFile } from 'obsidian';
+import { Notice, normalizePath, Plugin, requestUrl, setIcon, TFile } from 'obsidian';
 import { saveConversionResult as saveResult } from './conversion-saver.js';
 import { DropHandler } from './drop-handler.js';
 import { formatConversionError } from './format-conversion-error.js';
 import { FrontmatterMetadataAdapter } from './frontmatter-metadata-adapter.js';
+import { createPageTokenStore, createTokenStore, hasTokens } from './google-drive-token-store.js';
 import { createLogger } from './logger.js';
 import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
 import { createParserMap } from './parser-registry.js';
@@ -44,8 +40,7 @@ import type {
   VaultOperations,
 } from './sync-orchestrator.js';
 import { SyncOrchestrator, SyncSource } from './sync-orchestrator.js';
-import { TesseractAssetDownloader } from './tesseract-asset-downloader.js';
-import { TesseractAssetServer } from './tesseract-asset-server.js';
+import { TesseractAssetDownloader, TesseractAssetServer } from './tesseract-assets.js';
 import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
 
 interface FileSystemAdapter extends DataAdapter {
@@ -143,7 +138,7 @@ export default class PetrifyPlugin extends Plugin {
           const auth = new GoogleDriveAuth({
             clientId,
             clientSecret,
-            tokenStore: this.createTokenStore(),
+            tokenStore: createTokenStore(this),
           });
           const client = await auth.restoreSession();
           if (!client) return null;
@@ -153,7 +148,7 @@ export default class PetrifyPlugin extends Plugin {
           const auth = new GoogleDriveAuth({
             clientId,
             clientSecret,
-            tokenStore: this.createTokenStore(),
+            tokenStore: createTokenStore(this),
           });
           return auth.getAuthUrl();
         },
@@ -161,14 +156,11 @@ export default class PetrifyPlugin extends Plugin {
           const auth = new GoogleDriveAuth({
             clientId,
             clientSecret,
-            tokenStore: this.createTokenStore(),
+            tokenStore: createTokenStore(this),
           });
           await auth.handleAuthCode(code);
         },
-        hasGoogleDriveTokens: () => {
-          const raw = this.app.secretStorage.getSecret('petrify-drive-tokens');
-          return Promise.resolve(!!raw);
-        },
+        hasGoogleDriveTokens: () => hasTokens(this),
       }),
     );
 
@@ -188,7 +180,7 @@ export default class PetrifyPlugin extends Plugin {
       .then(() => this.ocr?.terminate?.())
       .then(() => this.assetServer?.stop())
       .catch((e: unknown) => {
-        console.error('Cleanup failed:', e);
+        this.watcherLog.error(`Cleanup failed: ${e instanceof Error ? e.message : String(e)}`, e);
       });
   }
 
@@ -208,7 +200,6 @@ export default class PetrifyPlugin extends Plugin {
       return;
     }
 
-    // Tesseract (default)
     const adapter = this.app.vault.adapter as FileSystemAdapter;
     const vaultPath = adapter.getBasePath();
     const pluginDir = path.join(vaultPath, this.app.vault.configDir, 'plugins', 'petrify');
@@ -344,7 +335,7 @@ export default class PetrifyPlugin extends Plugin {
           folderId: mapping.folderId,
           pollIntervalMs: this.settings.googleDrive.pollIntervalMinutes * 60000,
           auth: authClient,
-          pageTokenStore: this.createPageTokenStore(mapping.folderId),
+          pageTokenStore: createPageTokenStore(this, mapping.folderId),
         });
         this.attachWatcherHandlers(watcher, mapping.outputDir);
         await watcher.start();
@@ -394,9 +385,10 @@ export default class PetrifyPlugin extends Plugin {
     outputDir: string,
     baseName: string,
   ): Promise<string> {
+    const normalizedDir = normalizePath(outputDir);
     const outputPath = await saveResult(
       result,
-      outputDir,
+      normalizedDir,
       baseName,
       this.generator.extension,
       this.fsAdapter,
@@ -447,7 +439,9 @@ export default class PetrifyPlugin extends Plugin {
     const localMapping = this.settings.localWatch.mappings.find((m) => id.startsWith(m.watchDir));
     if (localMapping) {
       const fileName = path.basename(id, path.extname(id));
-      return path.join(localMapping.outputDir, `${fileName}${this.generator.extension}`);
+      return normalizePath(
+        path.join(localMapping.outputDir, `${fileName}${this.generator.extension}`),
+      );
     }
 
     return this.sourceOutputMap.get(id) ?? '';
@@ -455,7 +449,7 @@ export default class PetrifyPlugin extends Plugin {
 
   private getOutputPath(name: string, outputDir: string): string {
     const fileName = path.basename(name, path.extname(name));
-    return path.join(outputDir, `${fileName}${this.generator.extension}`);
+    return normalizePath(path.join(outputDir, `${fileName}${this.generator.extension}`));
   }
 
   private async restart(): Promise<void> {
@@ -592,52 +586,10 @@ export default class PetrifyPlugin extends Plugin {
       this.googleDriveAuth = new GoogleDriveAuth({
         clientId,
         clientSecret,
-        tokenStore: this.createTokenStore(),
+        tokenStore: createTokenStore(this),
       });
     }
 
     return this.googleDriveAuth.restoreSession();
-  }
-
-  private createTokenStore(): TokenStore {
-    const secretId = 'petrify-drive-tokens';
-
-    return {
-      loadTokens: () => {
-        const raw = this.app.secretStorage.getSecret(secretId);
-        if (!raw) return Promise.resolve(null);
-
-        try {
-          const tokens = JSON.parse(raw);
-          if (typeof tokens.refresh_token !== 'string') return Promise.resolve(null);
-          return Promise.resolve(tokens as OAuthTokens);
-        } catch {
-          return Promise.resolve(null);
-        }
-      },
-      saveTokens: (tokens) => {
-        this.app.secretStorage.setSecret(secretId, JSON.stringify(tokens));
-        return Promise.resolve();
-      },
-      clearTokens: () => {
-        this.app.secretStorage.setSecret(secretId, '');
-        return Promise.resolve();
-      },
-    };
-  }
-
-  private createPageTokenStore(folderId: string): PageTokenStore {
-    const key = `pageToken_${folderId}`;
-    return {
-      loadPageToken: async () => {
-        const data = await this.loadData();
-        return data?.[key] ?? null;
-      },
-      savePageToken: async (token) => {
-        const data = (await this.loadData()) ?? {};
-        data[key] = token;
-        await this.saveData(data);
-      },
-    };
   }
 }

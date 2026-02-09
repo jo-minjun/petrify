@@ -1,10 +1,13 @@
 import type { GoogleDriveClient } from '@petrify/watcher-google-drive';
 import type { App } from 'obsidian';
 import { Modal } from 'obsidian';
+import { createLogger } from './logger.js';
+
+const log = createLogger('Sync');
 
 export interface FolderBrowseResult {
-  folderId: string;
-  folderName: string;
+  readonly folderId: string;
+  readonly folderName: string;
 }
 
 export class FolderBrowseModal extends Modal {
@@ -108,7 +111,7 @@ export class FolderBrowseModal extends Modal {
     } catch (err) {
       loadingEl.remove();
       const message = err instanceof Error ? err.message : String(err);
-      console.error('Failed to list folders:', err);
+      log.error('Failed to list folders', err);
       contentEl.createEl('p', { text: `Error: ${message}` });
     }
   }

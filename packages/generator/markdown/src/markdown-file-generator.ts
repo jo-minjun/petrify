@@ -9,22 +9,24 @@ export class MarkdownFileGenerator implements FileGeneratorPort {
     const assets = new Map<string, Uint8Array>();
     const sortedPages = [...note.pages].sort((a, b) => a.order - b.order);
 
-    let ocrSection = '';
-    let imageSection = '';
+    const imageLines: string[] = [];
+    const ocrParts: string[] = [];
 
     for (const page of sortedPages) {
       const filename = `${page.id}.png`;
       assets.set(filename, page.imageData);
 
+      imageLines.push(`![[assets/${outputName}/${filename}]]`);
+
       const pageOcr = ocrResults?.find((r) => r.pageIndex === page.order);
       if (pageOcr && pageOcr.texts.length > 0) {
-        ocrSection += `${pageOcr.texts.join('\n')}\n\n`;
+        ocrParts.push(pageOcr.texts.join('\n'));
       }
-
-      imageSection += `![[assets/${outputName}/${filename}]]\n`;
     }
 
-    const content = `${imageSection}\n---\n\n${ocrSection}`;
+    const imageSection = imageLines.join('\n');
+    const ocrSection = ocrParts.length > 0 ? `${ocrParts.join('\n\n')}\n` : '';
+    const content = `${imageSection}\n\n---\n\n${ocrSection}`;
 
     return {
       content: `${content.trim()}\n`,

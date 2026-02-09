@@ -27,8 +27,8 @@ export async function saveConversionResult(
 
     if (result.assets.size > 0) {
       const assetsDir = path.posix.join(outputDir, 'assets', baseName);
-      for (const [name, data] of result.assets) {
-        await fileWriter.writeAsset(assetsDir, name, data);
+      for (const [assetName, data] of result.assets) {
+        await fileWriter.writeAsset(assetsDir, assetName, data);
       }
     }
 

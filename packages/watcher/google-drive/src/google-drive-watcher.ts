@@ -1,7 +1,11 @@
 import * as path from 'node:path';
 import type { FileChangeEvent, FileDeleteEvent, WatcherPort } from '@petrify/core';
 import { GoogleDriveClient } from './google-drive-client.js';
-import type { DriveFile, GoogleDriveWatcherOptions } from './types.js';
+import type { DriveChange, DriveFile, GoogleDriveWatcherOptions } from './types.js';
+
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
 
 export class GoogleDriveWatcher implements WatcherPort {
   private readonly client: GoogleDriveClient;
@@ -51,7 +55,7 @@ export class GoogleDriveWatcher implements WatcherPort {
 
     this.pollTimer = setInterval(() => {
       this.pollOnce().catch((error) => {
-        this.errorHandler?.(error instanceof Error ? error : new Error(String(error)));
+        this.errorHandler?.(normalizeError(error));
       });
     }, this.pollIntervalMs);
   }
@@ -70,23 +74,27 @@ export class GoogleDriveWatcher implements WatcherPort {
     const result = await this.client.getChanges(this.pageToken);
 
     for (const change of result.changes) {
-      if (!change.removed && change.file) {
-        if (!change.file.parents?.includes(this.folderId)) continue;
-
-        this.cacheFile(change.file);
-        await this.emitFileChange(change.file);
-      } else if (change.removed) {
-        const cached = this.fileCache.get(change.fileId);
-        if (!cached) continue;
-
-        await this.emitFileDelete(change.fileId, cached.name, cached.extension);
-        this.fileCache.delete(change.fileId);
-      }
+      await this.processChange(change);
     }
 
     if (result.newStartPageToken) {
       this.pageToken = result.newStartPageToken;
       await this.pageTokenStore.savePageToken(this.pageToken);
+    }
+  }
+
+  private async processChange(change: DriveChange): Promise<void> {
+    if (!change.removed && change.file) {
+      if (!change.file.parents?.includes(this.folderId)) return;
+
+      this.cacheFile(change.file);
+      await this.emitFileChange(change.file);
+    } else if (change.removed) {
+      const cached = this.fileCache.get(change.fileId);
+      if (!cached) return;
+
+      await this.emitFileDelete(change.fileId, cached.name, cached.extension);
+      this.fileCache.delete(change.fileId);
     }
   }
 
@@ -104,7 +112,7 @@ export class GoogleDriveWatcher implements WatcherPort {
     try {
       await this.fileHandler?.(event);
     } catch (error) {
-      this.errorHandler?.(error as Error);
+      this.errorHandler?.(normalizeError(error));
     }
   }
 
@@ -118,7 +126,7 @@ export class GoogleDriveWatcher implements WatcherPort {
     try {
       await this.deleteHandler?.(event);
     } catch (error) {
-      this.errorHandler?.(error as Error);
+      this.errorHandler?.(normalizeError(error));
     }
   }
 

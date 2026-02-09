@@ -9,7 +9,7 @@ export class GoogleDriveAuth {
   private readonly clientId: string;
   private readonly clientSecret: string;
   private readonly tokenStore: TokenStore;
-  private client: OAuth2Client | null = null;
+  private authenticatedClient: OAuth2Client | null = null;
 
   constructor(options: GoogleDriveAuthOptions) {
     this.clientId = options.clientId;
@@ -21,7 +21,7 @@ export class GoogleDriveAuth {
     const tokens = await this.tokenStore.loadTokens();
     if (!tokens?.refresh_token) return null;
 
-    const client = new OAuth2Client(this.clientId, this.clientSecret, REDIRECT_URI);
+    const client = this.createOAuth2Client();
     client.setCredentials({
       refresh_token: tokens.refresh_token,
       access_token: tokens.access_token,
@@ -36,13 +36,12 @@ export class GoogleDriveAuth {
       });
     });
 
-    this.client = client;
+    this.authenticatedClient = client;
     return client;
   }
 
   getAuthUrl(): string {
-    const client = new OAuth2Client(this.clientId, this.clientSecret, REDIRECT_URI);
-    return client.generateAuthUrl({
+    return this.createOAuth2Client().generateAuthUrl({
       access_type: 'offline',
       scope: SCOPES,
       prompt: 'consent',
@@ -50,7 +49,7 @@ export class GoogleDriveAuth {
   }
 
   async handleAuthCode(code: string): Promise<OAuth2Client> {
-    const client = new OAuth2Client(this.clientId, this.clientSecret, REDIRECT_URI);
+    const client = this.createOAuth2Client();
     const { tokens } = await client.getToken(code);
 
     if (!tokens.refresh_token) {
@@ -66,16 +65,20 @@ export class GoogleDriveAuth {
     });
 
     client.setCredentials(tokens);
-    this.client = client;
+    this.authenticatedClient = client;
     return client;
   }
 
   isAuthenticated(): boolean {
-    return this.client !== null;
+    return this.authenticatedClient !== null;
   }
 
   async revokeToken(): Promise<void> {
-    this.client = null;
+    this.authenticatedClient = null;
     await this.tokenStore.clearTokens();
+  }
+
+  private createOAuth2Client(): OAuth2Client {
+    return new OAuth2Client(this.clientId, this.clientSecret, REDIRECT_URI);
   }
 }

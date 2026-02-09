@@ -23,6 +23,7 @@ function entries(...names: string[]): ReadDirEntry[] {
 
 vi.mock('obsidian', () => ({
   Notice: vi.fn(),
+  normalizePath: (p: string) => p,
 }));
 
 function createMockLogger(): Logger {

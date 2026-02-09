@@ -4,6 +4,18 @@ import type { FileChangeEvent, FileDeleteEvent, WatcherPort } from '@petrify/cor
 import type { FSWatcher } from 'chokidar';
 import { watch } from 'chokidar';
 
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+function fileMetadata(filePath: string): { id: string; name: string; extension: string } {
+  return {
+    id: filePath,
+    name: path.basename(filePath),
+    extension: path.extname(filePath).toLowerCase(),
+  };
+}
+
 export class ChokidarWatcher implements WatcherPort {
   private watcher: FSWatcher | null = null;
   private fileHandler: ((event: FileChangeEvent) => Promise<void>) | null = null;
@@ -32,18 +44,16 @@ export class ChokidarWatcher implements WatcherPort {
       depth: 0,
     });
 
-    this.watcher.on('add', (filePath: string, stats?: { mtimeMs: number }) => {
+    const fileEventHandler = (filePath: string, stats?: { mtimeMs: number }): void => {
       void this.handleFileEvent(filePath, stats);
-    });
-    this.watcher.on('change', (filePath: string, stats?: { mtimeMs: number }) => {
-      void this.handleFileEvent(filePath, stats);
-    });
+    };
+    this.watcher.on('add', fileEventHandler);
+    this.watcher.on('change', fileEventHandler);
     this.watcher.on('unlink', (filePath: string) => {
       void this.handleDeleteEvent(filePath);
     });
     this.watcher.on('error', (error: unknown) => {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.errorHandler?.(err);
+      this.errorHandler?.(normalizeError(error));
     });
 
     return Promise.resolve();
@@ -58,12 +68,11 @@ export class ChokidarWatcher implements WatcherPort {
     filePath: string,
     stats: { mtimeMs: number } | undefined,
   ): Promise<void> {
+    const meta = fileMetadata(filePath);
     const mtime = stats?.mtimeMs ?? Date.now();
 
     const event: FileChangeEvent = {
-      id: filePath,
-      name: path.basename(filePath),
-      extension: path.extname(filePath).toLowerCase(),
+      ...meta,
       mtime,
       readData: () =>
         fs.readFile(filePath).then((buf) => {
@@ -76,21 +85,17 @@ export class ChokidarWatcher implements WatcherPort {
     try {
       await this.fileHandler?.(event);
     } catch (error) {
-      this.errorHandler?.(error as Error);
+      this.errorHandler?.(normalizeError(error));
     }
   }
 
   private async handleDeleteEvent(filePath: string): Promise<void> {
-    const event: FileDeleteEvent = {
-      id: filePath,
-      name: path.basename(filePath),
-      extension: path.extname(filePath).toLowerCase(),
-    };
+    const event: FileDeleteEvent = fileMetadata(filePath);
 
     try {
       await this.deleteHandler?.(event);
     } catch (error) {
-      this.errorHandler?.(error as Error);
+      this.errorHandler?.(normalizeError(error));
     }
   }
 }

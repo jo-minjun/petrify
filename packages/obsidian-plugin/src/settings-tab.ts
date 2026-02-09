@@ -3,6 +3,7 @@ import {
   type App,
   type DataAdapter,
   Notice,
+  normalizePath,
   type Plugin,
   PluginSettingTab,
   Setting,
@@ -22,6 +23,10 @@ import {
   type PetrifySettings,
 } from './settings.js';
 
+interface FileSystemAdapter extends DataAdapter {
+  getBasePath(): string;
+}
+
 export interface SettingsTabCallbacks {
   readonly getSettings: () => PetrifySettings;
   readonly saveSettings: (settings: PetrifySettings) => Promise<void>;
@@ -37,6 +42,17 @@ export interface SettingsTabCallbacks {
     code: string,
   ) => Promise<void>;
   readonly hasGoogleDriveTokens: () => Promise<boolean>;
+}
+
+interface MappingItemConfig {
+  readonly index: number;
+  readonly enabled: boolean;
+  readonly outputDir: string;
+  readonly parserId: string;
+  readonly onToggle: (value: boolean) => void;
+  readonly onRemove: () => void;
+  readonly onOutputDirChange: (value: string) => void;
+  readonly onParserChange: (value: string) => void;
 }
 
 export class PetrifySettingsTab extends PluginSettingTab {
@@ -168,23 +184,28 @@ export class PetrifySettingsTab extends PluginSettingTab {
     this.pendingLocalWatch.mappings.forEach((mapping, index) => {
       const mappingContainer = containerEl.createDiv({ cls: 'petrify-mapping' });
 
-      new Setting(mappingContainer)
-        .setName(`Mapping #${index + 1}`)
-        .addToggle((toggle) =>
-          toggle.setValue(mapping.enabled).onChange((value) => {
-            this.pendingLocalWatch.mappings[index].enabled = value;
-            this.updateWatchSaveButton();
-          }),
-        )
-        .addButton((btn) =>
-          btn
-            .setButtonText('Remove')
-            .setWarning()
-            .onClick(() => {
-              this.pendingLocalWatch.mappings.splice(index, 1);
-              this.display();
-            }),
-        );
+      this.renderMappingItem(mappingContainer, {
+        index,
+        enabled: mapping.enabled,
+        outputDir: mapping.outputDir,
+        parserId: mapping.parserId,
+        onToggle: (value) => {
+          this.pendingLocalWatch.mappings[index].enabled = value;
+          this.updateWatchSaveButton();
+        },
+        onRemove: () => {
+          this.pendingLocalWatch.mappings.splice(index, 1);
+          this.display();
+        },
+        onOutputDirChange: (value) => {
+          this.pendingLocalWatch.mappings[index].outputDir = value;
+          this.updateWatchSaveButton();
+        },
+        onParserChange: (value) => {
+          this.pendingLocalWatch.mappings[index].parserId = value;
+          this.updateWatchSaveButton();
+        },
+      });
 
       const watchDirSetting = new Setting(mappingContainer)
         .setName('Watch directory')
@@ -209,44 +230,14 @@ export class PetrifySettingsTab extends PluginSettingTab {
         );
       watchDirSetting.settingEl.addClass('petrify-setting-full-width');
 
-      const outputDirSetting = new Setting(mappingContainer)
-        .setName('Output directory')
-        .addText((text) => {
-          text
-            .setPlaceholder('Handwritings/')
-            .setValue(mapping.outputDir)
-            .onChange((value) => {
-              this.pendingLocalWatch.mappings[index].outputDir = value;
-              this.updateWatchSaveButton();
-            });
-          text.inputEl.addClass('petrify-input-full-width');
-        })
-        .addButton((btn) =>
-          btn.setButtonText('Browse').onClick(async () => {
-            const vaultPath = (
-              this.app.vault.adapter as DataAdapter & { getBasePath(): string }
-            ).getBasePath();
-            const selected = await showNativeFolderDialog(vaultPath);
-            if (!selected) return;
-            const relative = selected.startsWith(vaultPath)
-              ? selected.slice(vaultPath.length + 1)
-              : selected;
-            this.pendingLocalWatch.mappings[index].outputDir = relative;
-            this.updateWatchSaveButton();
-            this.display();
-          }),
-        );
-      outputDirSetting.settingEl.addClass('petrify-setting-full-width');
+      this.renderOutputDirWithBrowse(mappingContainer, mapping.outputDir, (value) => {
+        this.pendingLocalWatch.mappings[index].outputDir = value;
+        this.updateWatchSaveButton();
+      });
 
-      new Setting(mappingContainer).setName('Parser').addDropdown((dropdown) => {
-        for (const id of Object.values(ParserId)) {
-          dropdown.addOption(id, id);
-        }
-        dropdown.setValue(mapping.parserId || ParserId.Viwoods);
-        dropdown.onChange((value) => {
-          this.pendingLocalWatch.mappings[index].parserId = value;
-          this.updateWatchSaveButton();
-        });
+      this.renderParserDropdown(mappingContainer, mapping.parserId, (value) => {
+        this.pendingLocalWatch.mappings[index].parserId = value;
+        this.updateWatchSaveButton();
       });
     });
   }
@@ -313,7 +304,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
         const authUrl = this.callbacks.getGoogleDriveAuthUrl(clientId, clientSecret);
         window.open(authUrl);
         new AuthCodeModal(this.app, (code) => {
-          this.callbacks
+          void this.callbacks
             .handleGoogleDriveAuthCode(clientId, clientSecret, code)
             .then(() => {
               new Notice('Google Drive authenticated successfully');
@@ -375,23 +366,28 @@ export class PetrifySettingsTab extends PluginSettingTab {
     this.pendingGoogleDrive.mappings.forEach((mapping, index) => {
       const mappingContainer = driveContainer.createDiv({ cls: 'petrify-mapping' });
 
-      new Setting(mappingContainer)
-        .setName(`Mapping #${index + 1}`)
-        .addToggle((toggle) =>
-          toggle.setValue(mapping.enabled).onChange((value) => {
-            this.pendingGoogleDrive.mappings[index].enabled = value;
-            this.updateWatchSaveButton();
-          }),
-        )
-        .addButton((btn) =>
-          btn
-            .setButtonText('Remove')
-            .setWarning()
-            .onClick(() => {
-              this.pendingGoogleDrive.mappings.splice(index, 1);
-              this.display();
-            }),
-        );
+      this.renderMappingItem(mappingContainer, {
+        index,
+        enabled: mapping.enabled,
+        outputDir: mapping.outputDir,
+        parserId: mapping.parserId,
+        onToggle: (value) => {
+          this.pendingGoogleDrive.mappings[index].enabled = value;
+          this.updateWatchSaveButton();
+        },
+        onRemove: () => {
+          this.pendingGoogleDrive.mappings.splice(index, 1);
+          this.display();
+        },
+        onOutputDirChange: (value) => {
+          this.pendingGoogleDrive.mappings[index].outputDir = value;
+          this.updateWatchSaveButton();
+        },
+        onParserChange: (value) => {
+          this.pendingGoogleDrive.mappings[index].parserId = value;
+          this.updateWatchSaveButton();
+        },
+      });
 
       new Setting(mappingContainer)
         .setName('Folder')
@@ -417,26 +413,72 @@ export class PetrifySettingsTab extends PluginSettingTab {
           }),
         );
 
-      new Setting(mappingContainer).setName('Output directory').addText((text) =>
-        text
-          .setPlaceholder('Handwritings/')
-          .setValue(mapping.outputDir)
-          .onChange((value) => {
-            this.pendingGoogleDrive.mappings[index].outputDir = value;
-            this.updateWatchSaveButton();
-          }),
-      );
-
-      new Setting(mappingContainer).setName('Parser').addDropdown((dropdown) => {
-        for (const id of Object.values(ParserId)) {
-          dropdown.addOption(id, id);
-        }
-        dropdown.setValue(mapping.parserId || ParserId.Viwoods);
-        dropdown.onChange((value) => {
-          this.pendingGoogleDrive.mappings[index].parserId = value;
-          this.updateWatchSaveButton();
-        });
+      this.renderOutputDirText(mappingContainer, mapping.outputDir, (value) => {
+        this.pendingGoogleDrive.mappings[index].outputDir = value;
+        this.updateWatchSaveButton();
       });
+
+      this.renderParserDropdown(mappingContainer, mapping.parserId, (value) => {
+        this.pendingGoogleDrive.mappings[index].parserId = value;
+        this.updateWatchSaveButton();
+      });
+    });
+  }
+
+  private renderMappingItem(container: HTMLElement, config: MappingItemConfig): void {
+    new Setting(container)
+      .setName(`Mapping #${config.index + 1}`)
+      .addToggle((toggle) => toggle.setValue(config.enabled).onChange(config.onToggle))
+      .addButton((btn) => btn.setButtonText('Remove').setWarning().onClick(config.onRemove));
+  }
+
+  private renderOutputDirWithBrowse(
+    container: HTMLElement,
+    value: string,
+    onChange: (value: string) => void,
+  ): void {
+    const outputDirSetting = new Setting(container)
+      .setName('Output directory')
+      .addText((text) => {
+        text.setPlaceholder('Handwritings/').setValue(value).onChange(onChange);
+        text.inputEl.addClass('petrify-input-full-width');
+      })
+      .addButton((btn) =>
+        btn.setButtonText('Browse').onClick(async () => {
+          const vaultPath = (this.app.vault.adapter as FileSystemAdapter).getBasePath();
+          const selected = await showNativeFolderDialog(vaultPath);
+          if (!selected) return;
+          const relative = selected.startsWith(vaultPath)
+            ? selected.slice(vaultPath.length + 1)
+            : selected;
+          onChange(normalizePath(relative));
+          this.display();
+        }),
+      );
+    outputDirSetting.settingEl.addClass('petrify-setting-full-width');
+  }
+
+  private renderOutputDirText(
+    container: HTMLElement,
+    value: string,
+    onChange: (value: string) => void,
+  ): void {
+    new Setting(container)
+      .setName('Output directory')
+      .addText((text) => text.setPlaceholder('Handwritings/').setValue(value).onChange(onChange));
+  }
+
+  private renderParserDropdown(
+    container: HTMLElement,
+    value: string,
+    onChange: (value: string) => void,
+  ): void {
+    new Setting(container).setName('Parser').addDropdown((dropdown) => {
+      for (const id of Object.values(ParserId)) {
+        dropdown.addOption(id, id);
+      }
+      dropdown.setValue(value || ParserId.Viwoods);
+      dropdown.onChange(onChange);
     });
   }
 
@@ -504,7 +546,7 @@ export class PetrifySettingsTab extends PluginSettingTab {
 
     let saveButton: HTMLButtonElement | null = null;
 
-    const updateSaveButton = () => {
+    const updateSaveButton = (): void => {
       if (!saveButton) return;
       const isGoogleVision = this.pendingProvider === 'google-vision';
       const hasApiKey = this.pendingApiKey.trim().length > 0;

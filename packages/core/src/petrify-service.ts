@@ -112,6 +112,7 @@ export class PetrifyService {
     let ocrResults: OcrTextResult[] | undefined;
 
     if (this.ocr) {
+      // Local binding enables TypeScript narrowing inside the async closure
       const ocr = this.ocr;
       const ocrPages = note.pages.filter((page) => page.imageData.length > 0);
       try {
