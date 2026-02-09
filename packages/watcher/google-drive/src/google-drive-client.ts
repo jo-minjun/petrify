@@ -1,4 +1,5 @@
 import { drive_v3 } from '@googleapis/drive';
+import { WatcherSourceError } from '@petrify/core';
 import type { OAuth2Client } from 'google-auth-library';
 import type { ChangesResult, DriveFile } from './types.js';
 import { validateDriveId } from './validate-drive-id.js';
@@ -14,7 +15,7 @@ function toDriveFile(data: Record<string, unknown>): DriveFile {
     typeof mimeType !== 'string' ||
     typeof modifiedTime !== 'string'
   ) {
-    throw new Error(
+    throw new WatcherSourceError(
       `Invalid Drive API response: missing required fields (id=${String(id)}, name=${String(name)})`,
     );
   }
@@ -91,7 +92,7 @@ export class GoogleDriveClient {
   async getStartPageToken(): Promise<string> {
     const res = await this.drive.changes.getStartPageToken({});
     if (!res.data.startPageToken) {
-      throw new Error('Drive API did not return a startPageToken');
+      throw new WatcherSourceError('Drive API did not return a startPageToken');
     }
     return res.data.startPageToken;
   }

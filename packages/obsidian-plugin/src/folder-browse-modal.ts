@@ -19,10 +19,10 @@ export class FolderBrowseModal extends Modal {
     this.onSelect = onSelect;
   }
 
-  async onOpen(): Promise<void> {
+  onOpen(): void {
     this.breadcrumb = [{ id: undefined, name: 'My Drive' }];
     this.currentFolderId = undefined;
-    await this.renderFolderList();
+    void this.renderFolderList();
   }
 
   onClose(): void {

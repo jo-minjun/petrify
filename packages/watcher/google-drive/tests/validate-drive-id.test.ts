@@ -1,3 +1,4 @@
+import { WatcherSourceError } from '@petrify/core';
 import { describe, expect, it } from 'vitest';
 import { validateDriveId } from '../src/validate-drive-id.js';
 
@@ -15,18 +16,18 @@ describe('validateDriveId', () => {
   });
 
   it('rejects an ID containing single quotes', () => {
-    expect(() => validateDriveId("id' OR 1=1")).toThrow();
+    expect(() => validateDriveId("id' OR 1=1")).toThrow(WatcherSourceError);
   });
 
   it('rejects an ID containing spaces', () => {
-    expect(() => validateDriveId('id with spaces')).toThrow();
+    expect(() => validateDriveId('id with spaces')).toThrow(WatcherSourceError);
   });
 
   it('rejects an empty string', () => {
-    expect(() => validateDriveId('')).toThrow();
+    expect(() => validateDriveId('')).toThrow(WatcherSourceError);
   });
 
   it('rejects an ID containing special characters', () => {
-    expect(() => validateDriveId('id;DROP TABLE')).toThrow();
+    expect(() => validateDriveId('id;DROP TABLE')).toThrow(WatcherSourceError);
   });
 });

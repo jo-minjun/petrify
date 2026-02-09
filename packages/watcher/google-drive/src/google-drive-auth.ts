@@ -1,3 +1,4 @@
+import { WatcherAuthError } from '@petrify/core';
 import { OAuth2Client } from 'google-auth-library';
 import type { GoogleDriveAuthOptions, TokenStore } from './types.js';
 
@@ -53,7 +54,7 @@ export class GoogleDriveAuth {
     const { tokens } = await client.getToken(code);
 
     if (!tokens.refresh_token) {
-      throw new Error(
+      throw new WatcherAuthError(
         'No refresh token received. Revoke app access in your Google Account and re-authenticate.',
       );
     }

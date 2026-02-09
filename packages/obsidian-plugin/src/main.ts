@@ -186,7 +186,10 @@ export default class PetrifyPlugin extends Plugin {
   onunload(): void {
     void Promise.all(this.watchers.map((w) => w.stop()))
       .then(() => this.ocr?.terminate?.())
-      .then(() => this.assetServer?.stop());
+      .then(() => this.assetServer?.stop())
+      .catch((e: unknown) => {
+        console.error('Cleanup failed:', e);
+      });
   }
 
   private async initializeOcr(): Promise<void> {
@@ -559,7 +562,20 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const saved = (await this.loadData()) ?? {};
+    this.settings = {
+      outputFormat: saved.outputFormat ?? DEFAULT_SETTINGS.outputFormat,
+      localWatch: { ...DEFAULT_SETTINGS.localWatch, ...saved.localWatch },
+      googleDrive: { ...DEFAULT_SETTINGS.googleDrive, ...saved.googleDrive },
+      ocr: {
+        ...DEFAULT_SETTINGS.ocr,
+        ...saved.ocr,
+        googleVision: {
+          ...DEFAULT_SETTINGS.ocr.googleVision,
+          ...saved.ocr?.googleVision,
+        },
+      },
+    };
   }
 
   private async saveSettings(): Promise<void> {
