@@ -19,6 +19,14 @@
     "@petrify/ocr-tesseract": "workspace:*",
     "@petrify/ocr-google-vision": "workspace:*"
   },
+  "homepage": "https://github.com/jo-minjun/petrify",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jo-minjun/petrify"
+  },
+  "bugs": {
+    "url": "https://github.com/jo-minjun/petrify/issues"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "esbuild": "^0.25.0",
