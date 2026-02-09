@@ -1,10 +1,10 @@
 # Petrify
 
-Convert handwritten note app files to Obsidian Excalidraw.
+Convert handwritten notes to Excalidraw or Markdown with OCR support to unify your knowledge base.
 
 ## Introduction
 
-Petrify converts handwriting note files into [Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) or Markdown format within Obsidian. It watches external folders for changes and automatically converts new or updated files into your vault.
+Petrify converts handwritten note files into [Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) or Markdown format within Obsidian, with OCR that makes handwriting searchable. In Excalidraw format, your handwriting is preserved as-is on the canvas, where you can annotate with text, arrows, highlights, and links.
 
 > [Viwoods](https://www.viwoods.com/) is a handwriting note app for e-ink tablets (e.g. Viwoods AiPaper). Petrify reads the `.note` format exported by this app.
 
@@ -25,7 +25,7 @@ Sometimes a pen is the most natural way to capture your thoughts — sketching d
 
 The usual workaround — syncing handwriting files to Google Drive and opening them as PDFs — keeps your notes accessible but isolated. Handwriting exported as PDF is just a flat image — it can't be searched, linked, or tagged alongside your Obsidian notes. Your handwriting becomes dead data, locked away from search, graph view, and backlinks.
 
-Petrify bridges this gap. It converts handwriting files into Excalidraw or Markdown inside your vault, with OCR that makes the content searchable. The result is one vault, one knowledge base — regardless of whether you picked up a pen or a keyboard.
+Petrify bridges this gap. It converts handwritten note files into Excalidraw or Markdown inside your vault, with OCR that makes the content searchable. The result is one vault, one knowledge base — regardless of whether you picked up a pen or a keyboard.
 
 This matters even more as personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw) become mainstream. A unified knowledge base means your AI can draw from everything you've written — handwritten or typed — to give more personalized answers.
 
@@ -67,6 +67,7 @@ Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
 
 ### Features
 
+- **Output format**: Excalidraw (`.excalidraw.md`) or Markdown (`.md`) — Excalidraw format requires the [Excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin)
 - **File watching**: Watch external folders and automatically convert new or updated files
 - **Multi-folder mapping**: Map multiple external folders to different vault folders, each with its own parser
 - **Drag & drop**: Drop handwriting files into the file explorer to convert them at the drop location

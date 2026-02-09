@@ -3,7 +3,7 @@
   "name": "Petrify",
   "version": "0.2.2",
   "minAppVersion": "1.11.4",
-  "description": "Convert handwriting notes to Excalidraw or Markdown with OCR support to unify your knowledge base.",
+  "description": "Convert handwritten notes to Excalidraw or Markdown with OCR support to unify your knowledge base.",
   "author": "minjun.jo",
   "authorUrl": "https://github.com/jo-minjun",
   "isDesktopOnly": true
