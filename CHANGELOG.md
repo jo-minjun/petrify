@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-11
+
 ### Changed
 
 - Refactored entire codebase for Obsidian guideline compliance (#41)
@@ -94,7 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - DropHandler stale reference bug (#30)
 
-[Unreleased]: https://github.com/jo-minjun/petrify/compare/0.2.2...HEAD
+[Unreleased]: https://github.com/jo-minjun/petrify/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/jo-minjun/petrify/compare/0.2.2...0.3.0
 [0.2.2]: https://github.com/jo-minjun/petrify/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/jo-minjun/petrify/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/jo-minjun/petrify/compare/0.1.2...0.2.0
