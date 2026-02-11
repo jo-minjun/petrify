@@ -57,6 +57,12 @@ packages/
 
 - Commit only after tests pass
 
+- Write commit messages in English with the format: `<type>: <subject>`
+  - Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
+  - Example: `feat: add user authentication`
+
+- Update `CHANGELOG.md` under `[Unreleased]` when committing user-facing changes
+
 - Manage shared devDependencies (typescript, vitest, tsup) only in the root package.json
   ```json
   // Root package.json
