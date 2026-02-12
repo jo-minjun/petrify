@@ -82,19 +82,19 @@ Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
 
 ![Petrify settings — watch sources and folder mapping](docs/assets/settings-watch.png)
 
-#### General
+#### Output
 
 | Setting | Description |
 |---------|-------------|
-| Output Format | Output file format (Excalidraw / Markdown) |
+| Output format | Output file format (Excalidraw / Markdown) |
 
 #### Watch Sources — Local File Watch
 
 | Setting | Description |
 |---------|-------------|
-| Local File Watch | Enable/disable local directory watching |
-| Watch Directory | External folder path to watch (with Browse button) |
-| Output Directory | Vault path for converted files (with Browse button) |
+| Local file watch | Enable/disable local directory watching |
+| Watch directory | External folder path to watch (with Browse button) |
+| Output directory | Vault path for converted files (with Browse button) |
 | Parser | Parser to use (currently Viwoods only) |
 
 Multiple mappings can be added, each with its own watch/output directory and parser.
@@ -104,23 +104,23 @@ Multiple mappings can be added, each with its own watch/output directory and par
 | Setting | Description |
 |---------|-------------|
 | Google Drive API | Enable/disable Google Drive integration |
-| Client ID | OAuth2 Client ID from Google Cloud Console |
-| Client Secret | OAuth2 Client Secret from Google Cloud Console |
+| Client ID | OAuth2 client ID from Google Cloud Console |
+| Client secret | OAuth2 client secret from Google Cloud Console |
 | Authentication | Authenticate with Google account |
-| Auto Polling | Automatically poll for changes |
-| Poll Interval | Minutes between polling (1–60, default: 5) |
+| Auto polling | Automatically poll for changes |
+| Poll interval | Minutes between polling (1–60, default: 5) |
 | Folder | Google Drive folder to watch (via Browse button) |
-| Output Directory | Vault path for converted files |
+| Output directory | Vault path for converted files |
 | Parser | Parser to use (currently Viwoods only) |
 
 #### OCR
 
 | Setting | Description |
 |---------|-------------|
-| OCR Provider | OCR engine (Tesseract / Google Vision) |
-| Google Vision API Key | API key for Google Cloud Vision (shown when Google Vision is selected) |
-| Language Hints | Preferred languages for recognition (Korean, English, Japanese, Simplified Chinese, Traditional Chinese) |
-| Confidence Threshold | Minimum OCR confidence (0–100, default: 50) |
+| OCR provider | OCR engine (Tesseract / Google Vision) |
+| Google Vision API key | API key for Google Cloud Vision (shown when Google Vision is selected) |
+| Language hints | Preferred languages for recognition (Korean, English, Japanese, Simplified Chinese, Traditional Chinese) |
+| Confidence threshold | Minimum OCR confidence (0–100, default: 50) |
 
 > **Google Vision API free tier:** Google Cloud Vision offers 1,000 free units per month. Petrify uses one unit per page, so you can OCR up to **1,000 pages/month at no cost**. See [Cloud Vision pricing](https://cloud.google.com/vision/pricing) for the latest details.
 
