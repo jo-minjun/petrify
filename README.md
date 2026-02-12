@@ -122,6 +122,8 @@ Multiple mappings can be added, each with its own watch/output directory and par
 | Language Hints | Preferred languages for recognition (Korean, English, Japanese, Simplified Chinese, Traditional Chinese) |
 | Confidence Threshold | Minimum OCR confidence (0–100, default: 50) |
 
+> **Google Vision API free tier:** Google Cloud Vision offers 1,000 free units per month. Petrify uses one unit per page, so you can OCR up to **1,000 pages/month at no cost**. See [Cloud Vision pricing](https://cloud.google.com/vision/pricing) for the latest details.
+
 ### Drag & Drop
 
 ![Drag and drop a .note file into Obsidian to convert](docs/assets/drag-and-drop.gif)
