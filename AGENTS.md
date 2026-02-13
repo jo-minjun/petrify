@@ -26,6 +26,7 @@ Adapters → Core ← Adapters
 packages/
 ├── core/                 # @petrify/core
 ├── parser/
+│   ├── pdf/              # @petrify/parser-pdf
 │   └── viwoods/          # @petrify/parser-viwoods
 ├── ocr/
 │   ├── tesseract/        # @petrify/ocr-tesseract
@@ -42,6 +43,7 @@ packages/
 | Package | Role |
 |--------|------|
 | `@petrify/core` | Intermediate representation models, PetrifyService, port interfaces |
+| `@petrify/parser-pdf` | PDF file parser (ParserPort implementation) |
 | `@petrify/parser-viwoods` | viwoods .note file parser (ParserPort implementation) |
 | `@petrify/ocr-tesseract` | Tesseract.js wrapper OCR (OcrPort implementation) |
 | `@petrify/ocr-google-vision` | Google Cloud Vision OCR (OcrPort implementation) |
@@ -82,6 +84,7 @@ packages/
   {
     "paths": {
       "@petrify/core": ["packages/core/src/index.ts"],
+      "@petrify/parser-pdf": ["packages/parser/pdf/src/index.ts"],
       "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
       "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
       "@petrify/ocr-google-vision": ["packages/ocr/google-vision/src/index.ts"],

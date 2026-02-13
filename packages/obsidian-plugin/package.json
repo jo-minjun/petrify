@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
-    "build": "node esbuild.config.mjs production && cp manifest.json ../../manifest.json",
+    "build": "node esbuild.config.mjs production && cp manifest.json ../../manifest.json && cp versions.json ../../versions.json",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
@@ -13,6 +13,7 @@
     "@petrify/core": "workspace:*",
     "@petrify/generator-excalidraw": "workspace:*",
     "@petrify/generator-markdown": "workspace:*",
+    "@petrify/parser-pdf": "workspace:*",
     "@petrify/parser-viwoods": "workspace:*",
     "@petrify/watcher-chokidar": "workspace:*",
     "@petrify/watcher-google-drive": "workspace:*",
