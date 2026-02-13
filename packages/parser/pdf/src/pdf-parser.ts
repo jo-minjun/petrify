@@ -56,7 +56,7 @@ interface NoteMetadata {
 const DEFAULT_DATE = new Date(0);
 const DEFAULT_TITLE = 'Untitled';
 const DEFAULT_SCALE = 2;
-const MAX_PAGE_COUNT = 1000;
+const MAX_PAGE_COUNT = 5000;
 const MAX_PAGE_WIDTH = 10_000;
 const MAX_PAGE_HEIGHT = 10_000;
 const MAX_PAGE_PIXELS = 50_000_000;

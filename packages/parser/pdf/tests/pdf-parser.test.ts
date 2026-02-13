@@ -139,7 +139,7 @@ describe('PdfParser', () => {
   it('throws ParseError when PDF has too many pages', async () => {
     const parser = new PdfParser(
       () => ({
-        promise: Promise.resolve(createDocument({ numPages: 1001 })),
+        promise: Promise.resolve(createDocument({ numPages: 5001 })),
       }),
       () => createCanvas(PNG_BYTES),
     );
