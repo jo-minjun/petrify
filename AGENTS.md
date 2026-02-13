@@ -67,6 +67,8 @@ packages/
 
 - Update `CHANGELOG.md` under `[Unreleased]` when committing user-facing changes
 
+- Follow the PR template (`.github/pull_request_template.md`) when creating pull requests. Fill in all sections: Summary, Related issue, Type of change, and Checklist
+
 - Manage shared devDependencies (typescript, vitest, tsup) only in the root package.json
   ```json
   // Root package.json
