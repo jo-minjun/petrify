@@ -107,7 +107,6 @@ importers:
         version: 7.0.0
 
   packages/parser/pdf:
-  packages/parser/supernote-x:
     dependencies:
       '@petrify/core':
         specifier: workspace:*
@@ -115,6 +114,12 @@ importers:
       pdfjs-dist:
         specifier: ^4.10.38
         version: 4.10.38
+
+  packages/parser/supernote-x:
+    dependencies:
+      '@petrify/core':
+        specifier: workspace:*
+        version: link:../../core
       pako:
         specifier: ^2.1.0
         version: 2.1.0

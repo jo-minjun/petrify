@@ -19,22 +19,44 @@ export interface ConversionResult {
 }
 
 export class PetrifyService {
+  private readonly parsersByExtension: Map<string, ParserPort[]>;
+
   constructor(
-    private readonly parsers: Map<string, ParserPort>,
+    parsers: Map<string, ParserPort | ParserPort[]>,
     private readonly generator: FileGeneratorPort,
     private readonly ocr: OcrPort | null,
     private readonly metadataPort: ConversionMetadataPort,
     private readonly options: PetrifyServiceOptions,
-  ) {}
+  ) {
+    this.parsersByExtension = new Map<string, ParserPort[]>();
 
-  getParsersForExtension(ext: string): ParserPort[] {
-    const parser = this.parsers.get(ext.toLowerCase());
-    return parser ? [parser] : [];
+    for (const [ext, parserOrParsers] of parsers) {
+      const normalizedExt = ext.toLowerCase();
+      const entries = Array.isArray(parserOrParsers) ? parserOrParsers : [parserOrParsers];
+      if (entries.length === 0) continue;
+
+      const existing = this.parsersByExtension.get(normalizedExt) ?? [];
+      for (const parser of entries) {
+        if (!existing.includes(parser)) {
+          existing.push(parser);
+        }
+      }
+      this.parsersByExtension.set(normalizedExt, existing);
+    }
   }
 
-  async handleFileChange(event: FileChangeEvent): Promise<ConversionResult | null> {
-    const parser = this.parsers.get(event.extension.toLowerCase());
-    if (!parser) {
+  getParsersForExtension(ext: string): ParserPort[] {
+    return [...(this.parsersByExtension.get(ext.toLowerCase()) ?? [])];
+  }
+
+  async handleFileChange(
+    event: FileChangeEvent,
+    parser: ParserPort,
+  ): Promise<ConversionResult | null> {
+    const supportsExtension = parser.extensions.some(
+      (supportedExt) => supportedExt.toLowerCase() === event.extension.toLowerCase(),
+    );
+    if (!supportsExtension) {
       return null;
     }
 

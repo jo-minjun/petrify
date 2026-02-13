@@ -134,7 +134,7 @@ export class SyncOrchestrator {
       };
 
       try {
-        const result = await this.petrifyService.handleFileChange(event);
+        const result = await this.petrifyService.handleFileChange(event, parser);
         if (result) {
           const baseName = entry.name.replace(/\.[^/.]+$/, '');
           const outputPath = await this.saveResult(result, mapping.outputDir, baseName);

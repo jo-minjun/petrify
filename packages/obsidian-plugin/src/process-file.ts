@@ -1,4 +1,4 @@
-import type { ConversionResult, FileChangeEvent, PetrifyService } from '@petrify/core';
+import type { ConversionResult, FileChangeEvent, ParserPort, PetrifyService } from '@petrify/core';
 import type { Logger } from './logger.js';
 
 export type SaveFn = (
@@ -13,8 +13,9 @@ export async function processFile(
   petrifyService: PetrifyService,
   save: SaveFn,
   log: Logger,
+  parser: ParserPort,
 ): Promise<boolean> {
-  const result = await petrifyService.handleFileChange(event);
+  const result = await petrifyService.handleFileChange(event, parser);
   if (!result) return false;
 
   const baseName = event.name.replace(/\.[^/.]+$/, '');
