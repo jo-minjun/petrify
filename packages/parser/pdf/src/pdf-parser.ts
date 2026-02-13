@@ -56,6 +56,10 @@ interface NoteMetadata {
 const DEFAULT_DATE = new Date(0);
 const DEFAULT_TITLE = 'Untitled';
 const DEFAULT_SCALE = 2;
+const MAX_PAGE_COUNT = 1000;
+const MAX_PAGE_WIDTH = 10_000;
+const MAX_PAGE_HEIGHT = 10_000;
+const MAX_PAGE_PIXELS = 50_000_000;
 
 export class PdfParser implements ParserPort {
   readonly extensions = ['.pdf'];
@@ -127,6 +131,9 @@ export class PdfParser implements ParserPort {
     if (document.numPages <= 0) {
       throw new ParseError('PDF contains no pages');
     }
+    if (document.numPages > MAX_PAGE_COUNT) {
+      throw new ParseError(`PDF contains too many pages (${document.numPages})`);
+    }
 
     const pages: Page[] = [];
 
@@ -148,6 +155,13 @@ export class PdfParser implements ParserPort {
     const viewport = page.getViewport({ scale: this.scale });
     const width = normalizeDimension(viewport.width);
     const height = normalizeDimension(viewport.height);
+    const pixels = width * height;
+
+    if (width > MAX_PAGE_WIDTH || height > MAX_PAGE_HEIGHT || pixels > MAX_PAGE_PIXELS) {
+      throw new ParseError(
+        `Page ${pageNumber} dimensions are too large (${width}x${height}, ${pixels} pixels)`,
+      );
+    }
 
     const canvas = this.createCanvas(width, height);
     const context = canvas.getContext();
@@ -212,7 +226,7 @@ function createDefaultCanvas(width: number, height: number): RenderCanvas {
 
     return {
       getContext: () => canvas.getContext('2d'),
-      toPngBytes: async () => decodePngDataUrl(canvas.toDataURL('image/png')),
+      toPngBytes: () => canvasToPngBytes(canvas),
     };
   }
 
@@ -229,6 +243,27 @@ function createDefaultCanvas(width: number, height: number): RenderCanvas {
   }
 
   throw new ParseError('Canvas API is unavailable in this environment');
+}
+
+function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new ParseError('Failed to convert canvas to blob'));
+          return;
+        }
+        blob
+          .arrayBuffer()
+          .then((buffer) => resolve(new Uint8Array(buffer)))
+          .catch((error) =>
+            reject(new ParseError(`Failed to read canvas blob: ${toErrorMessage(error)}`)),
+          );
+      },
+      'image/png',
+      1,
+    );
+  });
 }
 
 function normalizeTitle(value?: string): string {
@@ -294,30 +329,6 @@ function readNumber(
   }
 
   return parsed;
-}
-
-function decodePngDataUrl(dataUrl: string): Uint8Array {
-  const prefix = 'data:image/png;base64,';
-  if (!dataUrl.startsWith(prefix)) {
-    throw new ParseError('Unexpected canvas output format');
-  }
-
-  return decodeBase64(dataUrl.slice(prefix.length));
-}
-
-function decodeBase64(value: string): Uint8Array {
-  if (typeof atob !== 'function') {
-    throw new ParseError('Base64 decoding is unavailable in this environment');
-  }
-
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return bytes;
 }
 
 function toErrorMessage(error: unknown): string {

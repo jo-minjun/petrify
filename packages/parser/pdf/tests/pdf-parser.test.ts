@@ -135,6 +135,37 @@ describe('PdfParser', () => {
     await expect(parser.parse(new ArrayBuffer(8))).rejects.toThrow(ParseError);
     await expect(parser.parse(new ArrayBuffer(8))).rejects.toThrow('Failed to render page 1');
   });
+
+  it('throws ParseError when PDF has too many pages', async () => {
+    const parser = new PdfParser(
+      () => ({
+        promise: Promise.resolve(createDocument({ numPages: 1001 })),
+      }),
+      () => createCanvas(PNG_BYTES),
+    );
+
+    await expect(parser.parse(new ArrayBuffer(8))).rejects.toThrow(ParseError);
+    await expect(parser.parse(new ArrayBuffer(8))).rejects.toThrow('PDF contains too many pages');
+  });
+
+  it('throws ParseError when page dimensions are too large', async () => {
+    const parser = new PdfParser(
+      () => ({
+        promise: Promise.resolve(
+          createDocument({
+            numPages: 1,
+            viewport: { width: 12000, height: 4000 },
+          }),
+        ),
+      }),
+      () => createCanvas(PNG_BYTES),
+    );
+
+    await expect(parser.parse(new ArrayBuffer(8))).rejects.toThrow(ParseError);
+    await expect(parser.parse(new ArrayBuffer(8))).rejects.toThrow(
+      'Page 1 dimensions are too large',
+    );
+  });
 });
 
 function createDocument(options: {
@@ -142,10 +173,11 @@ function createDocument(options: {
   metadata?: MockPdfMetadata;
   metadataError?: Error;
   renderError?: Error;
+  viewport?: MockPdfViewport;
 }): MockDocument {
   return {
     numPages: options.numPages,
-    getPage: async () => createPage(options.renderError),
+    getPage: async () => createPage(options.renderError, options.viewport),
     getMetadata: async () => {
       if (options.metadataError) {
         throw options.metadataError;
@@ -155,9 +187,9 @@ function createDocument(options: {
   };
 }
 
-function createPage(renderError?: Error): MockPage {
+function createPage(renderError?: Error, viewport?: MockPdfViewport): MockPage {
   return {
-    getViewport: () => ({ width: 1200, height: 1600 }),
+    getViewport: () => viewport ?? { width: 1200, height: 1600 },
     render: () => ({
       promise: renderError ? Promise.reject(renderError) : Promise.resolve(),
     }),
