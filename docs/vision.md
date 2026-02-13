@@ -4,7 +4,7 @@
 
 ## What is Petrify?
 
-Petrify is an Obsidian plugin that automatically converts handwritten notes from E-ink tablets into your Obsidian vault. Currently supporting Viwoods devices, with plans to expand to various E-ink tablets.
+Petrify is an Obsidian plugin that automatically converts handwritten notes from E-ink tablets into your Obsidian vault. Supporting Viwoods, Supernote X-series, and any device that exports PDF.
 
 ## End Picture
 
@@ -14,10 +14,21 @@ Petrify is an Obsidian plugin that automatically converts handwritten notes from
 
 ### Multi-Device Support
 
-Starting with Viwoods, Petrify aims to support major E-ink devices including Supernote, reMarkable, and Onyx Boox.
+Petrify supports multiple E-ink devices through dedicated parsers and a universal PDF fallback.
 
-- **Devices without sufficient stroke data**: Convert page images as-is (e.g., Viwoods)
-- **Devices with stroke data**: Map directly to Excalidraw freedraw elements for high-quality, zoomable, editable output
+- **Viwoods**: Native `.note` parser — extracts page images from proprietary format
+- **Supernote X-series**: Native `.note` parser — decodes RLE-compressed stroke bitmaps
+- **PDF (universal)**: Any device that exports PDF — extracts pages as images via `pdf.js`
+- **Devices with stroke data** *(planned)*: Map directly to Excalidraw freedraw elements for high-quality, zoomable, editable output
+
+### Page-Level Incremental Processing
+
+Replace file-level mtime comparison with page-content hashing for precise change detection.
+
+- **Page hashing**: Hash each page's content individually, enabling per-page dirty detection instead of whole-file mtime comparison
+- **Incremental conversion**: Only re-convert pages whose hash has changed — skip unchanged pages entirely
+- **Incremental OCR**: Only re-run OCR on changed pages, reusing cached results for unchanged ones
+- **Per-page OCR re-run**: Allow users to selectively trigger OCR on specific pages (e.g., after correcting handwriting or changing OCR provider)
 
 ### LLM-Powered Intelligence
 
@@ -62,7 +73,7 @@ Dependency inversion through port interfaces allows independent addition of new 
 
 | Port | Purpose | Current Adapters |
 |------|---------|-----------------|
-| ParserPort | Device-specific file parsing | Viwoods |
+| ParserPort | Device-specific file parsing | Viwoods, Supernote X, PDF |
 | OcrPort | Text recognition | Tesseract.js, Google Vision |
 | FileGeneratorPort | Output file generation | Excalidraw, Markdown |
 | WatcherPort | File change detection | chokidar, Google Drive |
