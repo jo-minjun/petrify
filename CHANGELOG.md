@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added PDF parser adapter (`@petrify/parser-pdf`) and wired it into parser selection
+- Added SupernoteX parser adapter (`@petrify/parser-supernote-x`) and wired it into parser selection
 
 ### Changed
 
@@ -20,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Switched keep toggle frontmatter writes to `FileManager.processFrontMatter` for Obsidian plugin review guideline compliance
 - Added drop parser-selection edge case tests (cancel and `applyToAll` cache paths)
-- Improved `@petrify/parser-supernote-x` safety and compatibility: bounded flate decompression and browser-safe `LAYERINFO` base64 decoding
 
 ## [0.3.0] - 2026-02-11
 
