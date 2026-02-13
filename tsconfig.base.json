@@ -12,6 +12,7 @@
     "baseUrl": ".",
     "paths": {
       "@petrify/core": ["packages/core/src/index.ts"],
+      "@petrify/parser-pdf": ["packages/parser/pdf/src/index.ts"],
       "@petrify/parser-viwoods": ["packages/parser/viwoods/src/index.ts"],
       "@petrify/ocr-tesseract": ["packages/ocr/tesseract/src/index.ts"],
       "@petrify/ocr-google-vision": ["packages/ocr/google-vision/src/index.ts"],

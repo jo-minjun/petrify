@@ -1,0 +1,16 @@
+{
+  "name": "@petrify/parser-pdf",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@petrify/core": "workspace:*",
+    "pdfjs-dist": "^4.10.38"
+  }
+}
