@@ -21,6 +21,7 @@ export const BLANK_CONTENT_LENGTH = 0x140e;
 export const STYLE_WHITE = 'style_white';
 export const PROTOCOL_FLATE = 'SN_ASA_COMPRESS';
 export const PROTOCOL_RLE = 'RATTA_RLE';
+export const MAX_FLATE_DECOMPRESSED_BYTES = 20 * 1024 * 1024;
 
 export const LAYER_KEYS = ['MAINLAYER', 'LAYER1', 'LAYER2', 'LAYER3', 'BGLAYER'] as const;
 export const METADATA_REGEX = /<([^:<>]+):([^:<>]*)>/g;

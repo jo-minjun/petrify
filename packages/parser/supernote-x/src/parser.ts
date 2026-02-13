@@ -28,13 +28,34 @@ interface LayerVisibility {
   readonly isVisible: boolean;
 }
 
+function decodeBase64Utf8(input: string): string {
+  if (typeof globalThis.atob === 'function') {
+    const binary = globalThis.atob(input);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+  }
+
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(input, 'base64').toString('utf-8');
+  }
+
+  throw new ParseError('Base64 decoder is not available in this environment');
+}
+
 function decodeLayerInfoJson(raw: string): string {
   const json = raw.replace(/#/g, ':');
   try {
     JSON.parse(json);
     return json;
   } catch {
-    return Buffer.from(json, 'base64').toString('utf-8');
+    try {
+      return decodeBase64Utf8(json);
+    } catch {
+      return json;
+    }
   }
 }
 

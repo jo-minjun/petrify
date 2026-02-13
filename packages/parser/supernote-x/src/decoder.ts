@@ -3,12 +3,14 @@ import { PNG } from 'pngjs';
 import {
   createColorMap,
   INTERNAL_PAGE_HEIGHT,
+  MAX_FLATE_DECOMPRESSED_BYTES,
   PALETTE_TRANSPARENT,
   RLE_CONTINUATION_BIT,
   RLE_SPECIAL_LENGTH,
   RLE_SPECIAL_LENGTH_BLANK,
   RLE_SPECIAL_LENGTH_MARKER,
 } from './constants.js';
+import { ParseError } from './exceptions.js';
 
 export function decodeRattaRle(
   data: Uint8Array,
@@ -97,7 +99,47 @@ export function decodePng(data: Uint8Array, width: number, height: number): Uint
 }
 
 export function decodeFlate(data: Uint8Array, width: number, height: number): Uint8Array {
-  const decompressed = pako.inflate(data);
+  const inflater = new pako.Inflate();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  inflater.onData = (chunk: pako.Data) => {
+    let normalized: Uint8Array;
+    if (chunk instanceof Uint8Array) {
+      normalized = chunk;
+    } else if (chunk instanceof ArrayBuffer) {
+      normalized = new Uint8Array(chunk);
+    } else {
+      normalized = Uint8Array.from(chunk);
+    }
+    totalBytes += normalized.length;
+    if (totalBytes > MAX_FLATE_DECOMPRESSED_BYTES) {
+      throw new ParseError(`Flate decompressed data exceeds ${MAX_FLATE_DECOMPRESSED_BYTES} bytes`);
+    }
+    chunks.push(normalized);
+  };
+
+  try {
+    inflater.push(data, true);
+  } catch (e) {
+    if (e instanceof ParseError) {
+      throw e;
+    }
+    const message = e instanceof Error ? e.message : String(e);
+    throw new ParseError(`Failed to inflate flate layer: ${message}`);
+  }
+
+  if (inflater.err) {
+    throw new ParseError(`Failed to inflate flate layer: ${inflater.msg ?? 'unknown error'}`);
+  }
+
+  const decompressed = new Uint8Array(totalBytes);
+  let chunkOffset = 0;
+  for (const chunk of chunks) {
+    decompressed.set(chunk, chunkOffset);
+    chunkOffset += chunk.length;
+  }
+
   const pixelCount = Math.floor(decompressed.length / 2);
   const view = new DataView(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
   const rawPixels = new Uint16Array(pixelCount);
@@ -111,7 +153,9 @@ export function decodeFlate(data: Uint8Array, width: number, height: number): Ui
 
   let outIdx = 0;
   for (let i = 0; i < rawPixels.length && outIdx < width * height; i++) {
-    if (i % width < INTERNAL_PAGE_HEIGHT) {
+    // Flate layers may include padded columns; keep only the visible page columns.
+    const column = i % width;
+    if (column < INTERNAL_PAGE_HEIGHT) {
       const code = rawPixels[i];
       if (code === 0x0000) pixels[outIdx] = 0x00;
       else if (code === 0x2104) pixels[outIdx] = 0x9d;

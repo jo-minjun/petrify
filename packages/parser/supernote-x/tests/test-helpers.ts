@@ -30,6 +30,7 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
 export interface TestPageOptions {
   pageId?: string;
   rleData?: Uint8Array;
+  layerInfo?: string;
 }
 
 export function buildTestNote(options?: { pages?: TestPageOptions[] }): ArrayBuffer {
@@ -49,6 +50,7 @@ export function buildTestNote(options?: { pages?: TestPageOptions[] }): ArrayBuf
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     const pageId = page.pageId ?? `page-${i}`;
+    const layerInfo = page.layerInfo;
     // All-transparent bitmap: fills width*height with 0xff
     const rleData = page.rleData ?? new Uint8Array([0x62, 0xff]);
 
@@ -68,11 +70,15 @@ export function buildTestNote(options?: { pages?: TestPageOptions[] }): ArrayBuf
 
     const pageOffset = offset;
     pageOffsets.push(pageOffset);
-    const pageBlock = buildMetadataBlock({
+    const pageEntries: Record<string, string> = {
       PAGEID: pageId,
       PAGESTYLE: 'style_white',
       MAINLAYER: String(layerOffset),
-    });
+    };
+    if (layerInfo !== undefined) {
+      pageEntries.LAYERINFO = layerInfo;
+    }
+    const pageBlock = buildMetadataBlock(pageEntries);
     parts.push(pageBlock);
     offset += pageBlock.length;
   }

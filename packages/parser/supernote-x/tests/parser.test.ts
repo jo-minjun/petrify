@@ -51,6 +51,18 @@ describe('NoteParser', () => {
       expect(note.pages[1].id).toBe('second');
       expect(note.pages[1].order).toBe(1);
     });
+
+    it('decodes base64 layer visibility metadata', async () => {
+      const hiddenMainLayer =
+        'W3siaXNCYWNrZ3JvdW5kTGF5ZXIiOmZhbHNlLCJsYXllcklkIjowLCJpc1Zpc2libGUiOmZhbHNlfV0=';
+      const data = buildTestNote({
+        pages: [{ pageId: 'hidden', layerInfo: hiddenMainLayer }],
+      });
+      const parser = new NoteParser();
+      const note = await parser.parse(data);
+
+      expect(note.pages).toHaveLength(0);
+    });
   });
 
   describe('footer parsing', () => {

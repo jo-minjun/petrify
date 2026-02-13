@@ -1,5 +1,7 @@
+import pako from 'pako';
 import { describe, expect, it } from 'vitest';
-import { decodeRattaRle } from '../src/decoder.js';
+import { decodeFlate, decodeRattaRle } from '../src/decoder.js';
+import { ParseError } from '../src/exceptions.js';
 
 describe('decodeRattaRle', () => {
   it('decodes simple length+1 encoding', () => {
@@ -64,5 +66,16 @@ describe('decodeRattaRle', () => {
     const data = new Uint8Array([0x61, 0x01]); // 2 BLACK pixels
     const result = decodeRattaRle(data, 5, 1, false);
     expect(Array.from(result)).toEqual([0x00, 0x00, 0xff, 0xff, 0xff]);
+  });
+});
+
+describe('decodeFlate', () => {
+  it('throws ParseError when decompressed payload exceeds safety limit', () => {
+    const oversized = new Uint8Array(20 * 1024 * 1024 + 2);
+    const compressed = pako.deflate(oversized);
+    const decode = () => decodeFlate(compressed, 1404, 1872);
+
+    expect(decode).toThrow(ParseError);
+    expect(decode).toThrow('exceeds');
   });
 });
