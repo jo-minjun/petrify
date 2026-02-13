@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added PDF parser adapter (`@petrify/parser-pdf`) and wired it into parser selection
 
+### Changed
+
+- Enforced explicit parser selection in conversion flow (removed extension-based parser fallback in `handleFileChange`)
+- Moved `PetrifyService` integration tests from `@petrify/core` to `@petrify/obsidian-plugin` to keep integration coverage at plugin level
+
+### Fixed
+
+- Switched keep toggle frontmatter writes to `FileManager.processFrontMatter` for Obsidian plugin review guideline compliance
+- Added drop parser-selection edge case tests (cancel and `applyToAll` cache paths)
+- Improved `@petrify/parser-supernote-x` safety and compatibility: bounded flate decompression and browser-safe `LAYERINFO` base64 decoding
+
 ## [0.3.0] - 2026-02-11
 
 ### Changed

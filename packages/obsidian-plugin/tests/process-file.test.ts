@@ -1,4 +1,4 @@
-import type { ConversionResult, FileChangeEvent, PetrifyService } from '@petrify/core';
+import type { ConversionResult, FileChangeEvent, ParserPort, PetrifyService } from '@petrify/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Logger } from '../src/logger.js';
 import type { SaveFn } from '../src/process-file.js';
@@ -26,11 +26,13 @@ describe('processFile', () => {
   let mockService: { handleFileChange: ReturnType<typeof vi.fn> };
   let save: ReturnType<typeof vi.fn>;
   let log: ReturnType<typeof createMockLogger>;
+  let mockParser: ParserPort;
 
   beforeEach(() => {
     mockService = { handleFileChange: vi.fn() };
     save = vi.fn().mockResolvedValue('output/file.excalidraw.md');
     log = createMockLogger();
+    mockParser = { extensions: ['.note'], parse: vi.fn() };
   });
 
   it('returns false (skip) when handleFileChange returns null', async () => {
@@ -42,6 +44,7 @@ describe('processFile', () => {
       mockService as unknown as PetrifyService,
       save as SaveFn,
       log,
+      mockParser,
     );
 
     expect(result).toBe(false);
@@ -62,6 +65,7 @@ describe('processFile', () => {
       mockService as unknown as PetrifyService,
       save as SaveFn,
       log,
+      mockParser,
     );
 
     expect(result).toBe(true);
@@ -82,8 +86,25 @@ describe('processFile', () => {
       mockService as unknown as PetrifyService,
       save as SaveFn,
       log,
+      mockParser,
     );
 
     expect(save).toHaveBeenCalledWith(expect.anything(), 'output', 'my-document');
+  });
+
+  it('passes parser override to handleFileChange when provided', async () => {
+    mockService.handleFileChange.mockResolvedValue(null);
+    const event = createFileChangeEvent('file.note');
+
+    await processFile(
+      event,
+      'output',
+      mockService as unknown as PetrifyService,
+      save as SaveFn,
+      log,
+      mockParser,
+    );
+
+    expect(mockService.handleFileChange).toHaveBeenCalledWith(event, mockParser);
   });
 });

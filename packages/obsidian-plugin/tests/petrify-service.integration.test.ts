@@ -1,21 +1,20 @@
+import {
+  ConversionError,
+  type ConversionMetadata,
+  type ConversionMetadataPort,
+  type FileChangeEvent,
+  type FileGeneratorPort,
+  type GeneratorOutput,
+  type Note,
+  type OcrPort,
+  type OcrResult,
+  type OcrTextResult,
+  type Page,
+  ParseError,
+  type ParserPort,
+  PetrifyService,
+} from '@petrify/core';
 import { describe, expect, it } from 'vitest';
-import { ConversionError, ParseError } from '../src/exceptions.js';
-import type { Note, Page } from '../src/models/index.js';
-import { PetrifyService } from '../src/petrify-service.js';
-import type {
-  ConversionMetadata,
-  ConversionMetadataPort,
-} from '../src/ports/conversion-metadata.js';
-import type {
-  FileGeneratorPort,
-  GeneratorOutput,
-  OcrTextResult,
-} from '../src/ports/file-generator.js';
-import type { OcrPort, OcrResult } from '../src/ports/ocr.js';
-import type { ParserPort } from '../src/ports/parser.js';
-import type { FileChangeEvent } from '../src/ports/watcher.js';
-
-// --- Lightweight Fake implementations ---
 
 class FakeMetadata implements ConversionMetadataPort {
   readonly store = new Map<string, ConversionMetadata>();
@@ -91,8 +90,6 @@ class FakeOcr implements OcrPort {
   }
 }
 
-// --- Helpers ---
-
 function createPage(overrides?: Partial<Page>): Page {
   return {
     id: 'page-1',
@@ -125,23 +122,24 @@ function createFileChangeEvent(overrides?: Partial<FileChangeEvent>): FileChange
   };
 }
 
-// --- Tests ---
-
-describe('PetrifyService integration tests', () => {
-  it('full pipeline: parse → OCR → generate', async () => {
+describe('PetrifyService integration tests (plugin level)', () => {
+  it('full pipeline: parse -> OCR -> generate', async () => {
     const note = createNote({ title: 'My Note' });
     const fakeParser = new FakeParser(note);
     const fakeOcr = new FakeOcr();
     const fakeGenerator = new FakeGenerator();
     const fakeMetadata = new FakeMetadata();
 
-    const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(parsers, fakeGenerator, fakeOcr, fakeMetadata, {
-      confidenceThreshold: 50,
-    });
+    const service = new PetrifyService(
+      new Map<string, ParserPort>([['.note', fakeParser]]),
+      fakeGenerator,
+      fakeOcr,
+      fakeMetadata,
+      { confidenceThreshold: 50 },
+    );
 
     const event = createFileChangeEvent();
-    const result = await service.handleFileChange(event);
+    const result = await service.handleFileChange(event, fakeParser);
 
     expect(result).not.toBeNull();
     expect(result?.content).toContain('My Note');
@@ -165,16 +163,15 @@ describe('PetrifyService integration tests', () => {
       ],
     });
 
-    const fakeGenerator = new FakeGenerator();
-    const fakeMetadata = new FakeMetadata();
+    const service = new PetrifyService(
+      new Map<string, ParserPort>([['.note', fakeParser]]),
+      new FakeGenerator(),
+      fakeOcr,
+      new FakeMetadata(),
+      { confidenceThreshold: 50 },
+    );
 
-    const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(parsers, fakeGenerator, fakeOcr, fakeMetadata, {
-      confidenceThreshold: 50,
-    });
-
-    const event = createFileChangeEvent();
-    const result = await service.handleFileChange(event);
+    const result = await service.handleFileChange(createFileChangeEvent(), fakeParser);
 
     expect(result).not.toBeNull();
     expect(result?.content).toContain('high');
@@ -182,41 +179,40 @@ describe('PetrifyService integration tests', () => {
   });
 
   it('metadata round-trip: skips when mtime has not changed', async () => {
-    const note = createNote();
-    const fakeParser = new FakeParser(note);
-    const fakeGenerator = new FakeGenerator();
+    const fakeParser = new FakeParser(createNote());
     const fakeMetadata = new FakeMetadata();
 
-    const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(parsers, fakeGenerator, null, fakeMetadata, {
-      confidenceThreshold: 50,
-    });
+    const service = new PetrifyService(
+      new Map<string, ParserPort>([['.note', fakeParser]]),
+      new FakeGenerator(),
+      null,
+      fakeMetadata,
+      { confidenceThreshold: 50 },
+    );
 
     const event = createFileChangeEvent({ mtime: 1000 });
-
-    const firstResult = await service.handleFileChange(event);
+    const firstResult = await service.handleFileChange(event, fakeParser);
     expect(firstResult).not.toBeNull();
 
     fakeMetadata.store.set('/path/to/file.note', { source: '/path/to/file.note', mtime: 1000 });
 
-    const secondResult = await service.handleFileChange(event);
+    const secondResult = await service.handleFileChange(event, fakeParser);
     expect(secondResult).toBeNull();
   });
 
   it('stores assets at the correct path', async () => {
     const page = createPage({ id: 'page-abc' });
-    const note = createNote({ pages: [page] });
-    const fakeParser = new FakeParser(note);
-    const fakeGenerator = new FakeGenerator();
-    const fakeMetadata = new FakeMetadata();
+    const fakeParser = new FakeParser(createNote({ pages: [page] }));
 
-    const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(parsers, fakeGenerator, null, fakeMetadata, {
-      confidenceThreshold: 50,
-    });
+    const service = new PetrifyService(
+      new Map<string, ParserPort>([['.note', fakeParser]]),
+      new FakeGenerator(),
+      null,
+      new FakeMetadata(),
+      { confidenceThreshold: 50 },
+    );
 
-    const event = createFileChangeEvent();
-    const result = await service.handleFileChange(event);
+    const result = await service.handleFileChange(createFileChangeEvent(), fakeParser);
 
     expect(result).not.toBeNull();
     expect(result?.assets.has('page-abc.png')).toBe(true);
@@ -224,17 +220,13 @@ describe('PetrifyService integration tests', () => {
   });
 
   it('convertDroppedFile: metadata has keep=true', async () => {
-    const note = createNote();
-    const fakeParser = new FakeParser(note);
-    const fakeGenerator = new FakeGenerator();
-    const fakeMetadata = new FakeMetadata();
+    const fakeParser = new FakeParser(createNote());
 
-    const service = new PetrifyService(new Map(), fakeGenerator, null, fakeMetadata, {
+    const service = new PetrifyService(new Map(), new FakeGenerator(), null, new FakeMetadata(), {
       confidenceThreshold: 50,
     });
 
-    const data = new ArrayBuffer(8);
-    const result = await service.convertDroppedFile(data, fakeParser, 'dropped');
+    const result = await service.convertDroppedFile(new ArrayBuffer(8), fakeParser, 'dropped');
 
     expect(result.content).toContain('Test Note');
     expect(result.metadata.keep).toBe(true);
@@ -257,22 +249,21 @@ describe('PetrifyService integration tests', () => {
   });
 
   it('error propagation chain: parse error is wrapped in ConversionError', async () => {
-    const note = createNote();
-    const fakeParser = new FakeParser(note);
+    const fakeParser = new FakeParser(createNote());
     fakeParser.setError(new ParseError('invalid format'));
 
-    const fakeGenerator = new FakeGenerator();
-    const fakeMetadata = new FakeMetadata();
-
-    const parsers = new Map<string, ParserPort>([['.note', fakeParser]]);
-    const service = new PetrifyService(parsers, fakeGenerator, null, fakeMetadata, {
-      confidenceThreshold: 50,
-    });
+    const service = new PetrifyService(
+      new Map<string, ParserPort>([['.note', fakeParser]]),
+      new FakeGenerator(),
+      null,
+      new FakeMetadata(),
+      { confidenceThreshold: 50 },
+    );
 
     const event = createFileChangeEvent();
 
-    await expect(service.handleFileChange(event)).rejects.toThrow(ConversionError);
-    await expect(service.handleFileChange(event)).rejects.toMatchObject({
+    await expect(service.handleFileChange(event, fakeParser)).rejects.toThrow(ConversionError);
+    await expect(service.handleFileChange(event, fakeParser)).rejects.toMatchObject({
       phase: 'parse',
     });
   });

@@ -41,10 +41,14 @@ import type {
 } from './sync-orchestrator.js';
 import { SyncOrchestrator, SyncSource } from './sync-orchestrator.js';
 import { TesseractAssetDownloader, TesseractAssetServer } from './tesseract-assets.js';
-import { parseFrontmatter, updateKeepInContent } from './utils/frontmatter.js';
+import { parseFrontmatter } from './utils/frontmatter.js';
 
 interface FileSystemAdapter extends DataAdapter {
   getBasePath(): string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function createGenerator(format: OutputFormat): FileGeneratorPort {
@@ -257,10 +261,15 @@ export default class PetrifyPlugin extends Plugin {
     this.parserMap = createParserMap();
     this.generator = createGenerator(this.settings.outputFormat);
 
-    const extensionMap = new Map<string, ParserPort>();
+    const extensionMap = new Map<string, ParserPort[]>();
     for (const [, parser] of this.parserMap) {
       for (const ext of parser.extensions) {
-        extensionMap.set(ext.toLowerCase(), parser);
+        const normalizedExt = ext.toLowerCase();
+        const parsers = extensionMap.get(normalizedExt) ?? [];
+        if (!parsers.includes(parser)) {
+          parsers.push(parser);
+        }
+        extensionMap.set(normalizedExt, parsers);
       }
     }
 
@@ -315,8 +324,13 @@ export default class PetrifyPlugin extends Plugin {
     if (this.settings.localWatch.enabled) {
       for (const mapping of this.settings.localWatch.mappings) {
         if (!mapping.enabled || !mapping.watchDir) continue;
+        const parser = this.parserMap.get(mapping.parserId);
+        if (!parser) {
+          this.watcherLog.error(`Unknown parser: ${mapping.parserId}`);
+          continue;
+        }
         const watcher = new ChokidarWatcher(mapping.watchDir);
-        this.attachWatcherHandlers(watcher, mapping.outputDir);
+        this.attachWatcherHandlers(watcher, mapping.outputDir, parser);
         await watcher.start();
         this.watchers.push(watcher);
       }
@@ -331,24 +345,29 @@ export default class PetrifyPlugin extends Plugin {
 
       for (const mapping of this.settings.googleDrive.mappings) {
         if (!mapping.enabled || !mapping.folderId) continue;
+        const parser = this.parserMap.get(mapping.parserId);
+        if (!parser) {
+          this.watcherLog.error(`Unknown parser: ${mapping.parserId}`);
+          continue;
+        }
         const watcher = new GoogleDriveWatcher({
           folderId: mapping.folderId,
           pollIntervalMs: this.settings.googleDrive.pollIntervalMinutes * 60000,
           auth: authClient,
           pageTokenStore: createPageTokenStore(this, mapping.folderId),
         });
-        this.attachWatcherHandlers(watcher, mapping.outputDir);
+        this.attachWatcherHandlers(watcher, mapping.outputDir, parser);
         await watcher.start();
         this.watchers.push(watcher);
       }
     }
   }
 
-  private attachWatcherHandlers(watcher: WatcherPort, outputDir: string): void {
+  private attachWatcherHandlers(watcher: WatcherPort, outputDir: string, parser: ParserPort): void {
     watcher.onFileChange(async (event) => {
       this.watcherLog.info(`File detected: ${event.name}`);
       try {
-        const converted = await this.processFile(event, outputDir);
+        const converted = await this.processFile(event, outputDir, parser);
         if (converted) {
           this.convertLog.notify(`Converted: ${event.name}`);
         }
@@ -370,13 +389,18 @@ export default class PetrifyPlugin extends Plugin {
     });
   }
 
-  private async processFile(event: FileChangeEvent, outputDir: string): Promise<boolean> {
+  private async processFile(
+    event: FileChangeEvent,
+    outputDir: string,
+    parser: ParserPort,
+  ): Promise<boolean> {
     return processFileImpl(
       event,
       outputDir,
       this.petrifyService,
       (result, dir, baseName) => this.saveConversionResult(result, dir, baseName),
       this.convertLog,
+      parser,
     );
   }
 
@@ -425,7 +449,15 @@ export default class PetrifyPlugin extends Plugin {
     }
 
     const newKeep = !meta.keep;
-    await this.app.vault.process(file, (data) => updateKeepInContent(data, newKeep));
+    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+      const currentPetrify = isRecord(frontmatter.petrify) ? frontmatter.petrify : {};
+      frontmatter.petrify = {
+        ...currentPetrify,
+        source: currentPetrify.source ?? meta.source,
+        mtime: currentPetrify.mtime ?? meta.mtime,
+        keep: newKeep,
+      };
+    });
 
     const status = newKeep ? 'protected' : 'unprotected';
     new Notice(`Petrify: File ${status}`);

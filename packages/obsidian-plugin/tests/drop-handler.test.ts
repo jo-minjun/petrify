@@ -7,8 +7,33 @@ vi.mock('obsidian', () => ({
   Notice: vi.fn(),
 }));
 
+type ModalSelection = { parser: ParserPort; applyToAll: boolean } | null;
+const modalSelections: ModalSelection[] = [];
+const modalOpenMock = vi.fn();
+
 vi.mock('../src/parser-select-modal.js', () => ({
-  ParserSelectModal: vi.fn(),
+  ParserSelectModal: class {
+    private readonly parsers: Array<{ id: string; parser: ParserPort }>;
+
+    constructor(
+      _app: unknown,
+      _fileName: string,
+      _extension: string,
+      parsers: Array<{ id: string; parser: ParserPort }>,
+    ) {
+      this.parsers = parsers;
+    }
+
+    open(): void {
+      modalOpenMock();
+    }
+
+    waitForSelection(): Promise<ModalSelection> {
+      const next = modalSelections.shift();
+      if (next !== undefined) return Promise.resolve(next);
+      return Promise.resolve({ parser: this.parsers[0].parser, applyToAll: false });
+    }
+  },
 }));
 
 function createMockParser(extensions: string[]): ParserPort {
@@ -91,6 +116,9 @@ describe('DropHandler', () => {
   const mockApp = {} as unknown as import('obsidian').App;
 
   beforeEach(() => {
+    modalOpenMock.mockReset();
+    modalSelections.length = 0;
+
     mockParser = createMockParser(['.note']);
     mockService = createMockPetrifyService([mockParser]);
     saveResult = vi.fn().mockResolvedValue('output/file.excalidraw.md');
@@ -250,5 +278,73 @@ describe('DropHandler', () => {
     await handler.handleDrop(evt);
 
     expect(saveResult).toHaveBeenCalledWith(expect.anything(), '', 'test');
+  });
+
+  it('skips conversion when parser selection is canceled for multiple parsers', async () => {
+    const parserA = createMockParser(['.note']);
+    const parserB = createMockParser(['.note']);
+    mockService = createMockPetrifyService([parserA, parserB]);
+    mockService.convertDroppedFile.mockResolvedValue(createMockConversionResult());
+    handler = new DropHandler(
+      mockApp,
+      mockService as unknown as PetrifyService,
+      new Map([
+        ['viwoods', parserA],
+        ['supernote-x', parserB],
+      ]),
+      saveResult as SaveConversionFn,
+    );
+
+    modalSelections.push(null);
+
+    const evt = createDragEvent({
+      target: createFileExplorerTarget('notes'),
+      files: createMockFileList([createMockFile('test.note')]),
+    });
+
+    await handler.handleDrop(evt);
+
+    expect(modalOpenMock).toHaveBeenCalledTimes(1);
+    expect(mockService.convertDroppedFile).not.toHaveBeenCalled();
+  });
+
+  it('reuses selected parser for same extension when applyToAll is enabled', async () => {
+    const parserA = createMockParser(['.note']);
+    const parserB = createMockParser(['.note']);
+    mockService = createMockPetrifyService([parserA, parserB]);
+    mockService.convertDroppedFile.mockResolvedValue(createMockConversionResult());
+    handler = new DropHandler(
+      mockApp,
+      mockService as unknown as PetrifyService,
+      new Map([
+        ['viwoods', parserA],
+        ['supernote-x', parserB],
+      ]),
+      saveResult as SaveConversionFn,
+    );
+
+    modalSelections.push({ parser: parserB, applyToAll: true });
+
+    const evt = createDragEvent({
+      target: createFileExplorerTarget('notes'),
+      files: createMockFileList([createMockFile('first.note'), createMockFile('second.note')]),
+    });
+
+    await handler.handleDrop(evt);
+
+    expect(modalOpenMock).toHaveBeenCalledTimes(1);
+    expect(mockService.convertDroppedFile).toHaveBeenCalledTimes(2);
+    expect(mockService.convertDroppedFile).toHaveBeenNthCalledWith(
+      1,
+      expect.any(ArrayBuffer),
+      parserB,
+      'first',
+    );
+    expect(mockService.convertDroppedFile).toHaveBeenNthCalledWith(
+      2,
+      expect.any(ArrayBuffer),
+      parserB,
+      'second',
+    );
   });
 });

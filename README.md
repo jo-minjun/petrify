@@ -9,7 +9,7 @@ Petrify converts handwritten note files into [Excalidraw](https://github.com/zsv
 > [Viwoods](https://www.viwoods.com/) is a handwriting note app for e-ink tablets (e.g. Viwoods AiPaper). Petrify reads the `.note` format exported by this app.
 
 **Currently supported:**
-- Parser: Viwoods (.note), PDF (.pdf)
+- Parser: Viwoods (.note), Supernote X-series (.note), PDF (.pdf)
 - OCR: Tesseract.js (local), Google Cloud Vision (API)
 - Output: Excalidraw (.excalidraw.md), Markdown (.md)
 - Watcher: chokidar (local filesystem), Google Drive API (remote change detection)
@@ -29,7 +29,7 @@ Petrify bridges this gap. It converts handwritten note files into Excalidraw or 
 
 This matters even more as personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw) become mainstream. A unified knowledge base means your AI can draw from everything you've written — handwritten or typed — to give more personalized answers.
 
-Petrify currently supports Viwoods (.note) and PDF (.pdf) files, and its plugin architecture makes it straightforward to add support for other handwriting apps in the future.
+Petrify currently supports Viwoods (.note), Supernote X-series (.note), and PDF (.pdf) files, and its plugin architecture makes it straightforward to add support for other handwriting apps in the future.
 With the PDF parser, you can sync and convert notes from any device that supports PDF export by selecting the `pdf` parser in your mapping.
 
 ## Obsidian Plugin
@@ -96,7 +96,7 @@ Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
 | Local file watch | Enable/disable local directory watching |
 | Watch directory | External folder path to watch (with Browse button) |
 | Output directory | Vault path for converted files (with Browse button) |
-| Parser | Parser to use (Viwoods / PDF) |
+| Parser | Parser to use (Viwoods / Supernote X-series / PDF) |
 
 Multiple mappings can be added, each with its own watch/output directory and parser.
 
@@ -112,7 +112,7 @@ Multiple mappings can be added, each with its own watch/output directory and par
 | Poll interval | Minutes between polling (1–60, default: 5) |
 | Folder | Google Drive folder to watch (via Browse button) |
 | Output directory | Vault path for converted files |
-| Parser | Parser to use (Viwoods / PDF) |
+| Parser | Parser to use (Viwoods / Supernote X-series / PDF) |
 
 #### OCR
 

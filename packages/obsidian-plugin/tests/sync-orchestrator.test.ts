@@ -148,6 +148,9 @@ describe('SyncOrchestrator', () => {
   });
 
   it('successful sync: finds file and converts successfully', async () => {
+    const parser = parserMap.get('viwoods');
+    expect(parser).toBeDefined();
+
     mockFs.readdir.mockResolvedValue(entries('file.note'));
     mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
@@ -160,8 +163,49 @@ describe('SyncOrchestrator', () => {
     const result = await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(result).toEqual({ synced: 1, failed: 0, deleted: 0 });
-    expect(mockService.handleFileChange).toHaveBeenCalledOnce();
+    expect(mockService.handleFileChange).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'file.note' }),
+      parser,
+    );
     expect(convertLog.info).toHaveBeenCalledWith(expect.stringContaining('Converted: file.note'));
+  });
+
+  it('uses parser from parserId when multiple parsers share extension', async () => {
+    const viwoodsParser = createMockParser(['.note']);
+    const supernoteParser = createMockParser(['.note']);
+    const multiParserMap = new Map<string, ParserPort>([
+      ['viwoods', viwoodsParser],
+      ['supernote-x', supernoteParser],
+    ]);
+
+    orchestrator = new SyncOrchestrator(
+      mockService as unknown as PetrifyService,
+      mockMetadata as ConversionMetadataPort,
+      multiParserMap,
+      mockGenerator as FileGeneratorPort,
+      mockFs,
+      mockVault,
+      saveResult as SaveConversionFn,
+      syncLog,
+      convertLog,
+    );
+
+    mockFs.readdir.mockResolvedValue(entries('file.note'));
+    mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
+    mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
+    mockService.handleFileChange.mockResolvedValue({
+      content: 'test',
+      assets: new Map(),
+      metadata: { source: '/watch/file.note', mtime: 1000 },
+    });
+
+    const result = await orchestrator.syncAll([createDefaultMapping({ parserId: 'supernote-x' })]);
+
+    expect(result).toEqual({ synced: 1, failed: 0, deleted: 0 });
+    expect(mockService.handleFileChange).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'file.note' }),
+      supernoteParser,
+    );
   });
 
   it('increments failed when directory read fails', async () => {

@@ -43,6 +43,7 @@ function createMockMetadataPort(): ConversionMetadataPort {
 describe('PetrifyService', () => {
   describe('handleFileChange', () => {
     it('returns null for unsupported extensions', async () => {
+      const mockParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>();
       const service = new PetrifyService(
         parsers,
@@ -60,7 +61,7 @@ describe('PetrifyService', () => {
         readData: vi.fn(),
       };
 
-      const result = await service.handleFileChange(event);
+      const result = await service.handleFileChange(event, mockParser);
       expect(result).toBeNull();
     });
 
@@ -88,7 +89,7 @@ describe('PetrifyService', () => {
         readData,
       };
 
-      const result = await service.handleFileChange(event);
+      const result = await service.handleFileChange(event, mockParser);
       expect(result).toBeNull();
       expect(readData).not.toHaveBeenCalled();
     });
@@ -115,8 +116,49 @@ describe('PetrifyService', () => {
         readData: vi.fn(),
       };
 
-      const result = await service.handleFileChange(event);
+      const result = await service.handleFileChange(event, mockParser);
       expect(result).toBeNull();
+    });
+
+    it('uses parser override when provided', async () => {
+      const defaultParser = createMockParserPort();
+      const overrideParser = createMockParserPort();
+      const parsers = new Map<string, ParserPort>([['.note', defaultParser]]);
+
+      const note: Note = {
+        title: 'override',
+        pages: [],
+        createdAt: new Date(),
+        modifiedAt: new Date(),
+      };
+      vi.mocked(defaultParser.parse).mockResolvedValue(note);
+      vi.mocked(overrideParser.parse).mockResolvedValue(note);
+
+      const mockGenerator = createMockGeneratorPort();
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'content' }),
+      );
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
+
+      const service = new PetrifyService(parsers, mockGenerator, null, mockMetadata, {
+        confidenceThreshold: 0.5,
+      });
+
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        mtime: Date.now(),
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
+      };
+
+      const result = await service.handleFileChange(event, overrideParser);
+
+      expect(result).not.toBeNull();
+      expect(overrideParser.parse).toHaveBeenCalledOnce();
+      expect(defaultParser.parse).not.toHaveBeenCalled();
     });
   });
 
@@ -210,6 +252,23 @@ describe('PetrifyService', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toBe(mockParser);
     });
+
+    it('returns all registered parsers for the same extension', () => {
+      const firstParser = createMockParserPort();
+      const secondParser = createMockParserPort();
+      const service = new PetrifyService(
+        new Map<string, ParserPort[]>([['.note', [firstParser, secondParser]]]),
+        createMockGeneratorPort(),
+        null,
+        createMockMetadataPort(),
+        { confidenceThreshold: 50 },
+      );
+
+      const result = service.getParsersForExtension('.note');
+      expect(result).toHaveLength(2);
+      expect(result).toContain(firstParser);
+      expect(result).toContain(secondParser);
+    });
   });
 
   describe('conversion flow', () => {
@@ -266,7 +325,7 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      const result = await service.handleFileChange(event);
+      const result = await service.handleFileChange(event, mockParser);
 
       expect(result).not.toBeNull();
       expect(result?.content).toBe('test-content');
@@ -310,7 +369,7 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      await service.handleFileChange(event);
+      await service.handleFileChange(event, mockParser);
 
       const generateCall = vi.mocked(mockGenerator.generate).mock.calls[0];
       const ocrResults = generateCall[2];
@@ -355,7 +414,7 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      await service.handleFileChange(event);
+      await service.handleFileChange(event, mockParser);
 
       const generateCall = vi.mocked(mockGenerator.generate).mock.calls[0];
       const ocrResults = generateCall[2];
@@ -394,7 +453,7 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      const result = await service.handleFileChange(event);
+      const result = await service.handleFileChange(event, mockParser);
 
       expect(result).not.toBeNull();
       expect(result?.assets.get('img.png')).toEqual(new Uint8Array([1, 2, 3]));
@@ -446,7 +505,7 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      await service.handleFileChange(event);
+      await service.handleFileChange(event, mockParser);
 
       expect(mockOcr.recognize).toHaveBeenCalledTimes(2);
       const generateCall = vi.mocked(mockGenerator.generate).mock.calls[0];
@@ -496,7 +555,7 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      await service.handleFileChange(event);
+      await service.handleFileChange(event, mockParser);
 
       expect(mockOcr.recognize).toHaveBeenCalledTimes(1);
     });
@@ -570,8 +629,8 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      await expect(service.handleFileChange(event)).rejects.toThrow(ConversionError);
-      await expect(service.handleFileChange(event)).rejects.toMatchObject({
+      await expect(service.handleFileChange(event, mockParser)).rejects.toThrow(ConversionError);
+      await expect(service.handleFileChange(event, mockParser)).rejects.toMatchObject({
         phase: 'parse',
       });
     });
@@ -605,8 +664,8 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      await expect(service.handleFileChange(event)).rejects.toThrow(ConversionError);
-      await expect(service.handleFileChange(event)).rejects.toMatchObject({
+      await expect(service.handleFileChange(event, mockParser)).rejects.toThrow(ConversionError);
+      await expect(service.handleFileChange(event, mockParser)).rejects.toMatchObject({
         phase: 'ocr',
       });
     });
@@ -637,8 +696,8 @@ describe('PetrifyService', () => {
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
-      await expect(service.handleFileChange(event)).rejects.toThrow(ConversionError);
-      await expect(service.handleFileChange(event)).rejects.toMatchObject({
+      await expect(service.handleFileChange(event, mockParser)).rejects.toThrow(ConversionError);
+      await expect(service.handleFileChange(event, mockParser)).rejects.toMatchObject({
         phase: 'generate',
       });
     });

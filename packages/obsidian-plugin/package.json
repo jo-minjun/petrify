@@ -14,6 +14,7 @@
     "@petrify/generator-excalidraw": "workspace:*",
     "@petrify/generator-markdown": "workspace:*",
     "@petrify/parser-pdf": "workspace:*",
+    "@petrify/parser-supernote-x": "workspace:*",
     "@petrify/parser-viwoods": "workspace:*",
     "@petrify/watcher-chokidar": "workspace:*",
     "@petrify/watcher-google-drive": "workspace:*",

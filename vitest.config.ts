@@ -7,6 +7,10 @@ export default defineConfig({
       '@petrify/core': path.resolve(__dirname, 'packages/core/src/index.ts'),
       '@petrify/parser-pdf': path.resolve(__dirname, 'packages/parser/pdf/src/index.ts'),
       '@petrify/parser-viwoods': path.resolve(__dirname, 'packages/parser/viwoods/src/index.ts'),
+      '@petrify/parser-supernote-x': path.resolve(
+        __dirname,
+        'packages/parser/supernote-x/src/index.ts',
+      ),
       '@petrify/ocr-tesseract': path.resolve(__dirname, 'packages/ocr/tesseract/src/index.ts'),
       '@petrify/ocr-google-vision': path.resolve(
         __dirname,
