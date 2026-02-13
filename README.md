@@ -1,23 +1,10 @@
 # Petrify
 
-Convert handwritten notes to Excalidraw or Markdown with OCR support to unify your knowledge base.
+Turn your handwritten notes into searchable Obsidian knowledge.
 
 ## Introduction
 
 Petrify converts handwritten note files into [Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) or Markdown format within Obsidian, with OCR that makes handwriting searchable. In Excalidraw format, your handwriting is preserved as-is on the canvas, where you can annotate with text, arrows, highlights, and links.
-
-> [Viwoods](https://www.viwoods.com/) is a handwriting note app for e-ink tablets (e.g. Viwoods AiPaper). Petrify reads the `.note` format exported by this app.
-
-**Currently supported:**
-- Parser: Viwoods (.note), Supernote X-series (.note), PDF (.pdf)
-- OCR: Tesseract.js (local), Google Cloud Vision (API)
-- Output: Excalidraw (.excalidraw.md), Markdown (.md)
-- Watcher: chokidar (local filesystem), Google Drive API (remote change detection)
-
-**Planned:**
-- Additional parsers for other handwriting note apps
-
-![Handwriting note converted to Excalidraw in Obsidian](docs/assets/conversion-result.png)
 
 ## Why Petrify
 
@@ -25,9 +12,9 @@ Sometimes a pen is the most natural way to capture your thoughts — sketching d
 
 The usual workaround — syncing handwriting files to Google Drive and opening them as PDFs — keeps your notes accessible but isolated. Handwriting exported as PDF is just a flat image — it can't be searched, linked, or tagged alongside your Obsidian notes. Your handwriting becomes dead data, locked away from search, graph view, and backlinks.
 
-Petrify bridges this gap. It converts handwritten note files into Excalidraw or Markdown inside your vault, with OCR that makes the content searchable. The result is one vault, one knowledge base — regardless of whether you picked up a pen or a keyboard.
-
 This matters even more as personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw) become mainstream. A unified knowledge base means your AI can draw from everything you've written — handwritten or typed — to give more personalized answers.
+
+Petrify bridges this gap. It converts handwritten note files into Excalidraw or Markdown inside your vault, with OCR that makes the content searchable. The result is one vault, one knowledge base — regardless of whether you picked up a pen or a keyboard.
 
 Petrify currently supports Viwoods (.note), Supernote X-series (.note), and PDF (.pdf) files, and its plugin architecture makes it straightforward to add support for other handwriting apps in the future.
 With the PDF parser, you can sync and convert notes from any device that supports PDF export by selecting the `pdf` parser in your mapping.
@@ -68,13 +55,16 @@ Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
 
 ### Features
 
+![Handwriting note converted to Excalidraw in Obsidian](docs/assets/conversion-result.png)
+
+- **Supported parsers**: Viwoods (.note), Supernote X-series (.note), PDF (.pdf)
 - **Output format**: Excalidraw (`.excalidraw.md`) or Markdown (`.md`) — Excalidraw format requires the [Excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin)
+- **OCR**: Extract handwritten text so your notes become searchable in Obsidian — supports Tesseract.js (local) and Google Cloud Vision (API)
+  ![OCR text extracted from handwriting, searchable in Obsidian](docs/assets/ocr-text.png)
 - **File watching**: Watch external folders and automatically convert new or updated files
 - **Multi-folder mapping**: Map multiple external folders to different vault folders, each with its own parser
 - **Drag & drop**: Drop handwriting files into the file explorer to convert them at the drop location
 - **Sync command**: Manually trigger a full sync via the ribbon icon or command palette (`Petrify: Sync`)
-- **OCR**: Extract handwritten text so your notes become searchable in Obsidian
-  ![OCR text extracted from handwriting, searchable in Obsidian](docs/assets/ocr-text.png)
 - **Duplicate prevention**: Skips already-converted files by comparing file and page content hashes
 - **Source delete sync**: Optionally remove converted files when the source file is deleted
 - **Keep protection**: Mark converted files as protected via frontmatter (`keep: true`) to prevent deletion or re-conversion — toggle via command palette or file context menu
@@ -172,7 +162,7 @@ Each user needs their own Google Cloud OAuth credentials:
 
 ### Network usage
 
-By default, this plugin does not make any network requests. Network features (Google Drive, Cloud Vision) are only active when explicitly enabled in settings.
+By default, this plugin does not make any network requests. Network access occurs only when using specific features:
 
 - **Tesseract.js (OCR)**: On first use with the Tesseract provider, language data files (~15 MB per language) are downloaded from the [petrify GitHub releases](https://github.com/jo-minjun/petrify/releases) and cached locally. Once downloaded, all OCR processing happens entirely on your device. No image data is sent to external servers.
 - **Google Cloud Vision API**: When selected as OCR provider, images are sent to Google servers for text recognition. Requires a user-provided API key.
