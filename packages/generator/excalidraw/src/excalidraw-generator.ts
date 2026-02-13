@@ -1,6 +1,6 @@
 import type { Note, Page } from '@petrify/core';
+import { sha1Hex } from '@petrify/core';
 import { uint8ArrayToBase64 } from './base64.js';
-import { sha1Hex } from './sha1.js';
 
 export interface ExcalidrawElement {
   readonly type: 'image';

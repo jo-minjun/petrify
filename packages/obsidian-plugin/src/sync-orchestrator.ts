@@ -116,20 +116,11 @@ export class SyncOrchestrator {
       if (!supportedExts.includes(ext)) continue;
 
       const fileRef = entry.fileRef ?? path.join(mapping.watchDir, entry.name);
-      let stat: { mtimeMs: number };
-      try {
-        stat = await mappingFs.stat(fileRef);
-      } catch (error) {
-        this.syncLog.error(`File stat failed: ${entry.name}`, error);
-        failed++;
-        continue;
-      }
 
       const event: FileChangeEvent = {
         id: fileRef,
         name: entry.name,
         extension: ext,
-        mtime: stat.mtimeMs,
         readData: () => mappingFs.readFile(fileRef),
       };
 

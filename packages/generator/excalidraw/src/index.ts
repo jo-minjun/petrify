@@ -8,4 +8,4 @@ export type {
 } from './excalidraw-generator.js';
 export { ExcalidrawGenerator } from './excalidraw-generator.js';
 export { ExcalidrawMdGenerator } from './md-generator.js';
-export { sha1Hex } from './sha1.js';
+export { extractOcrByPageId } from './ocr-extractor.js';

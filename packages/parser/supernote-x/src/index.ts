@@ -6,6 +6,8 @@ export class SupernoteXParser implements ParserPort {
 
   private readonly parser = new NoteParser();
 
+  constructor(readonly id: string) {}
+
   parse(data: ArrayBuffer): Promise<Note> {
     return this.parser.parse(data);
   }

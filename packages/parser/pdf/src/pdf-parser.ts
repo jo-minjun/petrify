@@ -65,6 +65,7 @@ export class PdfParser implements ParserPort {
   readonly extensions = ['.pdf'];
 
   constructor(
+    readonly id: string,
     private readonly loadPdf: LoadPdfFn = loadPdfDocument,
     private readonly createCanvas: CreateCanvasFn = createDefaultCanvas,
     private readonly scale: number = DEFAULT_SCALE,

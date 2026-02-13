@@ -27,7 +27,7 @@ function createResult(overrides?: Partial<ConversionResult>): ConversionResult {
   return {
     content: '# Test Content',
     assets: new Map(),
-    metadata: { source: '/watch/file.note', mtime: 1000 },
+    metadata: { source: '/watch/file.note', parser: null, fileHash: null, pageHashes: null },
     ...overrides,
   };
 }

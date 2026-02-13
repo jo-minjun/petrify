@@ -44,8 +44,8 @@ export class ChokidarWatcher implements WatcherPort {
       depth: 0,
     });
 
-    const fileEventHandler = (filePath: string, stats?: { mtimeMs: number }): void => {
-      void this.handleFileEvent(filePath, stats);
+    const fileEventHandler = (filePath: string): void => {
+      void this.handleFileEvent(filePath);
     };
     this.watcher.on('add', fileEventHandler);
     this.watcher.on('change', fileEventHandler);
@@ -64,16 +64,11 @@ export class ChokidarWatcher implements WatcherPort {
     this.watcher = null;
   }
 
-  private async handleFileEvent(
-    filePath: string,
-    stats: { mtimeMs: number } | undefined,
-  ): Promise<void> {
+  private async handleFileEvent(filePath: string): Promise<void> {
     const meta = fileMetadata(filePath);
-    const mtime = stats?.mtimeMs ?? Date.now();
 
     const event: FileChangeEvent = {
       ...meta,
-      mtime,
       readData: () =>
         fs.readFile(filePath).then((buf) => {
           const ab = new ArrayBuffer(buf.byteLength);

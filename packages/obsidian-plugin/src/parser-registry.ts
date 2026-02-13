@@ -11,8 +11,8 @@ export enum ParserId {
 
 export function createParserMap(): Map<string, ParserPort> {
   return new Map<string, ParserPort>([
-    [ParserId.Viwoods, new ViwoodsParser()],
-    [ParserId.Pdf, new PdfParser()],
-    [ParserId.SupernoteX, new SupernoteXParser()],
+    [ParserId.Viwoods, new ViwoodsParser(ParserId.Viwoods)],
+    [ParserId.Pdf, new PdfParser(ParserId.Pdf)],
+    [ParserId.SupernoteX, new SupernoteXParser(ParserId.SupernoteX)],
   ]);
 }

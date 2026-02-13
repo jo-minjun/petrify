@@ -66,14 +66,13 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/note.note');
     await flushPromises();
 
     expect(events).toHaveLength(1);
     expect(events[0].id).toBe('/test/dir/note.note');
     expect(events[0].name).toBe('note.note');
     expect(events[0].extension).toBe('.note');
-    expect(events[0].mtime).toBe(1700000000000);
   });
 
   it('emits a FileChangeEvent on change event', async () => {
@@ -83,12 +82,11 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    emit('change', '/test/dir/note.note', { mtimeMs: 1700000001000 });
+    emit('change', '/test/dir/note.note');
     await flushPromises();
 
     expect(events).toHaveLength(1);
     expect(events[0].id).toBe('/test/dir/note.note');
-    expect(events[0].mtime).toBe(1700000001000);
   });
 
   it('emits a FileDeleteEvent on unlink event', async () => {
@@ -118,29 +116,12 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    emit('add', '/test/dir/test.note', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/test.note');
     await flushPromises();
 
     const data = await events[0].readData();
     expect(readFile).toHaveBeenCalledWith('/test/dir/test.note');
     expect(data).toBeInstanceOf(ArrayBuffer);
-  });
-
-  it('uses Date.now() as fallback when stats is undefined', async () => {
-    const dateNowSpy = vi.spyOn(Date, 'now').mockReturnValue(9999999999999);
-
-    const events: FileChangeEvent[] = [];
-    watcher.onFileChange(async (event) => {
-      events.push(event);
-    });
-
-    await watcher.start();
-    emit('add', '/test/dir/note.note', undefined);
-    await flushPromises();
-
-    expect(events[0].mtime).toBe(9999999999999);
-
-    dateNowSpy.mockRestore();
   });
 
   it('converts uppercase file extensions to lowercase', async () => {
@@ -150,7 +131,7 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    emit('add', '/test/dir/file.NOTE', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/file.NOTE');
     await flushPromises();
 
     expect(events[0].extension).toBe('.note');
@@ -168,7 +149,7 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/note.note');
     await flushPromises();
 
     expect(errors).toHaveLength(1);
@@ -231,7 +212,7 @@ describe('ChokidarWatcher', () => {
   it('does not crash when events fire with no handlers registered', async () => {
     await watcher.start();
 
-    expect(() => emit('add', '/test/dir/note.note', { mtimeMs: 1700000000000 })).not.toThrow();
+    expect(() => emit('add', '/test/dir/note.note')).not.toThrow();
     expect(() => emit('unlink', '/test/dir/note.note')).not.toThrow();
   });
 
@@ -246,7 +227,7 @@ describe('ChokidarWatcher', () => {
     });
 
     await watcher.start();
-    emit('add', '/test/dir/Makefile', { mtimeMs: 1700000000000 });
+    emit('add', '/test/dir/Makefile');
     await flushPromises();
 
     expect(events).toHaveLength(1);

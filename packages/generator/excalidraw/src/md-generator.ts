@@ -44,7 +44,7 @@ ${compressed}
 
     if (ocrResults && ocrResults.length > 0) {
       for (const result of ocrResults) {
-        lines.push(`<!-- Page ${result.pageIndex + 1} -->`);
+        lines.push(`<!-- page: ${result.pageId} -->`);
         lines.push(result.texts.join('\n'));
       }
     }
