@@ -454,7 +454,8 @@ export default class PetrifyPlugin extends Plugin {
       frontmatter.petrify = {
         ...currentPetrify,
         source: currentPetrify.source ?? meta.source,
-        mtime: currentPetrify.mtime ?? meta.mtime,
+        parser: currentPetrify.parser ?? meta.parser,
+        fileHash: currentPetrify.fileHash ?? meta.fileHash,
         keep: newKeep,
       };
     });

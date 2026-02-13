@@ -37,7 +37,7 @@ vi.mock('../src/parser-select-modal.js', () => ({
 }));
 
 function createMockParser(extensions: string[]): ParserPort {
-  return { extensions, parse: vi.fn() };
+  return { id: 'test-parser', extensions, parse: vi.fn() };
 }
 
 function createMockPetrifyService(parsers: ParserPort[] = []): {
@@ -54,7 +54,7 @@ function createMockConversionResult(): ConversionResult {
   return {
     content: '# converted',
     assets: new Map(),
-    metadata: { source: null, mtime: null, keep: true },
+    metadata: { source: null, parser: null, fileHash: null, pageHashes: null, keep: true },
   };
 }
 
@@ -237,7 +237,7 @@ describe('DropHandler', () => {
     const newResult: ConversionResult = {
       content: '# markdown content',
       assets: new Map(),
-      metadata: { source: null, mtime: null, keep: true },
+      metadata: { source: null, parser: null, fileHash: null, pageHashes: null, keep: true },
     };
     newService.convertDroppedFile.mockResolvedValue(newResult);
 

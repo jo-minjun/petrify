@@ -105,7 +105,6 @@ export class GoogleDriveWatcher implements WatcherPort {
       id: `gdrive://${file.id}`,
       name: file.name,
       extension: ext,
-      mtime: new Date(file.modifiedTime).getTime(),
       readData: () => this.client.downloadFile(file.id),
     };
 

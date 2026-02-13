@@ -43,6 +43,7 @@ Adapters → Core ← Adapters
 |------|---------|---------|
 | ParserPort | Viwoods (.note) | @petrify/parser-viwoods |
 | ParserPort | Supernote X-series (.note) | @petrify/parser-supernote-x |
+| ParserPort | PDF (.pdf) | @petrify/parser-pdf |
 | OcrPort | Tesseract.js | @petrify/ocr-tesseract |
 | OcrPort | Google Cloud Vision | @petrify/ocr-google-vision |
 | FileGeneratorPort | Excalidraw (.excalidraw.md) | @petrify/generator-excalidraw |
@@ -71,7 +72,7 @@ Adapters → Core ← Adapters
 │       ▼           ▼             ▼                ▼                        │
 │  ┌──────────────────────────────────────────────────────────────────┐     │
 │  │                        PetrifyService                            │     │
-│  │       filter ext → check mtime → parse → ocr → generate         │     │
+│  │    filter ext → check hash → diff pages → parse → ocr → generate │     │
 │  └──────────────────────────────┬───────────────────────────────────┘     │
 └─────────────────────────────────┼────────────────────────────────────────┘
                                   │ ConversionResult
@@ -89,6 +90,7 @@ Adapters → Core ← Adapters
 packages/
 ├── core/                 # @petrify/core (port interfaces + PetrifyService)
 ├── parser/
+│   ├── pdf/              # @petrify/parser-pdf (ParserPort impl)
 │   ├── viwoods/          # @petrify/parser-viwoods (ParserPort impl)
 │   └── supernote-x/      # @petrify/parser-supernote-x (ParserPort impl)
 ├── ocr/

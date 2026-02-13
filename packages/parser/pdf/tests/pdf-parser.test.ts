@@ -32,7 +32,7 @@ const PNG_BYTES = new Uint8Array([137, 80, 78, 71]);
 
 describe('PdfParser', () => {
   it('supports .pdf extension', () => {
-    const parser = new PdfParser(() => {
+    const parser = new PdfParser('test', () => {
       throw new Error('not used');
     });
 
@@ -41,6 +41,7 @@ describe('PdfParser', () => {
 
   it('parses pages and metadata from a PDF document', async () => {
     const parser = new PdfParser(
+      'test',
       () => ({
         promise: Promise.resolve(
           createDocument({
@@ -81,6 +82,7 @@ describe('PdfParser', () => {
 
   it('uses default metadata when metadata parsing fails', async () => {
     const parser = new PdfParser(
+      'test',
       () => ({
         promise: Promise.resolve(
           createDocument({
@@ -100,7 +102,7 @@ describe('PdfParser', () => {
   });
 
   it('throws InvalidFileFormatError when PDF loading fails', async () => {
-    const parser = new PdfParser(() => ({
+    const parser = new PdfParser('test', () => ({
       promise: Promise.reject(new Error('invalid pdf')),
     }));
 
@@ -109,6 +111,7 @@ describe('PdfParser', () => {
 
   it('throws ParseError when PDF has no pages', async () => {
     const parser = new PdfParser(
+      'test',
       () => ({
         promise: Promise.resolve(createDocument({ numPages: 0 })),
       }),
@@ -121,6 +124,7 @@ describe('PdfParser', () => {
 
   it('throws ParseError when page rendering fails', async () => {
     const parser = new PdfParser(
+      'test',
       () => ({
         promise: Promise.resolve(
           createDocument({
@@ -138,6 +142,7 @@ describe('PdfParser', () => {
 
   it('throws ParseError when PDF has too many pages', async () => {
     const parser = new PdfParser(
+      'test',
       () => ({
         promise: Promise.resolve(createDocument({ numPages: 5001 })),
       }),
@@ -150,6 +155,7 @@ describe('PdfParser', () => {
 
   it('throws ParseError when page dimensions are too large', async () => {
     const parser = new PdfParser(
+      'test',
       () => ({
         promise: Promise.resolve(
           createDocument({

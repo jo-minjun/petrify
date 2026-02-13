@@ -17,7 +17,6 @@ function createFileChangeEvent(name: string): FileChangeEvent {
     id: `/watch/${name}`,
     name,
     extension: '.note',
-    mtime: 1000,
     readData: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
   };
 }
@@ -32,7 +31,7 @@ describe('processFile', () => {
     mockService = { handleFileChange: vi.fn() };
     save = vi.fn().mockResolvedValue('output/file.excalidraw.md');
     log = createMockLogger();
-    mockParser = { extensions: ['.note'], parse: vi.fn() };
+    mockParser = { id: 'test-parser', extensions: ['.note'], parse: vi.fn() };
   });
 
   it('returns false (skip) when handleFileChange returns null', async () => {
@@ -55,7 +54,7 @@ describe('processFile', () => {
     const conversionResult: ConversionResult = {
       content: '# test',
       assets: new Map(),
-      metadata: { source: '/watch/file.note', mtime: 1000 },
+      metadata: { source: '/watch/file.note', parser: null, fileHash: null, pageHashes: null },
     };
     mockService.handleFileChange.mockResolvedValue(conversionResult);
 
@@ -77,7 +76,7 @@ describe('processFile', () => {
     mockService.handleFileChange.mockResolvedValue({
       content: '',
       assets: new Map(),
-      metadata: { source: '', mtime: 0 },
+      metadata: { source: '', parser: null, fileHash: null, pageHashes: null },
     });
 
     await processFile(

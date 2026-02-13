@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ConversionError, OcrRecognitionError, ParseError } from '../src/exceptions.js';
+import { sha1Hex } from '../src/hash.js';
 import type { Note, Page } from '../src/models/index.js';
 import { PetrifyService } from '../src/petrify-service.js';
 import type { ConversionMetadataPort } from '../src/ports/conversion-metadata.js';
@@ -19,6 +20,7 @@ function mockGeneratorOutput(overrides?: Partial<GeneratorOutput>): GeneratorOut
 
 function createMockParserPort(): ParserPort {
   return {
+    id: 'test-parser',
     extensions: ['.note'],
     parse: vi.fn(),
   };
@@ -30,6 +32,7 @@ function createMockGeneratorPort(): FileGeneratorPort {
     displayName: 'Test Generator',
     extension: '.excalidraw.md',
     generate: vi.fn(),
+    incrementalUpdate: vi.fn(),
   };
 }
 
@@ -37,6 +40,33 @@ function createMockMetadataPort(): ConversionMetadataPort {
   return {
     getMetadata: vi.fn(),
     formatMetadata: vi.fn(),
+  };
+}
+
+function createTestPage(overrides?: Partial<Page>): Page {
+  return {
+    id: 'page-1',
+    order: 0,
+    width: 100,
+    height: 100,
+    imageData: new Uint8Array([1, 2, 3]),
+    ...overrides,
+  };
+}
+
+function createTestNote(overrides?: Partial<Note>): Note {
+  return {
+    title: 'test',
+    pages: [createTestPage()],
+    createdAt: new Date(),
+    modifiedAt: new Date(),
+    ...overrides,
+  };
+}
+
+function createMockOcrPort(): OcrPort {
+  return {
+    recognize: vi.fn(),
   };
 }
 
@@ -57,7 +87,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.unknown',
         name: 'file.unknown',
         extension: '.unknown',
-        mtime: Date.now(),
         readData: vi.fn(),
       };
 
@@ -65,14 +94,16 @@ describe('PetrifyService', () => {
       expect(result).toBeNull();
     });
 
-    it('returns null when keep is true even if the source has changed', async () => {
+    it('returns null when keep is true', async () => {
       const mockParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
         source: '/path/to/file.note',
-        mtime: 1000,
+        parser: 'test-parser',
+        fileHash: 'abc123',
+        pageHashes: [{ id: 'page-1', hash: 'hash1' }],
         keep: true,
       });
 
@@ -85,7 +116,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData,
       };
 
@@ -94,14 +124,20 @@ describe('PetrifyService', () => {
       expect(readData).not.toHaveBeenCalled();
     });
 
-    it('returns null when mtime is equal or older', async () => {
+    it('returns null when fileHash is unchanged', async () => {
+      const testData = new ArrayBuffer(8);
+      const expectedHash = await sha1Hex(new Uint8Array(testData));
+
       const mockParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
         source: '/path/to/file.note',
-        mtime: 1000,
+        parser: 'test-parser',
+        fileHash: expectedHash,
+        pageHashes: [{ id: 'page-1', hash: 'hash1' }],
+        keep: false,
       });
 
       const service = new PetrifyService(parsers, createMockGeneratorPort(), null, mockMetadata, {
@@ -112,12 +148,131 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 1000,
-        readData: vi.fn(),
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(testData),
       };
 
       const result = await service.handleFileChange(event, mockParser);
       expect(result).toBeNull();
+      expect(mockParser.parse).not.toHaveBeenCalled();
+    });
+
+    it('returns null when fileHash differs but all pageHashes are unchanged', async () => {
+      const page = createTestPage({ id: 'page-1', imageData: new Uint8Array([1, 2, 3]) });
+      const note = createTestNote({ pages: [page] });
+      const pageHash = await sha1Hex(page.imageData);
+
+      const mockParser = createMockParserPort();
+      vi.mocked(mockParser.parse).mockResolvedValue(note);
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
+        source: '/path/to/file.note',
+        parser: 'test-parser',
+        fileHash: 'different-file-hash',
+        pageHashes: [{ id: 'page-1', hash: pageHash }],
+        keep: false,
+      });
+
+      const mockGenerator = createMockGeneratorPort();
+      const service = new PetrifyService(parsers, mockGenerator, null, mockMetadata, {
+        confidenceThreshold: 0.5,
+      });
+
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
+      };
+
+      const result = await service.handleFileChange(event, mockParser);
+      expect(result).toBeNull();
+      expect(mockGenerator.generate).not.toHaveBeenCalled();
+    });
+
+    it('converts new file with no saved metadata', async () => {
+      const page = createTestPage({ id: 'page-1', imageData: new Uint8Array([10, 20, 30]) });
+      const note = createTestNote({ pages: [page] });
+
+      const mockParser = createMockParserPort();
+      vi.mocked(mockParser.parse).mockResolvedValue(note);
+
+      const mockGenerator = createMockGeneratorPort();
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'new-content' }),
+      );
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
+
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(parsers, mockGenerator, null, mockMetadata, {
+        confidenceThreshold: 50,
+      });
+
+      const testData = new ArrayBuffer(8);
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(testData),
+      };
+
+      const result = await service.handleFileChange(event, mockParser);
+
+      expect(result).not.toBeNull();
+      expect(result?.content).toBe('new-content');
+      expect(result?.metadata.source).toBe(event.id);
+      expect(result?.metadata.parser).toBe('test-parser');
+      expect(result?.metadata.fileHash).toBe(await sha1Hex(new Uint8Array(testData)));
+      expect(result?.metadata.pageHashes).toHaveLength(1);
+      expect(result?.metadata.pageHashes?.[0].id).toBe('page-1');
+      expect(result?.metadata.keep).toBe(false);
+    });
+
+    it('performs full regeneration when parser changed', async () => {
+      const page = createTestPage({ id: 'page-1', imageData: new Uint8Array([1, 2, 3]) });
+      const note = createTestNote({ pages: [page] });
+      const pageHash = await sha1Hex(page.imageData);
+
+      const mockParser: ParserPort = {
+        id: 'new-parser',
+        extensions: ['.note'],
+        parse: vi.fn<ParserPort['parse']>().mockResolvedValue(note),
+      };
+
+      const mockGenerator = createMockGeneratorPort();
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'regenerated' }),
+      );
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
+        source: '/path/to/file.note',
+        parser: 'old-parser',
+        fileHash: 'different-hash',
+        pageHashes: [{ id: 'page-1', hash: pageHash }],
+        keep: false,
+      });
+
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(parsers, mockGenerator, null, mockMetadata, {
+        confidenceThreshold: 50,
+      });
+
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(16)),
+      };
+
+      const result = await service.handleFileChange(event, mockParser);
+
+      expect(result).not.toBeNull();
+      expect(result?.content).toBe('regenerated');
+      expect(result?.metadata.parser).toBe('new-parser');
     });
 
     it('uses parser override when provided', async () => {
@@ -125,12 +280,7 @@ describe('PetrifyService', () => {
       const overrideParser = createMockParserPort();
       const parsers = new Map<string, ParserPort>([['.note', defaultParser]]);
 
-      const note: Note = {
-        title: 'override',
-        pages: [],
-        createdAt: new Date(),
-        modifiedAt: new Date(),
-      };
+      const note = createTestNote();
       vi.mocked(defaultParser.parse).mockResolvedValue(note);
       vi.mocked(overrideParser.parse).mockResolvedValue(note);
 
@@ -150,7 +300,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: Date.now(),
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
@@ -179,7 +328,9 @@ describe('PetrifyService', () => {
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
         source: null,
-        mtime: null,
+        parser: 'test-parser',
+        fileHash: null,
+        pageHashes: null,
         keep: true,
       });
 
@@ -195,7 +346,9 @@ describe('PetrifyService', () => {
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
         source: '/path/to/file.note',
-        mtime: 1000,
+        parser: 'test-parser',
+        fileHash: 'abc123',
+        pageHashes: [{ id: 'page-1', hash: 'hash1' }],
       });
 
       const service = new PetrifyService(new Map(), createMockGeneratorPort(), null, mockMetadata, {
@@ -272,33 +425,6 @@ describe('PetrifyService', () => {
   });
 
   describe('conversion flow', () => {
-    function createTestPage(overrides?: Partial<Page>): Page {
-      return {
-        id: 'page-1',
-        order: 0,
-        width: 100,
-        height: 100,
-        imageData: new Uint8Array([1, 2, 3]),
-        ...overrides,
-      };
-    }
-
-    function createTestNote(overrides?: Partial<Note>): Note {
-      return {
-        title: 'test',
-        pages: [createTestPage()],
-        createdAt: new Date(),
-        modifiedAt: new Date(),
-        ...overrides,
-      };
-    }
-
-    function createMockOcrPort(): OcrPort {
-      return {
-        recognize: vi.fn(),
-      };
-    }
-
     it('converts without OCR', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
@@ -317,26 +443,26 @@ describe('PetrifyService', () => {
         confidenceThreshold: 50,
       });
 
+      const testData = new ArrayBuffer(8);
       const event: FileChangeEvent = {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
-        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(testData),
       };
 
       const result = await service.handleFileChange(event, mockParser);
 
       expect(result).not.toBeNull();
       expect(result?.content).toBe('test-content');
-      expect(result?.metadata).toEqual({
-        source: event.id,
-        mtime: event.mtime,
-        keep: false,
-      });
+      expect(result?.metadata.source).toBe(event.id);
+      expect(result?.metadata.parser).toBe('test-parser');
+      expect(result?.metadata.fileHash).toBe(await sha1Hex(new Uint8Array(testData)));
+      expect(result?.metadata.pageHashes).toBeDefined();
+      expect(result?.metadata.keep).toBe(false);
     });
 
-    it('converts with OCR', async () => {
+    it('converts with OCR and includes pageId in results', async () => {
       const mockParser = createMockParserPort();
       const note = createTestNote();
       vi.mocked(mockParser.parse).mockResolvedValue(note);
@@ -365,7 +491,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
@@ -375,6 +500,8 @@ describe('PetrifyService', () => {
       const ocrResults = generateCall[2];
       expect(ocrResults).toBeDefined();
       expect(ocrResults?.length).toBeGreaterThan(0);
+      expect(ocrResults?.[0].pageId).toBe('page-1');
+      expect(ocrResults?.[0].pageIndex).toBe(0);
       expect(ocrResults?.[0].texts).toContain('hello');
     });
 
@@ -390,7 +517,6 @@ describe('PetrifyService', () => {
 
       const mockMetadata = createMockMetadataPort();
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue(undefined);
-      vi.mocked(mockMetadata.formatMetadata).mockReturnValue('');
 
       const mockOcr = createMockOcrPort();
       vi.mocked(mockOcr.recognize).mockResolvedValue({
@@ -410,7 +536,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
@@ -449,7 +574,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
@@ -501,7 +625,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
@@ -511,7 +634,9 @@ describe('PetrifyService', () => {
       const generateCall = vi.mocked(mockGenerator.generate).mock.calls[0];
       const ocrResults = generateCall[2];
       expect(ocrResults).toHaveLength(2);
+      expect(ocrResults?.[0].pageId).toBe('page-1');
       expect(ocrResults?.[0].texts).toContain('page1-text');
+      expect(ocrResults?.[1].pageId).toBe('page-2');
       expect(ocrResults?.[1].texts).toContain('page2-text');
     });
 
@@ -551,7 +676,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
@@ -560,9 +684,71 @@ describe('PetrifyService', () => {
       expect(mockOcr.recognize).toHaveBeenCalledTimes(1);
     });
 
-    it('convertDroppedFile flow', async () => {
+    it('only runs OCR on changed/added pages for incremental updates', async () => {
+      const page1 = createTestPage({
+        id: 'page-1',
+        order: 0,
+        imageData: new Uint8Array([1, 2, 3]),
+      });
+      const page2 = createTestPage({
+        id: 'page-2',
+        order: 1,
+        imageData: new Uint8Array([4, 5, 6]),
+      });
+      const note = createTestNote({ pages: [page1, page2] });
+
+      const page1Hash = await sha1Hex(page1.imageData);
+
       const mockParser = createMockParserPort();
-      const note = createTestNote();
+      vi.mocked(mockParser.parse).mockResolvedValue(note);
+
+      const mockGenerator = createMockGeneratorPort();
+      vi.mocked(mockGenerator.generate).mockReturnValue(
+        mockGeneratorOutput({ content: 'incremental-content' }),
+      );
+
+      const mockMetadata = createMockMetadataPort();
+      vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
+        source: '/path/to/file.note',
+        parser: 'test-parser',
+        fileHash: 'old-file-hash',
+        pageHashes: [
+          { id: 'page-1', hash: page1Hash },
+          { id: 'page-2', hash: 'old-page2-hash' },
+        ],
+        keep: false,
+      });
+
+      const mockOcr = createMockOcrPort();
+      vi.mocked(mockOcr.recognize).mockResolvedValue({
+        text: 'page2-text',
+        confidence: 90,
+        regions: [{ text: 'page2-text', confidence: 90, x: 0, y: 0, width: 50, height: 20 }],
+      });
+
+      const parsers = new Map<string, ParserPort>([['.note', mockParser]]);
+      const service = new PetrifyService(parsers, mockGenerator, mockOcr, mockMetadata, {
+        confidenceThreshold: 50,
+      });
+
+      const event: FileChangeEvent = {
+        id: '/path/to/file.note',
+        name: 'file.note',
+        extension: '.note',
+        readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(16)),
+      };
+
+      const result = await service.handleFileChange(event, mockParser);
+
+      expect(result).not.toBeNull();
+      // Only page-2 changed, so OCR should run once (for page-2 only)
+      expect(mockOcr.recognize).toHaveBeenCalledTimes(1);
+    });
+
+    it('convertDroppedFile returns metadata with hashes', async () => {
+      const mockParser = createMockParserPort();
+      const page = createTestPage({ id: 'page-1', imageData: new Uint8Array([10, 20]) });
+      const note = createTestNote({ pages: [page] });
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
@@ -580,35 +766,17 @@ describe('PetrifyService', () => {
       const result = await service.convertDroppedFile(data, mockParser, 'dropped');
 
       expect(result.content).toBe('dropped-content');
-      expect(result.metadata).toEqual({
-        source: null,
-        mtime: null,
-        keep: true,
-      });
+      expect(result.metadata.source).toBeNull();
+      expect(result.metadata.parser).toBe('test-parser');
+      expect(result.metadata.fileHash).toBe(await sha1Hex(new Uint8Array(data)));
+      expect(result.metadata.pageHashes).toHaveLength(1);
+      expect(result.metadata.pageHashes?.[0].id).toBe('page-1');
+      expect(result.metadata.keep).toBe(true);
       expect(mockParser.parse).toHaveBeenCalledWith(data);
     });
   });
 
   describe('error propagation', () => {
-    function createTestPage(): Page {
-      return {
-        id: 'page-1',
-        order: 0,
-        width: 100,
-        height: 100,
-        imageData: new Uint8Array([1, 2, 3]),
-      };
-    }
-
-    function createTestNote(): Note {
-      return {
-        title: 'test',
-        pages: [createTestPage()],
-        createdAt: new Date(),
-        modifiedAt: new Date(),
-      };
-    }
-
     it('wraps parse failure as ConversionError (phase=parse)', async () => {
       const mockParser = createMockParserPort();
       vi.mocked(mockParser.parse).mockRejectedValue(new ParseError('test'));
@@ -625,7 +793,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
@@ -660,7 +827,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 
@@ -692,7 +858,6 @@ describe('PetrifyService', () => {
         id: '/path/to/file.note',
         name: 'file.note',
         extension: '.note',
-        mtime: 2000,
         readData: vi.fn<() => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(8)),
       };
 

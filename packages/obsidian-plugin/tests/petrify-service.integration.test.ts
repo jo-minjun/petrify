@@ -5,6 +5,7 @@ import {
   type FileChangeEvent,
   type FileGeneratorPort,
   type GeneratorOutput,
+  type IncrementalInput,
   type Note,
   type OcrPort,
   type OcrResult,
@@ -24,11 +25,12 @@ class FakeMetadata implements ConversionMetadataPort {
   }
 
   formatMetadata(metadata: ConversionMetadata): string {
-    return `---\nsource: ${metadata.source}\nmtime: ${metadata.mtime}\n---\n`;
+    return `---\nsource: ${metadata.source}\nfileHash: ${metadata.fileHash}\n---\n`;
   }
 }
 
 class FakeParser implements ParserPort {
+  readonly id = 'fake-parser';
   readonly extensions = ['.note'];
   private readonly noteToReturn: Note;
   private shouldThrow: Error | null = null;
@@ -67,6 +69,10 @@ class FakeGenerator implements FileGeneratorPort {
     }
 
     return { content, assets, extension: this.extension };
+  }
+
+  incrementalUpdate(_input: IncrementalInput, note: Note, outputName: string): GeneratorOutput {
+    return this.generate(note, outputName);
   }
 }
 
@@ -116,7 +122,6 @@ function createFileChangeEvent(overrides?: Partial<FileChangeEvent>): FileChange
     id: '/path/to/file.note',
     name: 'file.note',
     extension: '.note',
-    mtime: 2000,
     readData: async () => new ArrayBuffer(8),
     ...overrides,
   };
@@ -178,7 +183,7 @@ describe('PetrifyService integration tests (plugin level)', () => {
     expect(result?.content).not.toContain('low');
   });
 
-  it('metadata round-trip: skips when mtime has not changed', async () => {
+  it('metadata round-trip: skips when fileHash has not changed', async () => {
     const fakeParser = new FakeParser(createNote());
     const fakeMetadata = new FakeMetadata();
 
@@ -190,11 +195,12 @@ describe('PetrifyService integration tests (plugin level)', () => {
       { confidenceThreshold: 50 },
     );
 
-    const event = createFileChangeEvent({ mtime: 1000 });
+    const event = createFileChangeEvent();
     const firstResult = await service.handleFileChange(event, fakeParser);
     expect(firstResult).not.toBeNull();
-
-    fakeMetadata.store.set('/path/to/file.note', { source: '/path/to/file.note', mtime: 1000 });
+    if (firstResult) {
+      fakeMetadata.store.set('/path/to/file.note', firstResult.metadata);
+    }
 
     const secondResult = await service.handleFileChange(event, fakeParser);
     expect(secondResult).toBeNull();
@@ -237,7 +243,9 @@ describe('PetrifyService integration tests (plugin level)', () => {
     const fakeMetadata = new FakeMetadata();
     fakeMetadata.store.set('output/file.fake.md', {
       source: '/path/to/file.note',
-      mtime: 1000,
+      parser: null,
+      fileHash: null,
+      pageHashes: null,
     });
 
     const service = new PetrifyService(new Map(), new FakeGenerator(), null, fakeMetadata, {

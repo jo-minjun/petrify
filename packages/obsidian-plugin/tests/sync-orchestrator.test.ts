@@ -80,17 +80,20 @@ function createMockGenerator(): {
   displayName: string;
   extension: string;
   generate: ReturnType<typeof vi.fn>;
+  incrementalUpdate: ReturnType<typeof vi.fn>;
 } {
   return {
     id: 'excalidraw',
     displayName: 'Excalidraw',
     extension: '.excalidraw.md',
     generate: vi.fn(),
+    incrementalUpdate: vi.fn(),
   };
 }
 
 function createMockParser(extensions: string[]): ParserPort {
   return {
+    id: 'test-parser',
     extensions,
     parse: vi.fn(),
   };
@@ -152,12 +155,11 @@ describe('SyncOrchestrator', () => {
     expect(parser).toBeDefined();
 
     mockFs.readdir.mockResolvedValue(entries('file.note'));
-    mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue({
       content: 'test',
       assets: new Map(),
-      metadata: { source: '/watch/file.note', mtime: 1000 },
+      metadata: { source: '/watch/file.note', parser: null, fileHash: null, pageHashes: null },
     });
 
     const result = await orchestrator.syncAll([createDefaultMapping()]);
@@ -191,12 +193,11 @@ describe('SyncOrchestrator', () => {
     );
 
     mockFs.readdir.mockResolvedValue(entries('file.note'));
-    mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue({
       content: 'test',
       assets: new Map(),
-      metadata: { source: '/watch/file.note', mtime: 1000 },
+      metadata: { source: '/watch/file.note', parser: null, fileHash: null, pageHashes: null },
     });
 
     const result = await orchestrator.syncAll([createDefaultMapping({ parserId: 'supernote-x' })]);
@@ -217,19 +218,8 @@ describe('SyncOrchestrator', () => {
     expect(syncLog.error).toHaveBeenCalledWith('Directory unreadable: /watch', expect.any(Error));
   });
 
-  it('increments failed when file stat fails', async () => {
-    mockFs.readdir.mockResolvedValue(entries('file.note'));
-    mockFs.stat.mockRejectedValue(new Error('EACCES'));
-
-    const result = await orchestrator.syncAll([createDefaultMapping()]);
-
-    expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
-    expect(syncLog.error).toHaveBeenCalledWith('File stat failed: file.note', expect.any(Error));
-  });
-
   it('increments failed with ConversionError message when conversion fails', async () => {
     mockFs.readdir.mockResolvedValue(entries('file.note'));
-    mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockRejectedValue(
       new ConversionError('parse', new Error('invalid format')),
@@ -246,7 +236,6 @@ describe('SyncOrchestrator', () => {
 
   it('skips already converted files (handleFileChange returns null)', async () => {
     mockFs.readdir.mockResolvedValue(entries('file.note'));
-    mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue(null);
 
@@ -262,7 +251,9 @@ describe('SyncOrchestrator', () => {
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',
-      mtime: 1000,
+      parser: null,
+      fileHash: null,
+      pageHashes: null,
     });
     mockFs.access.mockRejectedValue(new Error('ENOENT'));
     mockVault.trash.mockResolvedValue(undefined);
@@ -316,12 +307,11 @@ describe('SyncOrchestrator', () => {
 
   it('works correctly when outputDir is empty string (vault root)', async () => {
     mockFs.readdir.mockResolvedValue(entries('file.note'));
-    mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue({
       content: 'test',
       assets: new Map(),
-      metadata: { source: '/watch/file.note', mtime: 1000 },
+      metadata: { source: '/watch/file.note', parser: null, fileHash: null, pageHashes: null },
     });
 
     const mapping = createDefaultMapping({ outputDir: '' });
@@ -345,12 +335,11 @@ describe('SyncOrchestrator', () => {
     const mapping2 = createDefaultMapping({ watchDir: '/watch2' });
 
     mockFs.readdir.mockResolvedValue(entries('file.note'));
-    mockFs.stat.mockResolvedValue({ mtimeMs: 1000 });
     mockFs.readFile.mockResolvedValue(new ArrayBuffer(8));
     mockService.handleFileChange.mockResolvedValue({
       content: 'test',
       assets: new Map(),
-      metadata: { source: '/watch/file.note', mtime: 1000 },
+      metadata: { source: '/watch/file.note', parser: null, fileHash: null, pageHashes: null },
     });
 
     const result = await orchestrator.syncAll([mapping1, mapping2]);
@@ -365,7 +354,9 @@ describe('SyncOrchestrator', () => {
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',
-      mtime: 1000,
+      parser: null,
+      fileHash: null,
+      pageHashes: null,
     });
     mockFs.access.mockRejectedValue(new Error('ENOENT'));
     mockVault.trash.mockResolvedValue(undefined);
@@ -392,7 +383,9 @@ describe('SyncOrchestrator', () => {
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: null,
-      mtime: null,
+      parser: null,
+      fileHash: null,
+      pageHashes: null,
     });
 
     const result = await orchestrator.syncAll([createDefaultMapping()]);
@@ -408,7 +401,9 @@ describe('SyncOrchestrator', () => {
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: '/watch/file.note',
-      mtime: 1000,
+      parser: null,
+      fileHash: null,
+      pageHashes: null,
     });
     mockFs.access.mockResolvedValue(undefined);
 
@@ -421,7 +416,6 @@ describe('SyncOrchestrator', () => {
   it('readData calls SyncFileSystem.readFile', async () => {
     const testBuffer = new ArrayBuffer(16);
     mockFs.readdir.mockResolvedValue(entries('file.note'));
-    mockFs.stat.mockResolvedValue({ mtimeMs: 2000 });
     mockFs.readFile.mockResolvedValue(testBuffer);
     mockService.handleFileChange.mockImplementation(
       async (event: { readData: () => Promise<ArrayBuffer> }) => {
@@ -430,7 +424,7 @@ describe('SyncOrchestrator', () => {
         return {
           content: 'test',
           assets: new Map(),
-          metadata: { source: '/watch/file.note', mtime: 2000 },
+          metadata: { source: '/watch/file.note', parser: null, fileHash: null, pageHashes: null },
         };
       },
     );

@@ -36,15 +36,17 @@ describe('MarkdownFileGenerator', () => {
   it('places image at the top and OCR text at the bottom', () => {
     const generator = new MarkdownFileGenerator();
     const note = createNote([createPage({ id: 'p1' })]);
-    const ocrResults = [{ pageIndex: 0, texts: ['안녕하세요'] }];
+    const ocrResults = [{ pageId: 'p1', pageIndex: 0, texts: ['안녕하세요'] }];
     const output = generator.generate(note, 'test-note', ocrResults);
 
     const imageIndex = output.content.indexOf('![[');
     const separatorIndex = output.content.indexOf('---');
+    const markerIndex = output.content.indexOf('<!-- page: p1 -->');
     const ocrIndex = output.content.indexOf('안녕하세요');
 
     expect(imageIndex).toBeLessThan(separatorIndex);
-    expect(separatorIndex).toBeLessThan(ocrIndex);
+    expect(separatorIndex).toBeLessThan(markerIndex);
+    expect(markerIndex).toBeLessThan(ocrIndex);
   });
 
   it('uses assets path for image references', () => {
@@ -84,12 +86,14 @@ describe('MarkdownFileGenerator', () => {
       createPage({ id: 'p2', order: 1 }),
     ]);
     const ocrResults = [
-      { pageIndex: 0, texts: ['첫번째 페이지'] },
-      { pageIndex: 1, texts: ['두번째 페이지'] },
+      { pageId: 'p1', pageIndex: 0, texts: ['첫번째 페이지'] },
+      { pageId: 'p2', pageIndex: 1, texts: ['두번째 페이지'] },
     ];
     const output = generator.generate(note, 'test', ocrResults);
 
+    expect(output.content).toContain('<!-- page: p1 -->');
     expect(output.content).toContain('첫번째 페이지');
+    expect(output.content).toContain('<!-- page: p2 -->');
     expect(output.content).toContain('두번째 페이지');
   });
 });

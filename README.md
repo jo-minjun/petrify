@@ -75,7 +75,7 @@ Restart Obsidian and enable **Petrify** in Settings > Community Plugins.
 - **Sync command**: Manually trigger a full sync via the ribbon icon or command palette (`Petrify: Sync`)
 - **OCR**: Extract handwritten text so your notes become searchable in Obsidian
   ![OCR text extracted from handwriting, searchable in Obsidian](docs/assets/ocr-text.png)
-- **Duplicate prevention**: Skips already-converted files by comparing modification time
+- **Duplicate prevention**: Skips already-converted files by comparing file and page content hashes
 - **Source delete sync**: Optionally remove converted files when the source file is deleted
 - **Keep protection**: Mark converted files as protected via frontmatter (`keep: true`) to prevent deletion or re-conversion — toggle via command palette or file context menu
 

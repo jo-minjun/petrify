@@ -1,7 +1,14 @@
-import type { FileGeneratorPort, GeneratorOutput, Note, OcrTextResult } from '@petrify/core';
+import type {
+  FileGeneratorPort,
+  GeneratorOutput,
+  IncrementalInput,
+  Note,
+  OcrTextResult,
+} from '@petrify/core';
+import { mergeOcrResults, sha1Hex } from '@petrify/core';
 import { ExcalidrawGenerator } from './excalidraw-generator.js';
 import { ExcalidrawMdGenerator } from './md-generator.js';
-import { sha1Hex } from './sha1.js';
+import { extractOcrByPageId } from './ocr-extractor.js';
 
 export class ExcalidrawFileGenerator implements FileGeneratorPort {
   readonly id = 'excalidraw';
@@ -25,6 +32,16 @@ export class ExcalidrawFileGenerator implements FileGeneratorPort {
       assets,
       extension: '.excalidraw.md',
     };
+  }
+
+  async incrementalUpdate(
+    input: IncrementalInput,
+    note: Note,
+    outputName: string,
+  ): Promise<GeneratorOutput> {
+    const existingOcr = extractOcrByPageId(input.existingContent);
+    const ocrResults = mergeOcrResults(note, existingOcr, input.updates, input.removedPageIds);
+    return this.generate(note, outputName, ocrResults);
   }
 
   private async extractAssets(

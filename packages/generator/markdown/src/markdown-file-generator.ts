@@ -1,4 +1,12 @@
-import type { FileGeneratorPort, GeneratorOutput, Note, OcrTextResult } from '@petrify/core';
+import type {
+  FileGeneratorPort,
+  GeneratorOutput,
+  IncrementalInput,
+  Note,
+  OcrTextResult,
+} from '@petrify/core';
+import { mergeOcrResults } from '@petrify/core';
+import { extractOcrByPageId } from './ocr-extractor.js';
 
 export class MarkdownFileGenerator implements FileGeneratorPort {
   readonly id = 'markdown';
@@ -20,6 +28,7 @@ export class MarkdownFileGenerator implements FileGeneratorPort {
 
       const pageOcr = ocrResults?.find((r) => r.pageIndex === page.order);
       if (pageOcr && pageOcr.texts.length > 0) {
+        ocrParts.push(`<!-- page: ${pageOcr.pageId} -->`);
         ocrParts.push(pageOcr.texts.join('\n'));
       }
     }
@@ -33,5 +42,11 @@ export class MarkdownFileGenerator implements FileGeneratorPort {
       assets,
       extension: '.md',
     };
+  }
+
+  incrementalUpdate(input: IncrementalInput, note: Note, outputName: string): GeneratorOutput {
+    const existingOcr = extractOcrByPageId(input.existingContent);
+    const ocrResults = mergeOcrResults(note, existingOcr, input.updates, input.removedPageIds);
+    return this.generate(note, outputName, ocrResults);
   }
 }

@@ -12,7 +12,9 @@ export class FrontmatterMetadataAdapter implements ConversionMetadataPort {
 
       return {
         source: meta.source,
-        mtime: meta.mtime,
+        parser: meta.parser,
+        fileHash: meta.fileHash,
+        pageHashes: meta.pageHashes,
         keep: meta.keep,
       };
     } catch {
@@ -23,7 +25,9 @@ export class FrontmatterMetadataAdapter implements ConversionMetadataPort {
   formatMetadata(metadata: ConversionMetadata): string {
     return createFrontmatter({
       source: metadata.source,
-      mtime: metadata.mtime,
+      parser: metadata.parser,
+      fileHash: metadata.fileHash,
+      pageHashes: metadata.pageHashes,
       keep: metadata.keep,
     });
   }

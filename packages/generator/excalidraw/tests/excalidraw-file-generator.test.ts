@@ -1,6 +1,6 @@
+import { sha1Hex } from '@petrify/core';
 import { describe, expect, it } from 'vitest';
 import { ExcalidrawFileGenerator } from '../src/excalidraw-file-generator.js';
-import { sha1Hex } from '../src/sha1.js';
 import { createNote, createPage } from './helpers.js';
 
 const SHA1_HEX_RE = /^[0-9a-f]{40}$/;

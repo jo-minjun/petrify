@@ -109,12 +109,14 @@ describe('OCR Text Section', () => {
       appState: { viewBackgroundColor: '#ffffff' },
       files: {},
     };
-    const ocrResults: OcrTextResult[] = [{ pageIndex: 0, texts: ['테스트 텍스트'] }];
+    const ocrResults: OcrTextResult[] = [
+      { pageId: 'page-1', pageIndex: 0, texts: ['테스트 텍스트'] },
+    ];
 
     const md = generator.generate(data, undefined, ocrResults);
 
     expect(md).toContain('## OCR Text');
-    expect(md).toContain('<!-- Page 1 -->');
+    expect(md).toContain('<!-- page: page-1 -->');
     expect(md).toContain('테스트 텍스트');
     const ocrIndex = md.indexOf('## OCR Text');
     const excalidrawIndex = md.indexOf('# Excalidraw Data');
@@ -135,7 +137,7 @@ describe('OCR Text Section', () => {
     const md = generator.generate(data);
 
     expect(md).toContain('## OCR Text');
-    expect(md).not.toContain('<!-- Page');
+    expect(md).not.toContain('<!-- page:');
   });
 
   it('includes empty ## OCR Text section when OCR results array is empty', () => {
@@ -152,7 +154,7 @@ describe('OCR Text Section', () => {
     const md = generator.generate(data, undefined, []);
 
     expect(md).toContain('## OCR Text');
-    expect(md).not.toContain('<!-- Page');
+    expect(md).not.toContain('<!-- page:');
   });
 
   it('includes single page OCR results in generate() output', () => {
@@ -166,12 +168,12 @@ describe('OCR Text Section', () => {
       files: {},
     };
     const ocrResults: OcrTextResult[] = [
-      { pageIndex: 0, texts: ['첫 번째 텍스트', '두 번째 텍스트'] },
+      { pageId: 'page-1', pageIndex: 0, texts: ['첫 번째 텍스트', '두 번째 텍스트'] },
     ];
 
     const md = generator.generate(data, undefined, ocrResults);
 
-    expect(md).toContain('<!-- Page 1 -->');
+    expect(md).toContain('<!-- page: page-1 -->');
     expect(md).toContain('첫 번째 텍스트');
     expect(md).toContain('두 번째 텍스트');
   });
@@ -187,15 +189,15 @@ describe('OCR Text Section', () => {
       files: {},
     };
     const ocrResults: OcrTextResult[] = [
-      { pageIndex: 0, texts: ['페이지1 텍스트'] },
-      { pageIndex: 1, texts: ['페이지2 텍스트A', '페이지2 텍스트B'] },
+      { pageId: 'page-1', pageIndex: 0, texts: ['페이지1 텍스트'] },
+      { pageId: 'page-2', pageIndex: 1, texts: ['페이지2 텍스트A', '페이지2 텍스트B'] },
     ];
 
     const md = generator.generate(data, undefined, ocrResults);
 
-    expect(md).toContain('<!-- Page 1 -->');
+    expect(md).toContain('<!-- page: page-1 -->');
     expect(md).toContain('페이지1 텍스트');
-    expect(md).toContain('<!-- Page 2 -->');
+    expect(md).toContain('<!-- page: page-2 -->');
     expect(md).toContain('페이지2 텍스트A');
     expect(md).toContain('페이지2 텍스트B');
   });

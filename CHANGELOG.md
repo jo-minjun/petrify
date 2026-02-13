@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Page-level hash-based change detection (`sha1Hex`, `diffPages`) replaces mtime-based conversion skipping
+- `incrementalUpdate` method on `FileGeneratorPort` for incremental output generation
+- `ConversionMetadataPort` now stores `parser`, `fileHash`, and per-page hashes instead of `mtime`
+- OCR markers use page ID format (`<!-- page: {id} -->`) for stable identification across page reordering
+
+### Changed
+
+- `PetrifyService.handleFileChange` uses 2-stage hash comparison (fileHash → pageHashes) to detect changes
+- Only changed/added pages trigger OCR re-processing; unchanged pages reuse existing OCR text
+- `FileChangeEvent` no longer carries `mtime`
+- Frontmatter format updated to store `parser`, `fileHash`, and `pageHashes`
+
+### Removed
+
+- Removed mtime-based conversion skip logic from `PetrifyService`
+- Removed duplicate `sha1.ts` from `@petrify/generator-excalidraw` (now uses `@petrify/core` `sha1Hex`)
+
 ## [0.4.0] - 2026-02-13
 
 ### Added

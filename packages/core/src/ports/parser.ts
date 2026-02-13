@@ -1,6 +1,9 @@
 import type { Note } from '../models/index.js';
 
 export interface ParserPort {
+  /** Unique identifier for this parser */
+  readonly id: string;
+
   /** Supported file extensions */
   readonly extensions: string[];
 
