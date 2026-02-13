@@ -30,6 +30,7 @@ Petrify bridges this gap. It converts handwritten note files into Excalidraw or 
 This matters even more as personal AI assistants like [OpenClaw](https://github.com/openclaw/openclaw) become mainstream. A unified knowledge base means your AI can draw from everything you've written — handwritten or typed — to give more personalized answers.
 
 Petrify currently supports Viwoods (.note) and PDF (.pdf) files, and its plugin architecture makes it straightforward to add support for other handwriting apps in the future.
+With the PDF parser, you can sync and convert notes from any device that supports PDF export by selecting the `pdf` parser in your mapping.
 
 ## Obsidian Plugin
 
