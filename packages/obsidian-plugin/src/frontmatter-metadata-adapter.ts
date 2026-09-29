@@ -20,6 +20,7 @@ export class FrontmatterMetadataAdapter implements ConversionMetadataPort {
 
       return {
         source: meta.source,
+        ...(meta.sourceFolder && { sourceFolder: meta.sourceFolder }),
         parser: meta.parser,
         fileHash: meta.fileHash,
         pageHashes: meta.pageHashes,
@@ -33,6 +34,7 @@ export class FrontmatterMetadataAdapter implements ConversionMetadataPort {
   formatMetadata(metadata: ConversionMetadata): string {
     return createFrontmatter({
       source: metadata.source,
+      sourceFolder: metadata.sourceFolder,
       parser: metadata.parser,
       fileHash: metadata.fileHash,
       pageHashes: metadata.pageHashes,

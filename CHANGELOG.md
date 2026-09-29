@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Preserved heading-like OCR text during incremental Excalidraw updates.
+- Recorded the producing Drive folder in conversion metadata and required matching ownership before deletion; legacy output without folder ownership is preserved until reconverted.
 - Fixed PDF conversion failing with a missing worker configuration in Obsidian by using its built-in PDF.js loader.
 - Prevented unsafe page IDs from escaping generated asset folders and ensured binary assets use only their intended bytes.
 - Preserved unchanged OCR text during incremental conversion and reprocessed files when the selected parser changes.

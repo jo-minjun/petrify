@@ -109,6 +109,7 @@ export class GoogleDriveWatcher implements WatcherPort {
 
     const event: FileChangeEvent = {
       id: `gdrive://${file.id}`,
+      sourceFolder: `gdrive://${this.folderId}`,
       name: file.name,
       extension: ext,
       readData: () => this.client.downloadFile(file.id),
@@ -124,6 +125,7 @@ export class GoogleDriveWatcher implements WatcherPort {
   private async emitFileDelete(fileId: string, name: string, extension: string): Promise<void> {
     const event: FileDeleteEvent = {
       id: `gdrive://${fileId}`,
+      sourceFolder: `gdrive://${this.folderId}`,
       name,
       extension,
     };

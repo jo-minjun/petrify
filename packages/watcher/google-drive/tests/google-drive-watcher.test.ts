@@ -83,6 +83,7 @@ describe('GoogleDriveWatcher', () => {
     expect(events).toHaveLength(1);
     expect(events[0].name).toBe('test.note');
     expect(events[0].id).toBe('gdrive://f1');
+    expect(events[0].sourceFolder).toBe('gdrive://test-folder-id');
     expect(events[0].extension).toBe('.note');
   });
 
@@ -161,6 +162,7 @@ describe('GoogleDriveWatcher', () => {
     await vi.advanceTimersByTimeAsync(30000);
     expect(onDelete).toHaveBeenCalledWith({
       id: 'gdrive://f1',
+      sourceFolder: 'gdrive://test-folder-id',
       name: 'deleted.note',
       extension: '.note',
     });

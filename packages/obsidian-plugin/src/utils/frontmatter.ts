@@ -1,19 +1,13 @@
-import type { PageHash } from '@petrify/core';
+import type { ConversionMetadata, PageHash } from '@petrify/core';
 
-export interface PetrifyFrontmatter {
-  readonly source: string | null;
-  readonly parser: string | null;
-  readonly fileHash: string | null;
-  readonly pageHashes: readonly PageHash[] | null;
-  readonly keep?: boolean;
-}
+export type PetrifyFrontmatter = ConversionMetadata;
 
 export function createFrontmatter(meta: PetrifyFrontmatter): string {
   const keep = meta.keep ?? false;
   const pageHashesSection = formatPageHashes(meta.pageHashes);
   return `---
 petrify:
-  source: ${meta.source}
+  source: ${meta.source}${meta.sourceFolder ? `\n  sourceFolder: ${meta.sourceFolder}` : ''}
   parser: ${meta.parser}
   fileHash: ${meta.fileHash}
   keep: ${keep}${pageHashesSection}
@@ -31,12 +25,14 @@ export function parseFrontmatter(content: string): PetrifyFrontmatter | null {
   if (!hasField(frontmatter, 'source')) return null;
 
   const source = extractField(frontmatter, /source:\s*(.+)/);
+  const sourceFolder = extractField(frontmatter, /^ {2}sourceFolder:[ \t]*(.+)$/m);
   const parser = extractField(frontmatter, /parser:\s*(.+)/);
   const fileHash = extractField(frontmatter, /fileHash:\s*(.+)/);
   const keepMatch = frontmatter.match(/keep:\s*(true|false)/);
 
   return {
     source,
+    ...(sourceFolder && { sourceFolder }),
     parser,
     fileHash,
     pageHashes: parsePageHashes(frontmatter),

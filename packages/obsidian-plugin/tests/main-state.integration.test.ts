@@ -5,7 +5,7 @@ import { runInNewContext } from 'node:vm';
 import type { FileChangeEvent, FileDeleteEvent, Note } from '@petrify/core';
 import { build } from 'esbuild';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createFrontmatter } from '../src/utils/frontmatter.js';
+import { createFrontmatter, parseFrontmatter } from '../src/utils/frontmatter.js';
 
 let bundle: string;
 beforeAll(async () => {
@@ -30,11 +30,17 @@ beforeAll(async () => {
   bundle = result.outputFiles[0].text;
 });
 
-async function startPlugin(source: 'local' | 'drive', keep: boolean, savedSource?: string) {
+async function startPlugin(
+  source: 'local' | 'drive',
+  keep: boolean,
+  savedSource?: string,
+  sourceFolder?: string,
+) {
   const id = source === 'drive' ? 'gdrive://file123' : '/notes/test.pdf';
   const path = 'Converted/test.md';
   const original = `${createFrontmatter({
     source: savedSource ?? id,
+    sourceFolder,
     parser: 'pdf',
     fileHash: 'old',
     pageHashes: null,
@@ -202,6 +208,43 @@ async function startPlugin(source: 'local' | 'drive', keep: boolean, savedSource
 }
 
 describe('plugin persisted conversion state', () => {
+  it('persists the producing Drive folder on conversion', async () => {
+    const state = await startPlugin('drive', false);
+    try {
+      await state.watcher.change({
+        id: state.id,
+        sourceFolder: 'gdrive://folder123',
+        name: 'test.pdf',
+        extension: '.pdf',
+        readData: () => Promise.resolve(new Uint8Array([1, 2]).buffer),
+      });
+      expect(parseFrontmatter(state.files.get(`/vault/${state.path}`) ?? '')).toMatchObject({
+        source: state.id,
+        sourceFolder: 'gdrive://folder123',
+      });
+    } finally {
+      state.plugin.onunload();
+    }
+  });
+
+  it.each([
+    undefined,
+    'gdrive://other-folder',
+    'gdrive://folder123',
+  ])('only deletes Drive output owned by the emitting folder: %s', async (sourceFolder) => {
+    const state = await startPlugin('drive', false, undefined, sourceFolder);
+    try {
+      await state.watcher.deleted({
+        id: state.id,
+        sourceFolder: 'gdrive://folder123',
+        name: 'test.pdf',
+        extension: '.pdf',
+      });
+      expect(state.deleted).toEqual(sourceFolder === 'gdrive://folder123' ? [state.path] : []);
+    } finally {
+      state.plugin.onunload();
+    }
+  });
   it('preserves a protected Drive output after plugin initialization', async () => {
     const state = await startPlugin('drive', true);
     try {
@@ -211,6 +254,22 @@ describe('plugin persisted conversion state', () => {
         extension: '.pdf',
         readData: () => Promise.resolve(new Uint8Array([1, 2]).buffer),
       });
+      expect(state.files.get(`/vault/${state.path}`)).toBe(state.original);
+    } finally {
+      state.plugin.onunload();
+    }
+  });
+
+  it('preserves protected Drive output even when deletion ownership matches', async () => {
+    const state = await startPlugin('drive', true, undefined, 'gdrive://folder123');
+    try {
+      await state.watcher.deleted({
+        id: state.id,
+        sourceFolder: 'gdrive://folder123',
+        name: 'test.pdf',
+        extension: '.pdf',
+      });
+      expect(state.deleted).toEqual([]);
       expect(state.files.get(`/vault/${state.path}`)).toBe(state.original);
     } finally {
       state.plugin.onunload();

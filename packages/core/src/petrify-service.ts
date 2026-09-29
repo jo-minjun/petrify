@@ -120,6 +120,7 @@ export class PetrifyService {
 
     const metadata: ConversionMetadata = {
       source: event.id,
+      ...(event.sourceFolder && { sourceFolder: event.sourceFolder }),
       parser: parser.id,
       fileHash,
       pageHashes: currentPageHashes,

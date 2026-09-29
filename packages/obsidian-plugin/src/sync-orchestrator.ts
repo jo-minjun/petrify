@@ -130,6 +130,9 @@ export class SyncOrchestrator {
       const fileRef = entry.fileRef ?? path.join(mapping.watchDir, entry.name);
 
       const event: FileChangeEvent = {
+        ...(mapping.source === SyncSource.GoogleDrive && {
+          sourceFolder: `gdrive://${mapping.watchDir}`,
+        }),
         id:
           mapping.source === SyncSource.GoogleDrive
             ? `gdrive://${fileRef.replace(/^gdrive:\/\//, '')}`
@@ -201,6 +204,7 @@ export class SyncOrchestrator {
       let sourceRef = metadata.source;
       if (mapping.source === SyncSource.GoogleDrive) {
         if (!sourceRef.startsWith('gdrive://') || metadata.parser !== parser.id) continue;
+        if (metadata.sourceFolder !== `gdrive://${mapping.watchDir}`) continue;
         sourceRef = sourceRef.slice('gdrive://'.length);
         if (entries.some((entry) => entry.fileRef?.replace(/^gdrive:\/\//, '') === sourceRef))
           continue;

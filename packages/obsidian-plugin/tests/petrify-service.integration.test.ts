@@ -138,6 +138,49 @@ function createFileChangeEvent(overrides?: Partial<FileChangeEvent>): FileChange
 }
 
 describe('PetrifyService integration tests (plugin level)', () => {
+  it('preserves OCR headings and later unchanged pages when appending an Excalidraw page', async () => {
+    const generator = new ExcalidrawFileGenerator();
+    const metadata = new FakeMetadata();
+    const ocr = new FakeOcr();
+    const headingText = 'before\n# heading\nafter\n# Excalidraw Data\n## OCR Text\nlast line';
+    for (const [key, text] of [
+      ['1,2,3', headingText],
+      ['4', 'second page'],
+      ['5', 'third page'],
+    ]) {
+      ocr.setResult(key, {
+        text,
+        regions: [{ text, confidence: 90, x: 0, y: 0, width: 10, height: 10 }],
+      });
+    }
+    const service = new PetrifyService(new Map(), generator, ocr, metadata, {
+      confidenceThreshold: 50,
+    });
+    const event = createFileChangeEvent();
+    const pages = [
+      createPage(),
+      createPage({ id: 'page-2', order: 1, imageData: new Uint8Array([4]) }),
+    ];
+    const first = await service.handleFileChange(event, new FakeParser(createNote({ pages })));
+    if (!first) throw new Error('Initial conversion was skipped');
+    metadata.store.set(event.id, first.metadata);
+    metadata.contents.set(event.id, first.content);
+
+    const appended = await service.handleFileChange(
+      createFileChangeEvent({ readData: () => Promise.resolve(new ArrayBuffer(16)) }),
+      new FakeParser(
+        createNote({
+          pages: [...pages, createPage({ id: 'page-3', order: 2, imageData: new Uint8Array([5]) })],
+        }),
+      ),
+    );
+
+    expect(appended?.content).toContain(
+      `<!-- page: page-1 -->\n${headingText}\n<!-- page: page-2 -->\nsecond page\n<!-- page: page-3 -->\nthird page`,
+    );
+    expect(ocr.recognized).toEqual(['1,2,3', '4', '5']);
+  });
+
   for (const generator of [new MarkdownFileGenerator(), new ExcalidrawFileGenerator()]) {
     describe(generator.id, () => {
       for (const hasContent of [true, false]) {

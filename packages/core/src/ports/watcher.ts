@@ -1,5 +1,6 @@
 export interface FileChangeEvent {
   readonly id: string;
+  readonly sourceFolder?: string;
   readonly name: string;
   readonly extension: string;
   readData(): Promise<ArrayBuffer>;
@@ -7,6 +8,7 @@ export interface FileChangeEvent {
 
 export interface FileDeleteEvent {
   readonly id: string;
+  readonly sourceFolder?: string;
   readonly name: string;
   readonly extension: string;
 }

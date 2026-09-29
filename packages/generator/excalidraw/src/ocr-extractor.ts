@@ -1,14 +1,11 @@
 import { parsePageMarkers } from '@petrify/core';
 
 export function extractOcrByPageId(content: string): Map<string, string[]> {
-  const ocrStart = content.indexOf('## OCR Text');
+  const lines = content.split(/\r?\n/);
+  const ocrStart = lines.indexOf('## OCR Text');
   if (ocrStart === -1) return new Map();
 
-  const ocrEnd = content.indexOf('\n# ', ocrStart);
-  const ocrSection = ocrEnd === -1 ? content.slice(ocrStart) : content.slice(ocrStart, ocrEnd);
-
-  const lines = ocrSection.split('\n');
-  // Skip the "## OCR Text" header line
-  const contentLines = lines.filter((line) => line !== '## OCR Text');
-  return parsePageMarkers(contentLines);
+  // Generated drawing data follows all OCR, which can itself contain the same heading.
+  const ocrEnd = lines.lastIndexOf('# Excalidraw Data');
+  return parsePageMarkers(lines.slice(ocrStart + 1, ocrEnd > ocrStart ? ocrEnd : undefined));
 }

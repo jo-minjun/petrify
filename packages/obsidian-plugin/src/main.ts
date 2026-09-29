@@ -386,7 +386,7 @@ export default class PetrifyPlugin extends Plugin {
         return;
       }
       const outputPath = this.getOutputPath(event.name, outputDir);
-      await this.handleDeletedSource(outputPath, event.id);
+      await this.handleDeletedSource(outputPath, event.id, event.sourceFolder);
     });
 
     watcher.onError((error) => {
@@ -428,7 +428,11 @@ export default class PetrifyPlugin extends Plugin {
     return outputPath;
   }
 
-  private async handleDeletedSource(outputPath: string, sourceId: string): Promise<void> {
+  private async handleDeletedSource(
+    outputPath: string,
+    sourceId: string,
+    sourceFolder?: string,
+  ): Promise<void> {
     if (!(await this.app.vault.adapter.exists(outputPath))) return;
 
     const metadata = await this.metadataAdapter.getMetadata(outputPath);
@@ -436,6 +440,11 @@ export default class PetrifyPlugin extends Plugin {
       ? sourceId.slice('gdrive://'.length)
       : sourceId;
     if (metadata?.source !== sourceId && metadata?.source !== legacyDriveId) return;
+    if (
+      sourceId.startsWith('gdrive://') &&
+      (!sourceFolder || metadata?.sourceFolder !== sourceFolder)
+    )
+      return;
 
     const canDelete = await this.petrifyService.handleFileDelete(outputPath);
     if (!canDelete) {

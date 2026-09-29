@@ -499,7 +499,7 @@ describe('SyncOrchestrator', () => {
       () => driveFs,
     );
     expect(mockService.handleFileChange).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'gdrive://drive-id' }),
+      expect.objectContaining({ id: 'gdrive://drive-id', sourceFolder: 'gdrive:///watch' }),
       parserMap.get('viwoods'),
       'output/file.excalidraw.md',
     );
@@ -519,12 +519,14 @@ describe('SyncOrchestrator', () => {
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: 'gdrive://drive-id',
+      sourceFolder: 'gdrive:///watch',
       parser: 'test-parser',
     });
     await orchestrator.syncAll(
       [createDefaultMapping({ source: SyncSource.GoogleDrive })],
       () => driveFs,
     );
+    expect(driveFs.access).toHaveBeenCalledWith('drive-id');
     expect(mockVault.trash).not.toHaveBeenCalled();
   });
 
@@ -536,6 +538,7 @@ describe('SyncOrchestrator', () => {
     mockService.handleFileDelete.mockResolvedValue(true);
     mockMetadata.getMetadata.mockResolvedValue({
       source: 'gdrive://drive-id',
+      sourceFolder: 'gdrive:///watch',
       parser: 'test-parser',
     });
     const result = await orchestrator.syncAll(
@@ -544,6 +547,37 @@ describe('SyncOrchestrator', () => {
     );
     expect(driveFs.access).toHaveBeenCalledWith('drive-id');
     expect(result.deleted).toBe(1);
+  });
+
+  it.each([
+    undefined,
+    'gdrive://folder-B',
+  ])('preserves output owned by an unknown or disabled Drive folder: %s', async (sourceFolder) => {
+    const driveFs = createMockFs();
+    driveFs.readdir.mockResolvedValue([]);
+    driveFs.access.mockRejectedValue(Object.assign(new Error('missing'), { code: 404 }));
+    mockFs.readdir.mockResolvedValue(entries('file.excalidraw.md'));
+    mockService.handleFileDelete.mockResolvedValue(true);
+    mockMetadata.getMetadata.mockResolvedValue({
+      source: 'gdrive://drive-id',
+      sourceFolder,
+      parser: 'test-parser',
+    });
+    const result = await orchestrator.syncAll(
+      [
+        createDefaultMapping({ source: SyncSource.GoogleDrive, watchDir: 'folder-A' }),
+        createDefaultMapping({
+          source: SyncSource.GoogleDrive,
+          watchDir: 'folder-B',
+          enabled: false,
+        }),
+      ],
+      () => driveFs,
+    );
+    expect(result.deleted).toBe(0);
+    expect(driveFs.access).not.toHaveBeenCalled();
+    expect(mockVault.trash).not.toHaveBeenCalled();
+    expect(mockFs.rm).not.toHaveBeenCalled();
   });
 
   it('preserves output produced by a different parser of the same local extension', async () => {
