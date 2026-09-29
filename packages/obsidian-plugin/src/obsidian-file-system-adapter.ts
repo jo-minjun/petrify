@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import { ConversionError } from '@petrify/core';
 import type { App } from 'obsidian';
 import { normalizePath } from 'obsidian';
 
@@ -15,11 +16,14 @@ export class ObsidianFileSystemAdapter {
   }
 
   async writeAsset(dir: string, name: string, data: Uint8Array): Promise<void> {
+    if (!name || name === '.' || name === '..' || /[/\\:\0]/.test(name)) {
+      throw new ConversionError('save', new Error(`Invalid asset filename: ${name}`));
+    }
     const normalizedDir = normalizePath(dir);
     if (!(await this.app.vault.adapter.exists(normalizedDir))) {
       await this.app.vault.adapter.mkdir(normalizedDir);
     }
     const assetPath = normalizePath(path.join(normalizedDir, name));
-    await this.app.vault.adapter.writeBinary(assetPath, data.buffer as ArrayBuffer);
+    await this.app.vault.adapter.writeBinary(assetPath, new Uint8Array(data).buffer);
   }
 }

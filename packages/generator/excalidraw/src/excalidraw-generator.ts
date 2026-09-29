@@ -102,12 +102,13 @@ export class ExcalidrawGenerator {
 
     const sortedPages = [...note.pages].sort((a, b) => a.order - b.order);
 
-    for (let i = 0; i < sortedPages.length; i++) {
-      const page = sortedPages[i];
+    let y = 0;
+    for (const page of sortedPages) {
       const fileId = await sha1Hex(page.imageData);
       const elementId = `element-${page.id}`;
 
-      elements.push(this.createImageElement(page, elementId, fileId, i, now));
+      elements.push(this.createImageElement(page, elementId, fileId, y, now));
+      y += page.height + ExcalidrawGenerator.PAGE_GAP;
       if (files) {
         files[fileId] = this.createFileEntry(page, fileId, now);
       }
@@ -120,11 +121,9 @@ export class ExcalidrawGenerator {
     page: Page,
     elementId: string,
     fileId: string,
-    index: number,
+    y: number,
     timestamp: number,
   ): ExcalidrawElement {
-    const y = index * (page.height + ExcalidrawGenerator.PAGE_GAP);
-
     return {
       type: 'image',
       id: elementId,

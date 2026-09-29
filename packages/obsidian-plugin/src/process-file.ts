@@ -14,12 +14,16 @@ export async function processFile(
   save: SaveFn,
   log: Logger,
   parser: ParserPort,
+  outputExtension = '.excalidraw.md',
 ): Promise<boolean> {
-  const result = await petrifyService.handleFileChange(event, parser);
+  const baseName = event.name.replace(/\.[^/.]+$/, '');
+  const outputPath = path.posix.join(outputDir, `${baseName}${outputExtension}`);
+  const result = await petrifyService.handleFileChange(event, parser, outputPath);
   if (!result) return false;
 
-  const baseName = event.name.replace(/\.[^/.]+$/, '');
-  const outputPath = await save(result, outputDir, baseName);
-  log.info(`Converted: ${event.name} -> ${outputPath}`);
+  const savedPath = await save(result, outputDir, baseName);
+  log.info(`Converted: ${event.name} -> ${savedPath}`);
   return true;
 }
+
+import * as path from 'node:path';

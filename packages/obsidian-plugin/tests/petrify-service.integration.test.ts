@@ -15,10 +15,18 @@ import {
   type ParserPort,
   PetrifyService,
 } from '@petrify/core';
+import { ExcalidrawFileGenerator } from '@petrify/generator-excalidraw';
+import { MarkdownFileGenerator } from '@petrify/generator-markdown';
 import { describe, expect, it } from 'vitest';
+import { saveConversionResult } from '../src/conversion-saver.js';
 
 class FakeMetadata implements ConversionMetadataPort {
   readonly store = new Map<string, ConversionMetadata>();
+  readonly contents = new Map<string, string>();
+
+  getContent(id: string): Promise<string | undefined> {
+    return Promise.resolve(this.contents.get(id));
+  }
 
   async getMetadata(id: string): Promise<ConversionMetadata | undefined> {
     return this.store.get(id);
@@ -78,6 +86,7 @@ class FakeGenerator implements FileGeneratorPort {
 
 class FakeOcr implements OcrPort {
   private readonly results: Map<string, OcrResult> = new Map();
+  readonly recognized: string[] = [];
 
   setResult(imageKey: string, result: OcrResult): void {
     this.results.set(imageKey, result);
@@ -85,6 +94,7 @@ class FakeOcr implements OcrPort {
 
   async recognize(image: ArrayBuffer): Promise<OcrResult> {
     const key = new Uint8Array(image).join(',');
+    this.recognized.push(key);
     const result = this.results.get(key);
     if (result) return result;
 
@@ -128,6 +138,244 @@ function createFileChangeEvent(overrides?: Partial<FileChangeEvent>): FileChange
 }
 
 describe('PetrifyService integration tests (plugin level)', () => {
+  it('preserves OCR headings and later unchanged pages when appending an Excalidraw page', async () => {
+    const generator = new ExcalidrawFileGenerator();
+    const metadata = new FakeMetadata();
+    const ocr = new FakeOcr();
+    const headingText = 'before\n# heading\nafter\n# Excalidraw Data\n## OCR Text\nlast line';
+    for (const [key, text] of [
+      ['1,2,3', headingText],
+      ['4', 'second page'],
+      ['5', 'third page'],
+    ]) {
+      ocr.setResult(key, {
+        text,
+        regions: [{ text, confidence: 90, x: 0, y: 0, width: 10, height: 10 }],
+      });
+    }
+    const service = new PetrifyService(new Map(), generator, ocr, metadata, {
+      confidenceThreshold: 50,
+    });
+    const event = createFileChangeEvent();
+    const pages = [
+      createPage(),
+      createPage({ id: 'page-2', order: 1, imageData: new Uint8Array([4]) }),
+    ];
+    const first = await service.handleFileChange(event, new FakeParser(createNote({ pages })));
+    if (!first) throw new Error('Initial conversion was skipped');
+    metadata.store.set(event.id, first.metadata);
+    metadata.contents.set(event.id, first.content);
+
+    const appended = await service.handleFileChange(
+      createFileChangeEvent({ readData: () => Promise.resolve(new ArrayBuffer(16)) }),
+      new FakeParser(
+        createNote({
+          pages: [...pages, createPage({ id: 'page-3', order: 2, imageData: new Uint8Array([5]) })],
+        }),
+      ),
+    );
+
+    expect(appended?.content).toContain(
+      `<!-- page: page-1 -->\n${headingText}\n<!-- page: page-2 -->\nsecond page\n<!-- page: page-3 -->\nthird page`,
+    );
+    expect(ocr.recognized).toEqual(['1,2,3', '4', '5']);
+  });
+
+  for (const generator of [new MarkdownFileGenerator(), new ExcalidrawFileGenerator()]) {
+    describe(generator.id, () => {
+      for (const hasContent of [true, false]) {
+        it(`preserves unchanged page OCR when saved content is ${hasContent ? 'available' : 'missing'}`, async () => {
+          const firstPage = createPage();
+          const secondPage = createPage({ id: 'page-2', order: 1, imageData: new Uint8Array([4]) });
+          const metadata = new FakeMetadata();
+          const ocr = new FakeOcr();
+          for (const [key, text] of [
+            ['1,2,3', 'unchanged-text'],
+            ['4', 'old-text'],
+            ['5', 'updated-text'],
+          ]) {
+            ocr.setResult(key, {
+              text,
+              regions: [{ text, confidence: 90, x: 0, y: 0, width: 10, height: 10 }],
+            });
+          }
+          const service = new PetrifyService(new Map(), generator, ocr, metadata, {
+            confidenceThreshold: 50,
+          });
+          const event = createFileChangeEvent();
+          const outputPath = `output/file${generator.extension}`;
+          const first = await service.handleFileChange(
+            event,
+            new FakeParser(createNote({ pages: [firstPage, secondPage] })),
+            outputPath,
+          );
+          if (!first) throw new Error('Initial conversion was skipped');
+          metadata.store.set(outputPath, first.metadata);
+          if (hasContent) metadata.contents.set(outputPath, first.content);
+          const updated = await service.handleFileChange(
+            createFileChangeEvent({ readData: () => Promise.resolve(new ArrayBuffer(16)) }),
+            new FakeParser(
+              createNote({ pages: [firstPage, { ...secondPage, imageData: new Uint8Array([5]) }] }),
+            ),
+            outputPath,
+          );
+          expect(updated?.content).toContain('unchanged-text');
+          expect(updated?.content).toContain('updated-text');
+          expect(updated?.content).not.toContain('old-text');
+          expect(ocr.recognized).toHaveLength(hasContent ? 3 : 4);
+        });
+      }
+
+      it('preserves existing OCR while appending a page, then removes deleted page OCR', async () => {
+        const metadata = new FakeMetadata();
+        const ocr = new FakeOcr();
+        ocr.setResult('4', {
+          text: 'added-page-text',
+          regions: [{ text: 'added-page-text', confidence: 90, x: 0, y: 0, width: 10, height: 10 }],
+        });
+        const service = new PetrifyService(new Map(), generator, ocr, metadata, {
+          confidenceThreshold: 50,
+        });
+        const event = createFileChangeEvent();
+        const first = await service.handleFileChange(event, new FakeParser(createNote()));
+        if (!first) throw new Error('Initial conversion was skipped');
+        metadata.store.set(event.id, first.metadata);
+        metadata.contents.set(event.id, first.content);
+        const secondPage = createPage({ id: 'page-2', order: 1, imageData: new Uint8Array([4]) });
+        const appended = await service.handleFileChange(
+          createFileChangeEvent({ readData: () => Promise.resolve(new ArrayBuffer(16)) }),
+          new FakeParser(createNote({ pages: [createPage(), secondPage] })),
+        );
+        if (!appended) throw new Error('Append conversion was skipped');
+        expect(appended.content).toContain('default-ocr-text');
+        expect(appended.content).toContain('added-page-text');
+        expect(ocr.recognized).toHaveLength(2);
+        metadata.store.set(event.id, appended.metadata);
+        metadata.contents.set(event.id, appended.content);
+        const removed = await service.handleFileChange(
+          createFileChangeEvent({ readData: () => Promise.resolve(new ArrayBuffer(24)) }),
+          new FakeParser(createNote({ pages: [{ ...secondPage, order: 0 }] })),
+        );
+        expect(removed?.content).toContain('added-page-text');
+        expect(removed?.content).not.toContain('default-ocr-text');
+        expect(removed?.assets.size).toBe(1);
+      });
+
+      it('removes old OCR when the changed page has no recognized text', async () => {
+        const metadata = new FakeMetadata();
+        const ocr = new FakeOcr();
+        const service = new PetrifyService(new Map(), generator, ocr, metadata, {
+          confidenceThreshold: 50,
+        });
+        const event = createFileChangeEvent();
+        const first = await service.handleFileChange(event, new FakeParser(createNote()));
+        if (!first) throw new Error('Initial conversion was skipped');
+        metadata.store.set(event.id, first.metadata);
+        metadata.contents.set(event.id, first.content);
+        ocr.setResult('5', { text: '', regions: [] });
+        const updated = await service.handleFileChange(
+          createFileChangeEvent({ readData: () => Promise.resolve(new ArrayBuffer(16)) }),
+          new FakeParser(createNote({ pages: [createPage({ imageData: new Uint8Array([5]) })] })),
+        );
+        expect(updated?.content).not.toContain('default-ocr-text');
+      });
+    });
+  }
+
+  it('converts identical source bytes again when the selected parser changes', async () => {
+    const metadata = new FakeMetadata();
+    const service = new PetrifyService(new Map(), new FakeGenerator(), null, metadata, {
+      confidenceThreshold: 50,
+    });
+    const event = createFileChangeEvent();
+    const parser = new FakeParser(createNote());
+    const first = await service.handleFileChange(event, parser);
+    if (!first) throw new Error('Initial conversion was skipped');
+    metadata.store.set(event.id, first.metadata);
+    const changedParser: ParserPort = {
+      id: 'changed-parser',
+      extensions: ['.note'],
+      parse: (data) => parser.parse(data),
+    };
+    const updated = await service.handleFileChange(event, changedParser);
+    expect(updated?.metadata.parser).toBe('changed-parser');
+    expect(updated?.content).toContain('Test Note');
+  });
+
+  it('uses the destination path for metadata lookup and honors keep before reading source data', async () => {
+    const metadata = new FakeMetadata();
+    metadata.store.set('output/file.md', {
+      source: 'remote-id',
+      parser: 'fake-parser',
+      fileHash: null,
+      pageHashes: null,
+      keep: true,
+    });
+    const service = new PetrifyService(new Map(), new FakeGenerator(), null, metadata, {
+      confidenceThreshold: 50,
+    });
+    const result = await service.handleFileChange(
+      createFileChangeEvent({
+        id: 'remote-id',
+        readData: () => Promise.reject(new Error('Source must not be read')),
+      }),
+      new FakeParser(createNote()),
+      'output/file.md',
+    );
+    expect(result).toBeNull();
+  });
+
+  it('retries conversion after an asset write fails without committing new metadata', async () => {
+    const metadata = new FakeMetadata();
+    const service = new PetrifyService(new Map(), new FakeGenerator(), null, metadata, {
+      confidenceThreshold: 50,
+    });
+    const event = createFileChangeEvent();
+    const parser = new FakeParser(createNote());
+    const first = await service.handleFileChange(event, parser);
+    if (!first) throw new Error('Initial conversion was skipped');
+    await expect(
+      saveConversionResult(
+        first,
+        'output',
+        'file',
+        '.md',
+        {
+          writeFile: () => {
+            metadata.store.set(event.id, first.metadata);
+            return Promise.resolve();
+          },
+          writeAsset: () => Promise.reject(new Error('disk full')),
+        },
+        metadata,
+      ),
+    ).rejects.toMatchObject({ phase: 'save' });
+    const retry = await service.handleFileChange(event, parser);
+    expect(retry).not.toBeNull();
+    expect(retry?.assets.size).toBe(1);
+    if (!retry) throw new Error('Retry conversion was skipped');
+    const savedAssets = new Map<string, Uint8Array>();
+    await saveConversionResult(
+      retry,
+      'output',
+      'file',
+      '.md',
+      {
+        writeFile: () => {
+          metadata.store.set(event.id, retry.metadata);
+          return Promise.resolve();
+        },
+        writeAsset: (_dir, name, data) => {
+          savedAssets.set(name, data);
+          return Promise.resolve();
+        },
+      },
+      metadata,
+    );
+    expect(savedAssets.get('page-1.png')).toEqual(new Uint8Array([1, 2, 3]));
+    expect(await service.handleFileChange(event, parser)).toBeNull();
+  });
+
   it('full pipeline: parse -> OCR -> generate', async () => {
     const note = createNote({ title: 'My Note' });
     const fakeParser = new FakeParser(note);

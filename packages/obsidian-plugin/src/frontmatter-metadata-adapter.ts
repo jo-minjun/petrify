@@ -4,6 +4,14 @@ import { createFrontmatter, parseFrontmatter } from './utils/frontmatter.js';
 export class FrontmatterMetadataAdapter implements ConversionMetadataPort {
   constructor(private readonly readFile: (path: string) => Promise<string>) {}
 
+  async getContent(id: string): Promise<string | undefined> {
+    try {
+      return await this.readFile(id);
+    } catch {
+      return undefined;
+    }
+  }
+
   async getMetadata(id: string): Promise<ConversionMetadata | undefined> {
     try {
       const content = await this.readFile(id);
@@ -12,6 +20,7 @@ export class FrontmatterMetadataAdapter implements ConversionMetadataPort {
 
       return {
         source: meta.source,
+        ...(meta.sourceFolder && { sourceFolder: meta.sourceFolder }),
         parser: meta.parser,
         fileHash: meta.fileHash,
         pageHashes: meta.pageHashes,
@@ -25,6 +34,7 @@ export class FrontmatterMetadataAdapter implements ConversionMetadataPort {
   formatMetadata(metadata: ConversionMetadata): string {
     return createFrontmatter({
       source: metadata.source,
+      sourceFolder: metadata.sourceFolder,
       parser: metadata.parser,
       fileHash: metadata.fileHash,
       pageHashes: metadata.pageHashes,

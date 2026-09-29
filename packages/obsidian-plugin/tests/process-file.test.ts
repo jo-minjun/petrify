@@ -91,7 +91,7 @@ describe('processFile', () => {
     expect(save).toHaveBeenCalledWith(expect.anything(), 'output', 'my-document');
   });
 
-  it('passes parser override to handleFileChange when provided', async () => {
+  it('passes the actual output path when looking up saved conversion state', async () => {
     mockService.handleFileChange.mockResolvedValue(null);
     const event = createFileChangeEvent('file.note');
 
@@ -102,8 +102,9 @@ describe('processFile', () => {
       save as SaveFn,
       log,
       mockParser,
+      '.md',
     );
 
-    expect(mockService.handleFileChange).toHaveBeenCalledWith(event, mockParser);
+    expect(mockService.handleFileChange).toHaveBeenCalledWith(event, mockParser, 'output/file.md');
   });
 });

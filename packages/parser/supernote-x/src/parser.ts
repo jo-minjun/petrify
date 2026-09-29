@@ -193,12 +193,10 @@ export class NoteParser {
         const layerMeta = parseMetadata(reader.readBlockAsString());
         const protocol = getMetadataValue(layerMeta, 'LAYERPROTOCOL') ?? '';
         const bitmapAddress = getMetadataValue(layerMeta, 'LAYERBITMAP');
-        if (!bitmapAddress) continue;
+        if (!bitmapAddress) throw new ParseError('Missing layer bitmap address');
 
         reader.seek(Number(bitmapAddress));
         const bitmapData = reader.readBlock();
-        if (bitmapData.length === 0) continue;
-
         const isCustomBg = layerName === 'BGLAYER' && pageStyle.startsWith('user_');
         const isBlank =
           layerName === 'BGLAYER' &&
@@ -213,21 +211,19 @@ export class NoteParser {
         } else if (protocol === PROTOCOL_RLE || protocol === '') {
           pixels = decodeRattaRle(bitmapData, width, height, isX2, isBlank);
         } else {
-          console.warn(
-            `[Petrify:Parser] Unsupported protocol "${protocol}" for layer ${layerName}. Skipping.`,
-          );
-          continue;
+          throw new ParseError(`Unsupported protocol "${protocol}"`);
         }
 
         layerBitmaps.push({ pixels, width, height });
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.warn(`[Petrify:Parser] Failed to decode layer ${layerName}: ${message}`);
+        throw new ParseError(
+          `Failed to decode visible layer ${layerName} on page ${pageId}: ${message}`,
+        );
       }
     }
 
     if (layerBitmaps.length === 0) {
-      console.warn(`[Petrify:Parser] No decodable layers for page ${pageId}`);
       return null;
     }
 

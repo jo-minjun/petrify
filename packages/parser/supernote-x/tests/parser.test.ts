@@ -24,6 +24,26 @@ describe('NoteParser', () => {
   });
 
   describe('page parsing', () => {
+    it.each([
+      { protocol: 'UNKNOWN' },
+      { protocol: 'UNKNOWN', rleData: new Uint8Array() },
+      { rleData: new Uint8Array([0x61]) },
+      { rleData: new Uint8Array([0x61, 1]) },
+      { protocol: 'SN_ASA_COMPRESS', rleData: new Uint8Array([1, 2, 3]) },
+      { bitmapAddress: '999999999' },
+    ])('rejects the entire note when a visible page layer cannot be decoded: %j', async (brokenPage) => {
+      await expect(
+        new NoteParser().parse(buildTestNote({ pages: [{}, brokenPage] })),
+      ).rejects.toThrow(ParseError);
+    });
+
+    it('retains a genuinely empty visible page as a blank image', async () => {
+      const note = await new NoteParser().parse(
+        buildTestNote({ pages: [{ rleData: new Uint8Array() }] }),
+      );
+      expect(note.pages).toHaveLength(1);
+      expect(note.pages[0].imageData.length).toBeGreaterThan(0);
+    });
     it('parses single page note', async () => {
       const data = buildTestNote({ pages: [{ pageId: 'p1' }] });
       const parser = new NoteParser();
