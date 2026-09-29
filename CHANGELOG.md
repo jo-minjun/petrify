@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed PDF conversion failing with a missing worker configuration in Obsidian by using its built-in PDF.js loader.
+
 ## [0.5.0] - 2026-02-13
 
 ### Added

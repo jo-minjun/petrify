@@ -44,7 +44,7 @@ interface RenderCanvas {
   toPngBytes(): Promise<Uint8Array>;
 }
 
-type LoadPdfFn = (data: Uint8Array) => PdfLoadingTask;
+type LoadPdfFn = (data: Uint8Array) => PdfLoadingTask | Promise<PdfLoadingTask>;
 type CreateCanvasFn = (width: number, height: number) => RenderCanvas;
 
 interface NoteMetadata {
@@ -92,7 +92,8 @@ export class PdfParser implements ParserPort {
   private async loadDocument(data: ArrayBuffer): Promise<PdfDocument> {
     let task: PdfLoadingTask;
     try {
-      task = this.loadPdf(new Uint8Array(data));
+      // PDF.js transfers this buffer to its worker; callers still need the original for hashing.
+      task = await this.loadPdf(new Uint8Array(data.slice(0)));
     } catch (error) {
       throw new InvalidFileFormatError(`Failed to open PDF: ${toErrorMessage(error)}`);
     }

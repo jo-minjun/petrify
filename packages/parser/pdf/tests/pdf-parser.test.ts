@@ -1,5 +1,5 @@
 import { InvalidFileFormatError, ParseError } from '@petrify/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PdfParser } from '../src/pdf-parser.js';
 
 interface MockPdfViewport {
@@ -99,6 +99,54 @@ describe('PdfParser', () => {
     expect(note.title).toBe('Untitled');
     expect(note.createdAt).toEqual(new Date(0));
     expect(note.modifiedAt).toEqual(new Date(0));
+  });
+
+  it('waits for an asynchronous PDF loader before rendering', async () => {
+    const parser = new PdfParser(
+      'test',
+      async () => ({ promise: Promise.resolve(createDocument({ numPages: 1 })) }),
+      () => createCanvas(PNG_BYTES),
+    );
+
+    const note = await parser.parse(new ArrayBuffer(8));
+
+    expect(note.pages).toHaveLength(1);
+    expect(note.pages[0].imageData).toEqual(PNG_BYTES);
+  });
+
+  it('preserves the input when the PDF worker takes ownership of its buffer', async () => {
+    const input = new Uint8Array([37, 80, 68, 70]).buffer;
+    const parser = new PdfParser(
+      'test',
+      (data) => {
+        structuredClone(data, { transfer: [data.buffer] });
+        return { promise: Promise.resolve(createDocument({ numPages: 1 })) };
+      },
+      () => createCanvas(PNG_BYTES),
+    );
+
+    await parser.parse(input);
+
+    expect(new Uint8Array(input)).toEqual(new Uint8Array([37, 80, 68, 70]));
+  });
+
+  it('wraps asynchronous loader initialization failures', async () => {
+    const parser = new PdfParser('test', () => Promise.reject(new Error('loader unavailable')));
+
+    await expect(parser.parse(new ArrayBuffer(8))).rejects.toThrow(
+      'Failed to open PDF: loader unavailable',
+    );
+  });
+
+  it('destroys the loading task when an asynchronous loader cannot open the PDF', async () => {
+    const destroy = vi.fn();
+    const parser = new PdfParser('test', async () => ({
+      promise: Promise.reject(new Error('invalid pdf')),
+      destroy,
+    }));
+
+    await expect(parser.parse(new ArrayBuffer(8))).rejects.toThrow(InvalidFileFormatError);
+    expect(destroy).toHaveBeenCalledOnce();
   });
 
   it('throws InvalidFileFormatError when PDF loading fails', async () => {
