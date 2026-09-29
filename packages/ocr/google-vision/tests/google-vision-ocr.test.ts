@@ -81,6 +81,44 @@ function createMockHttpPost(status: number, body: unknown) {
 }
 
 describe('GoogleVisionOcr', () => {
+  it('preserves detected spaces, line breaks, hyphens, paragraphs, and adjoining Korean words', async () => {
+    const word = (text: string, type?: string, isPrefix = false) => ({
+      symbols: [{ text, ...(type ? { property: { detectedBreak: { type, isPrefix } } } : {}) }],
+    });
+    const httpPost = createMockHttpPost(200, {
+      responses: [
+        {
+          fullTextAnnotation: {
+            pages: [
+              {
+                blocks: [
+                  {
+                    paragraphs: [
+                      {
+                        words: [
+                          word('안녕'),
+                          word('하세요', 'SPACE'),
+                          word('첫줄', 'LINE_BREAK'),
+                          word('다음', 'EOL_SURE_SPACE'),
+                          word('hy', 'HYPHEN'),
+                          word('phen'),
+                        ],
+                      },
+                      { words: [word('문단'), word('끝', 'SURE_SPACE', true)] },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const result = await new GoogleVisionOcr({ apiKey: 'test', httpPost }).recognize(
+      new ArrayBuffer(0),
+    );
+    expect(result.text).toBe('안녕하세요 첫줄\n다음\nhy-\nphen\n문단 끝');
+  });
   beforeEach(() => {
     vi.restoreAllMocks();
   });

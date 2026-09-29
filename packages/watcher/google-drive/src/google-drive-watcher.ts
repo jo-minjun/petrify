@@ -41,17 +41,22 @@ export class GoogleDriveWatcher implements WatcherPort {
 
   async start(): Promise<void> {
     this.pageToken = await this.pageTokenStore.loadPageToken();
+    const savedCache = await this.pageTokenStore.loadFileCache?.();
+    for (const [id, file] of Object.entries(savedCache ?? {})) {
+      this.fileCache.set(id, file);
+    }
 
     if (!this.pageToken) {
       this.pageToken = await this.client.getStartPageToken();
-      await this.pageTokenStore.savePageToken(this.pageToken);
-
-      const files = await this.client.listFiles(this.folderId);
-      for (const file of files) {
-        this.cacheFile(file);
-        await this.emitFileChange(file);
-      }
     }
+
+    const files = await this.client.listFiles(this.folderId);
+    for (const file of files) {
+      this.cacheFile(file);
+      await this.emitFileChange(file);
+    }
+    await this.pageTokenStore.saveFileCache?.(Object.fromEntries(this.fileCache));
+    await this.pageTokenStore.savePageToken(this.pageToken);
 
     this.pollTimer = setInterval(() => {
       this.pollOnce().catch((error) => {
@@ -78,8 +83,9 @@ export class GoogleDriveWatcher implements WatcherPort {
     }
 
     if (result.newStartPageToken) {
+      await this.pageTokenStore.saveFileCache?.(Object.fromEntries(this.fileCache));
+      await this.pageTokenStore.savePageToken(result.newStartPageToken);
       this.pageToken = result.newStartPageToken;
-      await this.pageTokenStore.savePageToken(this.pageToken);
     }
   }
 

@@ -13,5 +13,6 @@ export interface ConversionMetadata {
 
 export interface ConversionMetadataPort {
   getMetadata(id: string): Promise<ConversionMetadata | undefined>;
+  getContent?(id: string): Promise<string | undefined>;
   formatMetadata(metadata: ConversionMetadata): string;
 }

@@ -6,6 +6,18 @@ import { createNote, createPage } from './helpers.js';
 const SHA1_HEX_RE = /^[0-9a-f]{40}$/;
 
 describe('ExcalidrawGenerator', () => {
+  it.each([
+    'generate',
+    'generateWithoutFiles',
+  ] as const)('%s stacks mixed page heights cumulatively in page order', async (method) => {
+    const note = createNote([
+      createPage({ id: 'p2', order: 2, height: 800 }),
+      createPage({ id: 'p0', order: 0, height: 2000 }),
+      createPage({ id: 'p1', order: 1, height: 1000 }),
+    ]);
+    const result = await new ExcalidrawGenerator()[method](note);
+    expect(result.elements.map((element) => element.y)).toEqual([0, 2100, 3200]);
+  });
   describe('generate', () => {
     it('generates full document metadata', async () => {
       const note = createNote([createPage()]);

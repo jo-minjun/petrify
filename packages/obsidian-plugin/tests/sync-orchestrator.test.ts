@@ -168,6 +168,7 @@ describe('SyncOrchestrator', () => {
     expect(mockService.handleFileChange).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'file.note' }),
       parser,
+      'output/file.excalidraw.md',
     );
     expect(convertLog.info).toHaveBeenCalledWith(expect.stringContaining('Converted: file.note'));
   });
@@ -206,6 +207,7 @@ describe('SyncOrchestrator', () => {
     expect(mockService.handleFileChange).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'file.note' }),
       supernoteParser,
+      'output/file.excalidraw.md',
     );
   });
 
@@ -255,7 +257,7 @@ describe('SyncOrchestrator', () => {
       fileHash: null,
       pageHashes: null,
     });
-    mockFs.access.mockRejectedValue(new Error('ENOENT'));
+    mockFs.access.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
     mockVault.trash.mockResolvedValue(undefined);
     mockFs.rm.mockResolvedValue(undefined);
 
@@ -358,7 +360,7 @@ describe('SyncOrchestrator', () => {
       fileHash: null,
       pageHashes: null,
     });
-    mockFs.access.mockRejectedValue(new Error('ENOENT'));
+    mockFs.access.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
     mockVault.trash.mockResolvedValue(undefined);
     mockFs.rm.mockRejectedValue(new Error('ENOENT'));
 
@@ -432,5 +434,177 @@ describe('SyncOrchestrator', () => {
     await orchestrator.syncAll([createDefaultMapping()]);
 
     expect(mockFs.readFile).toHaveBeenCalledWith('/watch/file.note');
+  });
+
+  it('does not clean output after source enumeration fails', async () => {
+    mockFs.readdir
+      .mockRejectedValueOnce(new Error('unmounted'))
+      .mockResolvedValue(entries('file.excalidraw.md'));
+    await orchestrator.syncAll([createDefaultMapping()]);
+    expect(mockFs.readdir).toHaveBeenCalledTimes(1);
+    expect(mockVault.trash).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    '/other/file.note',
+    '/watch/file.pdf',
+    'gdrive://file-id',
+  ])('preserves outputs belonging to another source: %s', async (source) => {
+    mockFs.readdir
+      .mockResolvedValueOnce(entries())
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
+    mockService.handleFileDelete.mockResolvedValue(true);
+    mockMetadata.getMetadata.mockResolvedValue({ source });
+    mockFs.access.mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
+    await orchestrator.syncAll([createDefaultMapping()]);
+    expect(mockVault.trash).not.toHaveBeenCalled();
+  });
+
+  it.each(['EACCES', 'EIO', '503'])('preserves output after access failure %s', async (code) => {
+    mockFs.readdir
+      .mockResolvedValueOnce(entries())
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
+    mockService.handleFileDelete.mockResolvedValue(true);
+    mockMetadata.getMetadata.mockResolvedValue({ source: '/watch/file.note' });
+    mockFs.access.mockRejectedValue(Object.assign(new Error(code), { code }));
+    await orchestrator.syncAll([createDefaultMapping()]);
+    expect(mockVault.trash).not.toHaveBeenCalled();
+  });
+
+  it('preserves an enumerated source even when access subsequently reports missing', async () => {
+    mockFs.readdir
+      .mockResolvedValueOnce(entries('file.note'))
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
+    mockService.handleFileDelete.mockResolvedValue(true);
+    mockMetadata.getMetadata.mockResolvedValue({ source: '/watch/file.note' });
+    mockFs.access.mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
+    await orchestrator.syncAll([createDefaultMapping()]);
+    expect(mockVault.trash).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'drive-id',
+    'gdrive://drive-id',
+  ])('uses canonical Drive identity with a raw download reference: %s', async (fileRef) => {
+    const driveFs = createMockFs();
+    driveFs.readdir.mockResolvedValue([{ name: 'file.note', fileRef }]);
+    driveFs.readFile.mockResolvedValue(new ArrayBuffer(0));
+    mockFs.readdir.mockResolvedValue([]);
+    mockService.handleFileChange.mockImplementation(async (event) => {
+      await event.readData();
+      return null;
+    });
+    await orchestrator.syncAll(
+      [createDefaultMapping({ source: SyncSource.GoogleDrive })],
+      () => driveFs,
+    );
+    expect(mockService.handleFileChange).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'gdrive://drive-id' }),
+      parserMap.get('viwoods'),
+      'output/file.excalidraw.md',
+    );
+    expect(driveFs.readFile).toHaveBeenCalledWith('drive-id');
+  });
+
+  it.each([
+    403,
+    503,
+    'ECONNRESET',
+    undefined,
+  ])('preserves Drive outputs after access failure %s', async (code) => {
+    const driveFs = createMockFs();
+    driveFs.readdir.mockResolvedValue([]);
+    driveFs.access.mockRejectedValue(Object.assign(new Error('unavailable'), { code }));
+    mockFs.readdir.mockResolvedValue(entries('file.excalidraw.md'));
+    mockService.handleFileDelete.mockResolvedValue(true);
+    mockMetadata.getMetadata.mockResolvedValue({
+      source: 'gdrive://drive-id',
+      parser: 'test-parser',
+    });
+    await orchestrator.syncAll(
+      [createDefaultMapping({ source: SyncSource.GoogleDrive })],
+      () => driveFs,
+    );
+    expect(mockVault.trash).not.toHaveBeenCalled();
+  });
+
+  it('cleans confirmed missing Drive source using its raw ID', async () => {
+    const driveFs = createMockFs();
+    driveFs.readdir.mockResolvedValue([]);
+    driveFs.access.mockRejectedValue(Object.assign(new Error('missing'), { code: 404 }));
+    mockFs.readdir.mockResolvedValue(entries('file.excalidraw.md'));
+    mockService.handleFileDelete.mockResolvedValue(true);
+    mockMetadata.getMetadata.mockResolvedValue({
+      source: 'gdrive://drive-id',
+      parser: 'test-parser',
+    });
+    const result = await orchestrator.syncAll(
+      [createDefaultMapping({ source: SyncSource.GoogleDrive })],
+      () => driveFs,
+    );
+    expect(driveFs.access).toHaveBeenCalledWith('drive-id');
+    expect(result.deleted).toBe(1);
+  });
+
+  it('preserves output produced by a different parser of the same local extension', async () => {
+    mockFs.readdir
+      .mockResolvedValueOnce(entries())
+      .mockResolvedValueOnce(entries('file.excalidraw.md'));
+    mockService.handleFileDelete.mockResolvedValue(true);
+    mockMetadata.getMetadata.mockResolvedValue({
+      source: '/watch/file.note',
+      parser: 'other-parser',
+    });
+    mockFs.access.mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
+    await orchestrator.syncAll([createDefaultMapping()]);
+    expect(mockVault.trash).not.toHaveBeenCalled();
+  });
+
+  it('does not fall back to local filesystem when mapping filesystem is unavailable', async () => {
+    const result = await orchestrator.syncAll(
+      [createDefaultMapping({ source: SyncSource.GoogleDrive })],
+      () => null,
+    );
+    expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
+    expect(mockFs.readdir).not.toHaveBeenCalled();
+  });
+
+  it('syncs local and Drive mappings with the composition root resolver', async () => {
+    const driveFs = createMockFs();
+    driveFs.readdir.mockResolvedValue([{ name: 'drive.note', fileRef: 'drive-id' }]);
+    mockFs.readdir.mockImplementation(async (dir: string) =>
+      dir === '/watch' ? entries('local.note') : entries(),
+    );
+    mockService.handleFileChange.mockResolvedValue({
+      content: 'converted',
+      assets: new Map(),
+      metadata: {},
+    });
+    const result = await orchestrator.syncAll(
+      [
+        createDefaultMapping(),
+        createDefaultMapping({ source: SyncSource.GoogleDrive, watchDir: 'folder-id' }),
+      ],
+      (mapping) => (mapping.source === SyncSource.GoogleDrive ? driveFs : null),
+    );
+    expect(result).toEqual({ synced: 2, failed: 0, deleted: 0 });
+    expect(mockService.handleFileChange).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '/watch/local.note' }),
+      parserMap.get('viwoods'),
+      'output/local.excalidraw.md',
+    );
+    expect(mockService.handleFileChange).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'gdrive://drive-id' }),
+      parserMap.get('viwoods'),
+      'output/drive.excalidraw.md',
+    );
+  });
+
+  it('fails Drive mapping without an explicit source filesystem', async () => {
+    const result = await orchestrator.syncAll([
+      createDefaultMapping({ source: SyncSource.GoogleDrive }),
+    ]);
+    expect(result).toEqual({ synced: 0, failed: 1, deleted: 0 });
+    expect(mockFs.readdir).not.toHaveBeenCalled();
   });
 });

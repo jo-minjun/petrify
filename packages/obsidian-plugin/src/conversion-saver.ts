@@ -23,14 +23,14 @@ export async function saveConversionResult(
     const outputPath = path.posix.join(outputDir, `${baseName}${extension}`);
     const frontmatter = metadataFormatter.formatMetadata(result.metadata);
 
-    await fileWriter.writeFile(outputPath, frontmatter + result.content);
-
     if (result.assets.size > 0) {
       const assetsDir = path.posix.join(outputDir, 'assets', baseName);
       for (const [assetName, data] of result.assets) {
         await fileWriter.writeAsset(assetsDir, assetName, data);
       }
     }
+
+    await fileWriter.writeFile(outputPath, frontmatter + result.content);
 
     return outputPath;
   } catch (error) {

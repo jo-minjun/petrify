@@ -157,4 +157,12 @@ describe('GoogleDriveClient', () => {
     expect(file.id).toBe('f1');
     expect(file.name).toBe('test.note');
   });
+
+  it.each([
+    403, 404, 503,
+  ])('preserves API error code %s for safe cleanup decisions', async (code) => {
+    const error = Object.assign(new Error('Drive API error'), { code });
+    mockFiles.get.mockRejectedValueOnce(error);
+    await expect(client.getFile('file-id')).rejects.toBe(error);
+  });
 });

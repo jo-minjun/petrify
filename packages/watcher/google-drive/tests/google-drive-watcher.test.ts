@@ -110,7 +110,7 @@ describe('GoogleDriveWatcher', () => {
     expect(mockClient.downloadFile).toHaveBeenCalledWith('f1');
   });
 
-  it('skips initial scan when a saved pageToken exists', async () => {
+  it('restores current identities by scanning even when a saved pageToken exists', async () => {
     await pageTokenStore.savePageToken('existing-token');
 
     watcher = new GoogleDriveWatcher({
@@ -127,9 +127,44 @@ describe('GoogleDriveWatcher', () => {
 
     await watcher.start();
 
-    expect(mockClient.listFiles).not.toHaveBeenCalled();
+    expect(mockClient.listFiles).toHaveBeenCalled();
     expect(mockClient.getStartPageToken).not.toHaveBeenCalled();
     expect(events).toHaveLength(0);
+  });
+
+  it('does not save initial cursor when initial enumeration fails', async () => {
+    mockClient.listFiles.mockRejectedValueOnce(new Error('temporary failure'));
+    await expect(watcher.start()).rejects.toThrow('temporary failure');
+    expect(await pageTokenStore.loadPageToken()).toBeNull();
+  });
+
+  it('restores historical identities to delete a file removed while stopped', async () => {
+    await pageTokenStore.savePageToken('existing-token');
+    const saveFileCache = vi.fn().mockResolvedValue(undefined);
+    watcher = new GoogleDriveWatcher({
+      folderId: 'test-folder-id',
+      pollIntervalMs: 30000,
+      auth: {} as unknown as import('google-auth-library').OAuth2Client,
+      pageTokenStore: {
+        ...pageTokenStore,
+        loadFileCache: async () => ({ f1: { name: 'deleted.note', extension: '.note' } }),
+        saveFileCache,
+      },
+    });
+    mockClient.getChanges.mockResolvedValue({
+      changes: [{ fileId: 'f1', removed: true, time: '2026-01-02' }],
+      newStartPageToken: 'next',
+    });
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    watcher.onFileDelete(onDelete);
+    await watcher.start();
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(onDelete).toHaveBeenCalledWith({
+      id: 'gdrive://f1',
+      name: 'deleted.note',
+      extension: '.note',
+    });
+    expect(saveFileCache).toHaveBeenLastCalledWith({});
   });
 
   it('emits FileChangeEvent when polling detects a file addition', async () => {

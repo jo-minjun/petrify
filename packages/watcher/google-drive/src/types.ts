@@ -50,6 +50,8 @@ export interface ChangesResult {
 export interface PageTokenStore {
   loadPageToken(): Promise<string | null>;
   savePageToken(token: string): Promise<void>;
+  loadFileCache?(): Promise<Record<string, { name: string; extension: string }> | null>;
+  saveFileCache?(files: Record<string, { name: string; extension: string }>): Promise<void>;
 }
 
 export interface GoogleDriveWatcherOptions {

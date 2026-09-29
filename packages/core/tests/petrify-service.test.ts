@@ -703,11 +703,12 @@ describe('PetrifyService', () => {
       vi.mocked(mockParser.parse).mockResolvedValue(note);
 
       const mockGenerator = createMockGeneratorPort();
-      vi.mocked(mockGenerator.generate).mockReturnValue(
+      vi.mocked(mockGenerator.incrementalUpdate).mockReturnValue(
         mockGeneratorOutput({ content: 'incremental-content' }),
       );
 
       const mockMetadata = createMockMetadataPort();
+      mockMetadata.getContent = () => Promise.resolve('existing-content');
       vi.mocked(mockMetadata.getMetadata).mockResolvedValue({
         source: '/path/to/file.note',
         parser: 'test-parser',

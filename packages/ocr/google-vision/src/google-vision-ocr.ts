@@ -45,6 +45,7 @@ interface VisionWord {
 
 interface VisionSymbol {
   text?: string;
+  property?: { detectedBreak?: { type?: string; isPrefix?: boolean } };
 }
 
 interface VisionPage {
@@ -152,9 +153,33 @@ export class GoogleVisionOcr implements OcrPort {
 
   private extractBlockText(block: VisionBlock): string {
     return (block.paragraphs ?? [])
-      .flatMap((p) => p.words ?? [])
-      .map((w) => (w.symbols ?? []).map((s) => s.text ?? '').join(''))
-      .join(' ');
+      .map((paragraph) =>
+        (paragraph.words ?? [])
+          .flatMap((word) => word.symbols ?? [])
+          .map((symbol) => {
+            const detectedBreak = symbol.property?.detectedBreak;
+            let separator = '';
+            switch (detectedBreak?.type) {
+              case 'SPACE':
+              case 'SURE_SPACE':
+                separator = ' ';
+                break;
+              case 'EOL_SURE_SPACE':
+              case 'LINE_BREAK':
+                separator = '\n';
+                break;
+              case 'HYPHEN':
+                separator = '-\n';
+                break;
+            }
+            return detectedBreak?.isPrefix
+              ? separator + (symbol.text ?? '')
+              : (symbol.text ?? '') + separator;
+          })
+          .join('')
+          .replace(/\n$/, ''),
+      )
+      .join('\n');
   }
 
   private extractBoundingBox(vertices?: VisionVertex[]): {

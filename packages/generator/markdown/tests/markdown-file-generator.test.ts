@@ -23,6 +23,22 @@ function createNote(pages: Page[]): Note {
 }
 
 describe('MarkdownFileGenerator', () => {
+  it('encodes unsafe page IDs without filename collisions or wiki link injection', () => {
+    const ids = ['../escape', '..\\escape', '%2E%2E%2Fescape', 'a]]|#b', '..', 'normal-id'];
+    const output = new MarkdownFileGenerator().generate(
+      createNote(ids.map((id, order) => createPage({ id, order }))),
+      'test',
+    );
+    expect([...output.assets.keys()]).toEqual([
+      '%2E%2E%2Fescape.png',
+      '%2E%2E%5Cescape.png',
+      '%252E%252E%252Fescape.png',
+      'a%5D%5D%7C%23b.png',
+      '%2E%2E.png',
+      'normal-id.png',
+    ]);
+    expect(output.content).toContain('![[assets/test/a%5D%5D%7C%23b.png]]');
+  });
   it('includes page images in assets', () => {
     const generator = new MarkdownFileGenerator();
     const imageData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);

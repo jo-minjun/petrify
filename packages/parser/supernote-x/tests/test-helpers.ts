@@ -31,6 +31,8 @@ export interface TestPageOptions {
   pageId?: string;
   rleData?: Uint8Array;
   layerInfo?: string;
+  protocol?: string;
+  bitmapAddress?: string;
 }
 
 export function buildTestNote(options?: { pages?: TestPageOptions[] }): ArrayBuffer {
@@ -52,7 +54,18 @@ export function buildTestNote(options?: { pages?: TestPageOptions[] }): ArrayBuf
     const pageId = page.pageId ?? `page-${i}`;
     const layerInfo = page.layerInfo;
     // All-transparent bitmap: fills width*height with 0xff
-    const rleData = page.rleData ?? new Uint8Array([0x62, 0xff]);
+    const blankRuns: number[] = [];
+    let remaining = 1404 * 1872;
+    while (remaining >= 0x4000) {
+      blankRuns.push(0x62, 0xff);
+      remaining -= 0x4000;
+    }
+    while (remaining > 0) {
+      const length = Math.min(remaining, 128);
+      blankRuns.push(0x62, length - 1);
+      remaining -= length;
+    }
+    const rleData = page.rleData ?? new Uint8Array(blankRuns);
 
     const bitmapOffset = offset;
     const bitmapBlock = buildDataBlock(rleData);
@@ -62,8 +75,8 @@ export function buildTestNote(options?: { pages?: TestPageOptions[] }): ArrayBuf
     const layerOffset = offset;
     const layerBlock = buildMetadataBlock({
       LAYERNAME: 'MAINLAYER',
-      LAYERPROTOCOL: 'RATTA_RLE',
-      LAYERBITMAP: String(bitmapOffset),
+      LAYERPROTOCOL: page.protocol ?? 'RATTA_RLE',
+      LAYERBITMAP: page.bitmapAddress ?? String(bitmapOffset),
     });
     parts.push(layerBlock);
     offset += layerBlock.length;

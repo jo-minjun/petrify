@@ -4,6 +4,9 @@ import { decodeFlate, decodeRattaRle } from '../src/decoder.js';
 import { ParseError } from '../src/exceptions.js';
 
 describe('decodeRattaRle', () => {
+  it('rejects an incomplete color-length pair', () => {
+    expect(() => decodeRattaRle(new Uint8Array([0x61]), 1, 1, false)).toThrow(ParseError);
+  });
   it('decodes simple length+1 encoding', () => {
     // colorcode=0x61(BLACK->0x00), length=0x02 -> 3 pixels
     // colorcode=0x62(BG->0xff), length=0x04 -> 5 pixels
@@ -62,14 +65,57 @@ describe('decodeRattaRle', () => {
     expect(Array.from(result)).toEqual([0x9d, 0xc9, 0x30, 0x50]);
   });
 
-  it('fills remaining pixels with transparent on short data', () => {
+  it('rejects a truncated stream instead of filling missing pixels with transparency', () => {
     const data = new Uint8Array([0x61, 0x01]); // 2 BLACK pixels
-    const result = decodeRattaRle(data, 5, 1, false);
-    expect(Array.from(result)).toEqual([0x00, 0x00, 0xff, 0xff, 0xff]);
+    expect(() => decodeRattaRle(data, 5, 1, false)).toThrow(ParseError);
+  });
+
+  it.each([
+    new Uint8Array([0x61, 0x05]),
+    new Uint8Array([0x61, 0x04, 0x62, 0]),
+  ])('rejects runs beyond the expected bitmap size: %j', (data) => {
+    expect(() => decodeRattaRle(data, 5, 1, false)).toThrow(ParseError);
+  });
+
+  it('rejects a trailing continuation that cannot represent the remaining pixels', () => {
+    expect(() => decodeRattaRle(new Uint8Array([0x61, 0x80]), 3, 1, false)).toThrow(ParseError);
+  });
+
+  it('rejects an extra continuation after the bitmap is complete', () => {
+    expect(() => decodeRattaRle(new Uint8Array([0x61, 4, 0x62, 0x80]), 5, 1, false)).toThrow(
+      ParseError,
+    );
+  });
+
+  it('decodes a trailing continuation matching the remaining size', () => {
+    expect(Array.from(decodeRattaRle(new Uint8Array([0x61, 0x81]), 4, 1, false))).toEqual([
+      0, 0, 0, 0,
+    ]);
   });
 });
 
 describe('decodeFlate', () => {
+  it.each([
+    0, 16,
+  ])('rotates an asymmetric bitmap clockwise and removes %i padded bottom rows', (padding) => {
+    const stride = 3 + padding;
+    const data = new Uint8Array(2 * stride * 2);
+    data.fill(0xff);
+    const view = new DataView(data.buffer);
+    [0, 0x2104, 0xe1e2].forEach((code, y) => {
+      view.setUint16(y * 2, code, true);
+    });
+    [0xe1e2, 0, 0x2104].forEach((code, y) => {
+      view.setUint16((stride + y) * 2, code, true);
+    });
+    expect(Array.from(decodeFlate(pako.deflate(data), 2, 3))).toEqual([
+      0xc9, 0, 0, 0x9d, 0x9d, 0xc9,
+    ]);
+  });
+
+  it.each([1, 10, 14])('rejects incompatible decompressed lengths (%i bytes)', (length) => {
+    expect(() => decodeFlate(pako.deflate(new Uint8Array(length)), 2, 3)).toThrow(ParseError);
+  });
   it('throws ParseError when decompressed payload exceeds safety limit', () => {
     const oversized = new Uint8Array(20 * 1024 * 1024 + 2);
     const compressed = pako.deflate(oversized);

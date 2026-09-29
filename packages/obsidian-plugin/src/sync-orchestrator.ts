@@ -74,7 +74,12 @@ export class SyncOrchestrator {
       if (!mapping.enabled) continue;
       if (!mapping.watchDir) continue;
 
-      const mappingFs = syncFsForMapping?.(mapping) ?? this.fs;
+      const mappingFs = mapping.source === SyncSource.Local ? this.fs : syncFsForMapping?.(mapping);
+      if (!mappingFs) {
+        this.syncLog.error(`Source unavailable: ${mapping.watchDir}`);
+        failed++;
+        continue;
+      }
 
       const parserForMapping = this.parserMap.get(mapping.parserId);
       if (!parserForMapping) {
@@ -87,7 +92,14 @@ export class SyncOrchestrator {
       synced += fileResult.synced;
       failed += fileResult.failed;
 
-      deleted += await this.cleanOrphans(mapping, mappingFs);
+      if (fileResult.entries) {
+        deleted += await this.cleanOrphans(
+          mapping,
+          mappingFs,
+          parserForMapping,
+          fileResult.entries,
+        );
+      }
     }
 
     return { synced, failed, deleted };
@@ -97,7 +109,7 @@ export class SyncOrchestrator {
     mapping: SyncMapping,
     mappingFs: SyncFileSystem,
     parser: ParserPort,
-  ): Promise<{ synced: number; failed: number }> {
+  ): Promise<{ synced: number; failed: number; entries?: ReadDirEntry[] }> {
     let synced = 0;
     let failed = 0;
 
@@ -118,16 +130,31 @@ export class SyncOrchestrator {
       const fileRef = entry.fileRef ?? path.join(mapping.watchDir, entry.name);
 
       const event: FileChangeEvent = {
-        id: fileRef,
+        id:
+          mapping.source === SyncSource.GoogleDrive
+            ? `gdrive://${fileRef.replace(/^gdrive:\/\//, '')}`
+            : fileRef,
         name: entry.name,
         extension: ext,
-        readData: () => mappingFs.readFile(fileRef),
+        readData: () =>
+          mappingFs.readFile(
+            mapping.source === SyncSource.GoogleDrive
+              ? fileRef.replace(/^gdrive:\/\//, '')
+              : fileRef,
+          ),
       };
 
       try {
-        const result = await this.petrifyService.handleFileChange(event, parser);
+        const baseName = entry.name.replace(/\.[^/.]+$/, '');
+        const expectedOutputPath = normalizePath(
+          path.join(mapping.outputDir, baseName + this.generator.extension),
+        );
+        const result = await this.petrifyService.handleFileChange(
+          event,
+          parser,
+          expectedOutputPath,
+        );
         if (result) {
-          const baseName = entry.name.replace(/\.[^/.]+$/, '');
           const outputPath = await this.saveResult(result, mapping.outputDir, baseName);
           this.convertLog.info(`Converted: ${entry.name} -> ${outputPath}`);
           synced++;
@@ -139,10 +166,15 @@ export class SyncOrchestrator {
       }
     }
 
-    return { synced, failed };
+    return { synced, failed, entries };
   }
 
-  private async cleanOrphans(mapping: SyncMapping, mappingFs: SyncFileSystem): Promise<number> {
+  private async cleanOrphans(
+    mapping: SyncMapping,
+    mappingFs: SyncFileSystem,
+    parser: ParserPort,
+    entries: ReadDirEntry[],
+  ): Promise<number> {
     const vaultPath = this.vault.getBasePath();
     let deleted = 0;
 
@@ -164,10 +196,41 @@ export class SyncOrchestrator {
 
       const metadata = await this.metadataAdapter.getMetadata(outputPath);
       if (!metadata?.source) continue;
+      if (metadata.parser && metadata.parser !== parser.id) continue;
+
+      let sourceRef = metadata.source;
+      if (mapping.source === SyncSource.GoogleDrive) {
+        if (!sourceRef.startsWith('gdrive://') || metadata.parser !== parser.id) continue;
+        sourceRef = sourceRef.slice('gdrive://'.length);
+        if (entries.some((entry) => entry.fileRef?.replace(/^gdrive:\/\//, '') === sourceRef))
+          continue;
+      } else {
+        if (path.resolve(path.dirname(sourceRef)) !== path.resolve(mapping.watchDir)) continue;
+        if (
+          !parser.extensions.some(
+            (ext) => ext.toLowerCase() === path.extname(sourceRef).toLowerCase(),
+          )
+        )
+          continue;
+        if (
+          entries.some(
+            (entry) =>
+              path.resolve(entry.fileRef ?? path.join(mapping.watchDir, entry.name)) ===
+              path.resolve(sourceRef),
+          )
+        )
+          continue;
+      }
 
       try {
-        await mappingFs.access(metadata.source);
-      } catch {
+        await mappingFs.access(sourceRef);
+      } catch (error) {
+        const code =
+          typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
+        if (
+          mapping.source === SyncSource.Local ? code !== 'ENOENT' : code !== 404 && code !== '404'
+        )
+          continue;
         await this.vault.trash(outputPath);
         this.convertLog.info(`Cleaned orphan: ${outputPath}`);
         deleted++;

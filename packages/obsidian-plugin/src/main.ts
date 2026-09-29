@@ -30,6 +30,7 @@ import { createPageTokenStore, createTokenStore, hasTokens } from './google-driv
 import { createLogger } from './logger.js';
 import { ObsidianFileSystemAdapter } from './obsidian-file-system-adapter.js';
 import { createParserMap } from './parser-registry.js';
+import { updatePluginData } from './plugin-data.js';
 import { processFile as processFileImpl } from './process-file.js';
 import { DEFAULT_SETTINGS, type OutputFormat, type PetrifySettings } from './settings.js';
 import { PetrifySettingsTab } from './settings-tab.js';
@@ -75,7 +76,6 @@ export default class PetrifyPlugin extends Plugin {
   private isSyncing = false;
   private ribbonIconEl: HTMLElement | null = null;
   private googleDriveAuth: GoogleDriveAuth | null = null;
-  private readonly sourceOutputMap = new Map<string, string>();
   private readonly watcherLog = createLogger('Watcher');
   private readonly convertLog = createLogger('Convert');
   private readonly syncLog = createLogger('Sync');
@@ -250,8 +250,7 @@ export default class PetrifyPlugin extends Plugin {
     const adapter = this.app.vault.adapter as FileSystemAdapter;
     const vaultPath = adapter.getBasePath();
 
-    this.metadataAdapter = new FrontmatterMetadataAdapter(async (id: string) => {
-      const outputPath = this.getOutputPathForId(id);
+    this.metadataAdapter = new FrontmatterMetadataAdapter(async (outputPath: string) => {
       const fullPath = path.join(vaultPath, outputPath);
       return fs.readFile(fullPath, 'utf-8');
     });
@@ -379,8 +378,15 @@ export default class PetrifyPlugin extends Plugin {
     });
 
     watcher.onFileDelete(async (event) => {
+      if (
+        !parser.extensions.some(
+          (extension) => extension.toLowerCase() === event.extension.toLowerCase(),
+        )
+      ) {
+        return;
+      }
       const outputPath = this.getOutputPath(event.name, outputDir);
-      await this.handleDeletedSource(outputPath);
+      await this.handleDeletedSource(outputPath, event.id);
     });
 
     watcher.onError((error) => {
@@ -396,11 +402,12 @@ export default class PetrifyPlugin extends Plugin {
   ): Promise<boolean> {
     return processFileImpl(
       event,
-      outputDir,
+      normalizePath(outputDir),
       this.petrifyService,
       (result, dir, baseName) => this.saveConversionResult(result, dir, baseName),
       this.convertLog,
       parser,
+      this.generator.extension,
     );
   }
 
@@ -418,14 +425,17 @@ export default class PetrifyPlugin extends Plugin {
       this.fsAdapter,
       this.metadataAdapter,
     );
-    if (result.metadata.source) {
-      this.sourceOutputMap.set(result.metadata.source, outputPath);
-    }
     return outputPath;
   }
 
-  private async handleDeletedSource(outputPath: string): Promise<void> {
+  private async handleDeletedSource(outputPath: string, sourceId: string): Promise<void> {
     if (!(await this.app.vault.adapter.exists(outputPath))) return;
+
+    const metadata = await this.metadataAdapter.getMetadata(outputPath);
+    const legacyDriveId = sourceId.startsWith('gdrive://')
+      ? sourceId.slice('gdrive://'.length)
+      : sourceId;
+    if (metadata?.source !== sourceId && metadata?.source !== legacyDriveId) return;
 
     const canDelete = await this.petrifyService.handleFileDelete(outputPath);
     if (!canDelete) {
@@ -466,18 +476,6 @@ export default class PetrifyPlugin extends Plugin {
 
   private isPetrifyFile(file: TFile): boolean {
     return file.path.endsWith(this.generator.extension);
-  }
-
-  private getOutputPathForId(id: string): string {
-    const localMapping = this.settings.localWatch.mappings.find((m) => id.startsWith(m.watchDir));
-    if (localMapping) {
-      const fileName = path.basename(id, path.extname(id));
-      return normalizePath(
-        path.join(localMapping.outputDir, `${fileName}${this.generator.extension}`),
-      );
-    }
-
-    return this.sourceOutputMap.get(id) ?? '';
   }
 
   private getOutputPath(name: string, outputDir: string): string {
@@ -606,8 +604,7 @@ export default class PetrifyPlugin extends Plugin {
   }
 
   private async saveSettings(): Promise<void> {
-    const existing = (await this.loadData()) ?? {};
-    await this.saveData({ ...existing, ...this.settings });
+    await updatePluginData(this, (existing) => ({ ...existing, ...this.settings }));
   }
 
   private async getGoogleDriveAuthClient(): Promise<OAuth2Client | null> {

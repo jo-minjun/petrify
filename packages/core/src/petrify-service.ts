@@ -9,7 +9,12 @@ import type {
   ConversionMetadataPort,
   PageHash,
 } from './ports/conversion-metadata.js';
-import type { FileGeneratorPort, GeneratorOutput, OcrTextResult } from './ports/file-generator.js';
+import type {
+  FileGeneratorPort,
+  GeneratorOutput,
+  OcrTextResult,
+  PageUpdate,
+} from './ports/file-generator.js';
 import type { OcrPort } from './ports/ocr.js';
 import type { ParserPort } from './ports/parser.js';
 import type { FileChangeEvent } from './ports/watcher.js';
@@ -58,6 +63,7 @@ export class PetrifyService {
   async handleFileChange(
     event: FileChangeEvent,
     parser: ParserPort,
+    outputPath: string = event.id,
   ): Promise<ConversionResult | null> {
     const supportsExtension = parser.extensions.some(
       (supportedExt) => supportedExt.toLowerCase() === event.extension.toLowerCase(),
@@ -66,14 +72,14 @@ export class PetrifyService {
       return null;
     }
 
-    const savedMetadata = await this.metadataPort.getMetadata(event.id);
+    const savedMetadata = await this.metadataPort.getMetadata(outputPath);
     if (savedMetadata?.keep) {
       return null;
     }
 
     const data = await event.readData();
     const fileHash = await sha1Hex(new Uint8Array(data));
-    if (savedMetadata?.fileHash === fileHash) {
+    if (savedMetadata?.fileHash === fileHash && savedMetadata.parser === parser.id) {
       return null;
     }
 
@@ -86,7 +92,7 @@ export class PetrifyService {
 
     const currentPageHashes = await this.computePageHashes(note);
 
-    const parserChanged = savedMetadata?.parser != null && savedMetadata.parser !== parser.id;
+    const parserChanged = savedMetadata != null && savedMetadata.parser !== parser.id;
     const diff = diffPages(
       currentPageHashes,
       parserChanged ? null : (savedMetadata?.pageHashes ?? null),
@@ -97,9 +103,20 @@ export class PetrifyService {
 
     const baseName = event.name.replace(/\.[^/.]+$/, '');
     const changedPageIds = new Set([...diff.changed, ...diff.added]);
-    const targetPageIds =
-      diff.type === 'full' || diff.type === 'structural' ? undefined : changedPageIds;
-    const generatorOutput = await this.convertData(note, baseName, targetPageIds);
+    const existingContent =
+      diff.type === 'full' || diff.type === 'structural'
+        ? undefined
+        : await this.metadataPort.getContent?.(outputPath);
+    const generatorOutput =
+      existingContent === undefined
+        ? await this.convertData(note, baseName)
+        : await this.convertIncrementally(
+            note,
+            baseName,
+            existingContent,
+            changedPageIds,
+            diff.removed,
+          );
 
     const metadata: ConversionMetadata = {
       source: event.id,
@@ -166,15 +183,49 @@ export class PetrifyService {
     );
   }
 
-  private async convertData(
-    note: Note,
-    outputName: string,
-    targetPageIds?: Set<string>,
-  ): Promise<GeneratorOutput> {
-    const ocrResults = await this.runOcr(note, targetPageIds);
+  private async convertData(note: Note, outputName: string): Promise<GeneratorOutput> {
+    const ocrResults = await this.runOcr(note);
 
     try {
       return await this.generator.generate(note, outputName, ocrResults);
+    } catch (error) {
+      throw new ConversionError('generate', error);
+    }
+  }
+
+  private async convertIncrementally(
+    note: Note,
+    outputName: string,
+    existingContent: string,
+    changedPageIds: Set<string>,
+    removedPageIds: readonly string[],
+  ): Promise<GeneratorOutput> {
+    const ocrResults = await this.runOcr(note, changedPageIds);
+    const ocrByPageId = new Map(ocrResults?.map((result) => [result.pageId, result]));
+    const updates = new Map<string, PageUpdate>();
+    for (const page of note.pages) {
+      if (changedPageIds.has(page.id)) {
+        updates.set(page.id, {
+          page,
+          ocrResult: ocrByPageId.get(page.id) ?? {
+            pageId: page.id,
+            pageIndex: page.order,
+            texts: [],
+          },
+        });
+      }
+    }
+    try {
+      return await this.generator.incrementalUpdate(
+        {
+          existingContent,
+          existingAssets: new Map(),
+          updates,
+          removedPageIds,
+        },
+        note,
+        outputName,
+      );
     } catch (error) {
       throw new ConversionError('generate', error);
     }

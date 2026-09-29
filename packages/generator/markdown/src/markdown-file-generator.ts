@@ -21,7 +21,7 @@ export class MarkdownFileGenerator implements FileGeneratorPort {
     const ocrParts: string[] = [];
 
     for (const page of sortedPages) {
-      const filename = `${page.id}.png`;
+      const filename = `${encodeURIComponent(page.id).replace(/\./g, '%2E')}.png`;
       assets.set(filename, page.imageData);
 
       imageLines.push(`![[assets/${outputName}/${filename}]]`);

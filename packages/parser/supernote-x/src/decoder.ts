@@ -2,7 +2,6 @@ import pako from 'pako';
 import { PNG } from 'pngjs';
 import {
   createColorMap,
-  INTERNAL_PAGE_HEIGHT,
   MAX_FLATE_DECOMPRESSED_BYTES,
   PALETTE_TRANSPARENT,
   RLE_CONTINUATION_BIT,
@@ -19,10 +18,14 @@ export function decodeRattaRle(
   isX2: boolean,
   allBlank = false,
 ): Uint8Array {
+  if (data.length % 2 !== 0) {
+    throw new ParseError('Incomplete RLE color-length pair');
+  }
   const colorMap = createColorMap(isX2);
   const totalPixels = width * height;
   const pixels = new Uint8Array(totalPixels);
   pixels.fill(PALETTE_TRANSPARENT);
+  if (data.length === 0) return pixels;
 
   let pixelIdx = 0;
   let dataIdx = 0;
@@ -31,12 +34,15 @@ export function decodeRattaRle(
 
   const emit = (colorCode: number, count: number) => {
     const gray = colorMap.get(colorCode) ?? colorCode;
-    const end = Math.min(pixelIdx + count, totalPixels);
+    const end = pixelIdx + count;
+    if (end > totalPixels) {
+      throw new ParseError(`RLE bitmap exceeds expected ${totalPixels} pixels`);
+    }
     pixels.fill(gray, pixelIdx, end);
     pixelIdx = end;
   };
 
-  while (dataIdx + 1 < data.length && pixelIdx < totalPixels) {
+  while (dataIdx + 1 < data.length) {
     const colorCode = data[dataIdx++];
     let length = data[dataIdx++];
     let dataPushed = false;
@@ -71,8 +77,20 @@ export function decodeRattaRle(
     }
   }
 
-  if (holderColor >= 0 && pixelIdx < totalPixels) {
-    emit(holderColor, totalPixels - pixelIdx);
+  if (holderColor >= 0) {
+    const gap = totalPixels - pixelIdx;
+    if (gap === 0) throw new ParseError('Unexpected RLE continuation after the bitmap is complete');
+    for (let shift = 7; shift >= 0; shift--) {
+      const count = ((holderLength & 0x7f) + 1) << shift;
+      if (count <= gap) {
+        emit(holderColor, count);
+        break;
+      }
+    }
+  }
+
+  if (pixelIdx !== totalPixels) {
+    throw new ParseError(`Incomplete RLE bitmap: decoded ${pixelIdx} of ${totalPixels} pixels`);
   }
 
   return pixels;
@@ -140,28 +158,27 @@ export function decodeFlate(data: Uint8Array, width: number, height: number): Ui
     chunkOffset += chunk.length;
   }
 
-  const pixelCount = Math.floor(decompressed.length / 2);
-  const view = new DataView(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
-  const rawPixels = new Uint16Array(pixelCount);
-  for (let i = 0; i < pixelCount; i++) {
-    rawPixels[i] = view.getUint16(i * 2, true);
+  const pixelCount = decompressed.length / 2;
+  const sourceWidth = pixelCount / width;
+  if (!Number.isInteger(pixelCount) || (sourceWidth !== height && sourceWidth !== height + 16)) {
+    throw new ParseError(
+      `Invalid flate bitmap dimensions for ${width}x${height}: ${decompressed.length} bytes`,
+    );
   }
-  rawPixels.reverse();
+  const view = new DataView(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
 
   const pixels = new Uint8Array(width * height);
   pixels.fill(PALETTE_TRANSPARENT);
 
-  let outIdx = 0;
-  for (let i = 0; i < rawPixels.length && outIdx < width * height; i++) {
-    // Flate layers may include padded columns; keep only the visible page columns.
-    const column = i % width;
-    if (column < INTERNAL_PAGE_HEIGHT) {
-      const code = rawPixels[i];
+  // Storage is transposed; clockwise rotation leaves any padding below the visible page.
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const code = view.getUint16(((width - 1 - x) * sourceWidth + y) * 2, true);
+      const outIdx = y * width + x;
       if (code === 0x0000) pixels[outIdx] = 0x00;
       else if (code === 0x2104) pixels[outIdx] = 0x9d;
       else if (code === 0xe1e2) pixels[outIdx] = 0xc9;
       else pixels[outIdx] = PALETTE_TRANSPARENT;
-      outIdx++;
     }
   }
 
